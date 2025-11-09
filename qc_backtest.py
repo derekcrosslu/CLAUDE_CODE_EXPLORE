@@ -192,6 +192,127 @@ class QuantConnectAPI:
 
             time.sleep(poll_interval)
 
+    def create_optimization(self, project_id, name, target, parameters, compile_id=None,
+                           target_to="max", strategy="QuantConnect.Optimizer.Strategies.GridSearchOptimizationStrategy",
+                           node_type="O2-8", parallel_nodes=2):
+        """
+        Create optimization job via QuantConnect API
+
+        Args:
+            project_id: Project ID
+            name: Optimization job name
+            target: Target metric (e.g., "TotalPerformance.PortfolioStatistics.SharpeRatio")
+            parameters: List of dicts with {name, min, max, step}
+            compile_id: Optional compile ID (will compile if not provided)
+            target_to: "max" or "min"
+            strategy: Optimization strategy class name
+            node_type: Node type (O2-8, O4-12, O8-16)
+            parallel_nodes: Number of parallel nodes
+
+        Returns:
+            API response with optimization ID
+        """
+        # Compile project if no compile_id provided
+        if not compile_id:
+            compile_result = self.compile_project(project_id)
+            if not compile_result.get("success"):
+                return compile_result
+            compile_id = compile_result.get("compileId")
+
+        # Estimate cost first
+        estimate_result = self.estimate_optimization(project_id, parameters, node_type, parallel_nodes)
+        estimated_cost = estimate_result.get("estimatedCost", 0) if estimate_result.get("success") else 0
+
+        # Create optimization request
+        data = {
+            "projectId": project_id,
+            "name": name,
+            "target": target,
+            "targetTo": target_to,
+            "strategy": strategy,
+            "compileId": compile_id,
+            "parameters": parameters,
+            "estimatedCost": estimated_cost,
+            "nodeType": node_type,
+            "parallelNodes": parallel_nodes
+        }
+
+        return self._request("POST", "optimizations/create", data=data)
+
+    def estimate_optimization(self, project_id, parameters, node_type="O2-8", parallel_nodes=2):
+        """
+        Estimate cost of optimization
+
+        Args:
+            project_id: Project ID
+            parameters: List of parameter dicts with {name, min, max, step}
+            node_type: Node type
+            parallel_nodes: Number of parallel nodes
+
+        Returns:
+            Estimated cost
+        """
+        data = {
+            "projectId": project_id,
+            "parameters": parameters,
+            "nodeType": node_type,
+            "parallelNodes": parallel_nodes
+        }
+
+        return self._request("POST", "optimizations/estimate", data=data)
+
+    def read_optimization(self, optimization_id):
+        """
+        Read optimization status and results
+
+        Args:
+            optimization_id: Optimization ID
+
+        Returns:
+            Optimization data
+        """
+        return self._request("GET", "optimizations/read", params={
+            "optimizationId": optimization_id
+        })
+
+    def wait_for_optimization(self, optimization_id, timeout=1800, poll_interval=15):
+        """
+        Wait for optimization to complete
+
+        Args:
+            optimization_id: Optimization ID
+            timeout: Max wait time in seconds (default 30 min)
+            poll_interval: Seconds between status checks
+
+        Returns:
+            Final optimization result
+        """
+        start_time = time.time()
+
+        while True:
+            elapsed = time.time() - start_time
+
+            if elapsed > timeout:
+                return {
+                    "success": False,
+                    "error": f"Optimization timed out after {timeout}s"
+                }
+
+            result = self.read_optimization(optimization_id)
+
+            if not result.get("success"):
+                return result
+
+            optimization = result.get("optimization", {})
+            status = optimization.get("status")
+
+            print(f"Optimization Status: {status}, Elapsed: {elapsed:.0f}s")
+
+            if status in ["Completed", "Aborted", "Error"]:
+                return result
+
+            time.sleep(poll_interval)
+
 
 def parse_backtest_results(backtest_data):
     """
@@ -521,25 +642,67 @@ def main():
             print("ERROR: --project-id and --params-file required for --optimize")
             sys.exit(1)
 
-        # Load parameter sets from JSON file
+        # Load parameter configuration from JSON file
         params_path = Path(args.params_file)
         if not params_path.exists():
             print(f"ERROR: Parameter file not found: {args.params_file}")
             sys.exit(1)
 
-        parameter_sets = json.loads(params_path.read_text())
+        params_config = json.loads(params_path.read_text())
 
-        if not isinstance(parameter_sets, list):
-            print("ERROR: Parameter file must contain a JSON array of parameter sets")
+        # Expect format: {parameters: [{name, min, max, step}], target: "...", ...}
+        parameters = params_config.get("parameters", [])
+        target = params_config.get("target", "TotalPerformance.PortfolioStatistics.SharpeRatio")
+        target_to = params_config.get("targetTo", "max")
+        node_type = params_config.get("nodeType", "O2-8")
+        parallel_nodes = params_config.get("parallelNodes", 2)
+
+        if not parameters:
+            print("ERROR: Parameter file must contain 'parameters' array with {name, min, max, step}")
             sys.exit(1)
 
-        # Run optimization
-        optimization_results = optimize_strategy(api, args.project_id, parameter_sets, args.name or "Optimization")
+        print(f"\n=== Creating QC Native Optimization ===")
+        print(f"Project ID: {args.project_id}")
+        print(f"Parameters: {parameters}")
+        print(f"Target: {target} ({target_to})")
+        print(f"Nodes: {parallel_nodes} x {node_type}")
 
-        # Analyze results
-        analysis = analyze_optimization_results(optimization_results)
+        # Create optimization using native QC API
+        opt_result = api.create_optimization(
+            project_id=args.project_id,
+            name=args.name or "Optimization",
+            target=target,
+            parameters=parameters,
+            target_to=target_to,
+            node_type=node_type,
+            parallel_nodes=parallel_nodes
+        )
 
-        result = analysis
+        if not opt_result.get("success"):
+            print(f"ERROR: Failed to create optimization: {opt_result.get('error')}")
+            result = opt_result
+        else:
+            optimization_id = opt_result.get("optimization", {}).get("optimizationId")
+            print(f"\nOptimization created: {optimization_id}")
+            print("Waiting for completion...")
+
+            # Wait for optimization to complete
+            final_result = api.wait_for_optimization(optimization_id, timeout=1800)
+
+            if final_result.get("success"):
+                # Parse and analyze results
+                optimization = final_result.get("optimization", {})
+                result = {
+                    "success": True,
+                    "optimization_id": optimization_id,
+                    "status": optimization.get("status"),
+                    "best_parameters": optimization.get("parameterSet"),
+                    "best_backtest_id": optimization.get("backtestId"),
+                    "statistics": optimization.get("statistics", {}),
+                    "raw_data": optimization
+                }
+            else:
+                result = final_result
 
     else:
         parser.print_help()

@@ -147,5 +147,66 @@ Next Actions:
 1. Generate full report: /qc-report
 2. Start paper trading
 3. Monitor for 30 days before live
+
+---
+
+## Git Integration (AUTOMATIC)
+
+After validation completes, **automatically commit AND tag if successful**:
+
+```bash
+# Extract validation metrics
+IS_SHARPE=$(cat iteration_state.json | grep '"is_sharpe"' | sed 's/[^0-9.-]*//g')
+OOS_SHARPE=$(cat iteration_state.json | grep '"oos_sharpe"' | sed 's/[^0-9.-]*//g')
+DEGRADATION=$(cat iteration_state.json | grep '"degradation"' | sed 's/[^0-9.-]*//g')
+OOS_BACKTEST_ID=$(cat iteration_state.json | grep '"oos_backtest_id"' | sed 's/.*: "//;s/",//')
+DECISION=$(cat iteration_state.json | grep 'validation.*decision' | sed 's/.*: "//;s/",//')
+HYPOTHESIS_NAME=$(cat iteration_state.json | grep '"name"' | head -1 | sed 's/.*: "//;s/",//')
+
+# Stage files
+git add iteration_state.json oos_results*.json decisions_log.md
+
+# Commit with structured message
+git commit -m "$(cat <<EOF
+validate: Out-of-sample validation $(echo ${DECISION} | tr '[:lower:]' '[:upper:]')
+
+In-Sample Performance:
+- Sharpe Ratio: ${IS_SHARPE}
+
+Out-of-Sample Performance:
+- Sharpe Ratio: ${OOS_SHARPE}
+- Degradation: ${DEGRADATION}%
+- Backtest ID: ${OOS_BACKTEST_ID}
+
+Decision: ${DECISION}
+Status: $([ "${DECISION}" = "strategy_complete" ] && echo "READY FOR DEPLOYMENT" || echo "NEEDS REVIEW")
+Phase: validation → complete
+Iteration: $(cat iteration_state.json | grep '"iteration_count"' | sed 's/[^0-9]*//g')
+
+🤖 Generated with Claude Code
+Co-Authored-By: Claude <noreply@anthropic.com>
+EOF
+)"
+
+# If validation PASSED, create git tag
+if [ "${DECISION}" = "strategy_complete" ] || [ "${DEGRADATION}" -lt 30 ]; then
+    VERSION="v1.0.0-$(echo ${HYPOTHESIS_NAME} | tr ' ' '-' | tr '[:upper:]' '[:lower:]')"
+
+    git tag -a "${VERSION}" -m "Validated Strategy - ${HYPOTHESIS_NAME}
+OOS Sharpe: ${OOS_SHARPE}
+Degradation: ${DEGRADATION}%
+Validated: $(date +%Y-%m-%d)
+Status: Ready for paper trading"
+
+    echo "🏷️  Created tag: ${VERSION}"
+fi
+
+echo "✅ Committed validation results to git"
+echo "📝 Commit: $(git log -1 --oneline)"
+```
+
+**Tag created only if**:
+- Decision = STRATEGY_COMPLETE, OR
+- Degradation < 30% (acceptable performance)
 4. Document in strategy library
 ```

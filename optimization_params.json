@@ -1,32 +1,28 @@
-[
-  {
-    "rsi_period": 10,
-    "rsi_oversold": 25,
-    "rsi_overbought": 75,
-    "stop_loss_pct": 0.03
-  },
-  {
-    "rsi_period": 14,
-    "rsi_oversold": 30,
-    "rsi_overbought": 70,
-    "stop_loss_pct": 0.03
-  },
-  {
-    "rsi_period": 14,
-    "rsi_oversold": 25,
-    "rsi_overbought": 75,
-    "stop_loss_pct": 0.05
-  },
-  {
-    "rsi_period": 20,
-    "rsi_oversold": 30,
-    "rsi_overbought": 70,
-    "stop_loss_pct": 0.03
-  },
-  {
-    "rsi_period": 20,
-    "rsi_oversold": 35,
-    "rsi_overbought": 65,
-    "stop_loss_pct": 0.04
-  }
-]
+{
+  "description": "Native QuantConnect Optimization - RSI Mean Reversion Strategy",
+  "parameters": [
+    {
+      "name": "rsi_oversold",
+      "min": 30,
+      "max": 45,
+      "step": 5
+    },
+    {
+      "name": "bb_distance_pct",
+      "min": 1.02,
+      "max": 1.10,
+      "step": 0.04
+    },
+    {
+      "name": "use_trend_filter",
+      "min": 0,
+      "max": 1,
+      "step": 1
+    }
+  ],
+  "target": "TotalPerformance.PortfolioStatistics.SharpeRatio",
+  "targetTo": "max",
+  "nodeType": "O2-8",
+  "parallelNodes": 2,
+  "notes": "Smaller grid for testing: 4 oversold × 3 BB distance × 2 trend filter = 24 combinations"
+}

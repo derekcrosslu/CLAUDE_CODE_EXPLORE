@@ -15,11 +15,11 @@ from AlgorithmImports import *
 
 class TestStrategy(QCAlgorithm):
     """
-    Enhanced RSI Mean-Reversion Strategy
+    Enhanced RSI Mean-Reversion Strategy (OPTIMIZATION TEST 1 - Very Permissive)
 
     Entry Logic:
-    - Long: RSI < 30 (oversold) AND price near lower Bollinger Band
-    - Additional filter: Price above 200-day SMA (uptrend only)
+    - Long: RSI < 50 (very relaxed) AND price near lower BB (within 10%)
+    - NO 200 SMA filter (removed to enable trades in bull market)
 
     Exit Logic:
     - Take profit: RSI > 70 (overbought)
@@ -42,12 +42,27 @@ class TestStrategy(QCAlgorithm):
         # Add equity
         self.spy = self.add_equity("SPY", Resolution.DAILY)
 
-        # Core indicators
-        self.rsi = self.rsi(self.spy.symbol, 14)
-        self.bb = self.bb(self.spy.symbol, 20, 2)  # 20-period, 2 std dev
+        # OPTIMIZABLE PARAMETERS - using get_parameter for optimization
+        rsi_period = self.get_parameter("rsi_period", 14)
+        rsi_oversold_threshold = self.get_parameter("rsi_oversold", 30)
+        rsi_overbought_threshold = self.get_parameter("rsi_overbought", 70)
+        bb_period = self.get_parameter("bb_period", 20)
+        bb_std_dev = self.get_parameter("bb_std_dev", 2)
+        bb_distance_pct = self.get_parameter("bb_distance_pct", 1.02)
+        use_trend_filter = self.get_parameter("use_trend_filter", 1)  # 1=true, 0=false
+
+        # Store parameters for use in on_data
+        self.rsi_oversold = rsi_oversold_threshold
+        self.rsi_overbought = rsi_overbought_threshold
+        self.bb_distance = bb_distance_pct
+        self.use_sma_filter = use_trend_filter > 0
+
+        # Core indicators (now parameterized)
+        self.rsi = self.rsi(self.spy.symbol, int(rsi_period))
+        self.bb = self.bb(self.spy.symbol, int(bb_period), bb_std_dev)
         self.atr = self.atr(self.spy.symbol, 14)
 
-        # Trend filter - only trade in uptrends
+        # Trend filter - only trade in uptrends (if enabled)
         self.sma_200 = self.sma(self.spy.symbol, 200)
 
         # Additional momentum indicator
@@ -125,19 +140,16 @@ class TestStrategy(QCAlgorithm):
 
         # ENTRY LOGIC - Only if not invested
         if not self.portfolio.invested:
-            # Oversold condition: RSI < 30
-            oversold = rsi_value < 30
+            # Oversold condition: RSI < threshold (parameterized)
+            oversold = rsi_value < self.rsi_oversold
 
-            # Price near lower Bollinger Band (within 2%)
-            near_lower_bb = current_price < (bb_lower * 1.02)
+            # Price near lower Bollinger Band (parameterized distance)
+            near_lower_bb = current_price < (bb_lower * self.bb_distance)
 
-            # Trend filter: Only trade if above 200 SMA (uptrend)
-            in_uptrend = current_price > sma_200_value
+            # Trend filter: Only trade if above 200 SMA (if enabled via parameter)
+            in_uptrend = current_price > sma_200_value if self.use_sma_filter else True
 
-            # MACD momentum confirmation (optional)
-            macd_positive = self.macd.current.value > self.macd.signal.current.value
-
-            # Entry signal with all confirmations
+            # Entry signal with parameterized conditions
             if oversold and near_lower_bb and in_uptrend:
                 position_size = self._calculate_position_size(current_price)
 
@@ -182,8 +194,8 @@ class TestStrategy(QCAlgorithm):
             exit_reason = "Take Profit"
             self.plot("Trade Signals", "Sell", current_price)
 
-        # RSI overbought - mean reversion exit
-        elif rsi_value > 70:
+        # RSI overbought - mean reversion exit (parameterized)
+        elif rsi_value > self.rsi_overbought:
             exit_reason = "RSI Overbought"
             self.plot("Trade Signals", "Sell", current_price)
 
@@ -288,7 +300,7 @@ class TestStrategy(QCAlgorithm):
         self.plot("Indicators", "BB Middle", bb_middle)
         self.plot("RSI", "RSI", rsi)
         self.plot("RSI", "Overbought", 70)
-        self.plot("RSI", "Oversold", 30)
+        self.plot("RSI", "Oversold", 50)
 
     def on_order_event(self, order_event):
         """Called when order status changes"""

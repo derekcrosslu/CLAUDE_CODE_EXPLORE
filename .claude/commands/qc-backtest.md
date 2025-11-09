@@ -13,6 +13,7 @@ This command will:
 6. Make autonomous routing decision
 7. Update iteration_state.json
 8. Log decision to decisions_log.md
+9. **Commit backtest results to git automatically**
 
 **Usage**:
 ```
@@ -59,3 +60,47 @@ If you disagree with the autonomous decision:
 - If PROCEED_TO_OPTIMIZATION → Use `/qc-optimize`
 - If ESCALATE → Review results manually, adjust strategy
 - If ABANDON → Use `/qc-init` for new hypothesis
+
+---
+
+## Git Integration (AUTOMATIC)
+
+After backtest completes and results are logged, **automatically commit**:
+
+```bash
+# Extract metrics from iteration_state.json
+SHARPE=$(cat iteration_state.json | grep '"sharpe_ratio"' | head -1 | sed 's/[^0-9.-]*//g')
+TRADES=$(cat iteration_state.json | grep '"total_trades"' | head -1 | sed 's/[^0-9]*//g')
+RETURN=$(cat iteration_state.json | grep '"total_return"' | head -1 | sed 's/[^0-9.-]*//g')
+DECISION=$(cat iteration_state.json | grep '"decision"' | head -1 | sed 's/.*: "//;s/",//')
+REASON=$(cat iteration_state.json | grep '"reason"' | head -1 | sed 's/.*: "//;s/",//')
+BACKTEST_ID=$(cat iteration_state.json | grep '"backtest_id"' | head -1 | sed 's/.*: "//;s/",//')
+ITERATION=$(cat iteration_state.json | grep '"iteration_count"' | head -1 | sed 's/[^0-9]*//g')
+
+# Stage files
+git add iteration_state.json decisions_log.md
+
+# Commit with structured message including metrics
+git commit -m "$(cat <<EOF
+backtest: Complete backtest iteration ${ITERATION}
+
+Results:
+- Sharpe Ratio: ${SHARPE}
+- Total Return: ${RETURN}%
+- Total Trades: ${TRADES}
+- Backtest ID: ${BACKTEST_ID}
+
+Decision: ${DECISION}
+Reason: ${REASON}
+
+Phase: backtest → $(echo ${DECISION} | tr '[:upper:]' '[:lower:]' | sed 's/_/ /g')
+Iteration: ${ITERATION}
+
+🤖 Generated with Claude Code
+Co-Authored-By: Claude <noreply@anthropic.com>
+EOF
+)"
+
+echo "✅ Committed backtest results to git"
+echo "📝 Commit: $(git log -1 --oneline)"
+```
