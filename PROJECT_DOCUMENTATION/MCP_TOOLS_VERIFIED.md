@@ -184,9 +184,157 @@ mcp__quantconnect__read_backtest
 
 (Note: `quantconnect__` prefix added automatically by MCP)
 
+## Research Notebook API (Phase 6 - Nov 10, 2025)
+
+### Capabilities Tested and Verified
+
+**Project ID Used for Testing**: 26129044
+
+#### File Management (✅ WORKING)
+
+**Create/Upload Notebook**:
+```python
+# Via MCP or direct API
+create_file(
+    projectId=26129044,
+    name="research.ipynb",
+    content=notebook_json_string
+)
+```
+- ✅ Successfully tested
+- ✅ Can upload complete Jupyter notebooks
+- ⚠️ Rejects emoji characters (must use ASCII/basic Unicode)
+
+**Read Notebook**:
+```python
+read_file(
+    projectId=26129044,
+    name="research.ipynb"
+)
+```
+- ✅ Successfully tested
+- ✅ Returns complete notebook structure
+- ✅ Includes cell outputs from previous executions
+
+**Update Notebook**:
+```python
+update_file_contents(
+    projectId=26129044,
+    name="research.ipynb",
+    content=updated_notebook_json
+)
+```
+- ✅ Successfully tested
+- ✅ Can modify cells and re-upload
+
+**Delete Files**:
+```python
+delete_file(
+    projectId=26129044,
+    name="research.ipynb"
+)
+```
+- ✅ Successfully tested
+
+#### Execution Capabilities (❌ NOT AVAILABLE)
+
+**Remote Notebook Execution**:
+- ❌ NO API endpoint exists to trigger "Run All" remotely
+- ❌ Cannot execute notebooks via API
+- ✅ Can READ outputs after manual execution
+- **Solution**: Hybrid approach - upload notebook, user clicks "Run All", read results
+
+#### Optimization API (⚠️ PAID USAGE)
+
+**What Does NOT Exist**:
+```python
+# ❌ These methods DO NOT EXIST in QuantBook API
+qb.Optimize(...)  # DOES NOT EXIST
+qb.Backtest(...)  # DOES NOT EXIST
+```
+
+**What Actually Exists**:
+```python
+# ✅ Available in Research notebooks (via auto-authenticated api variable)
+from QuantConnect.Api import Api
+api = Api()  # Already authenticated in Research environment
+
+# Create optimization (COSTS $3-5)
+optimization = api.create_optimization(
+    project_id=26129044,
+    compile_id='...',
+    name='Optimization Run 1',
+    target='SharpeRatio',
+    parameters=[
+        OptimizationParameter('lookback', 10, 30, 5)
+    ]
+)
+
+# Poll for completion
+while optimization['status'] != 'completed':
+    time.sleep(30)
+    optimization = api.read_optimization(optimization['optimizationId'])
+
+# Create backtest (FREE)
+backtest = api.create_backtest(
+    project_id=26129044,
+    compile_id='...',
+    name='Backtest Run 1'
+)
+
+# Poll for completion
+while backtest['status'] != 'completed':
+    time.sleep(10)
+    backtest = api.read_backtest(project_id, backtest['backtestId'])
+```
+
+### Architecture Decision
+
+**Chosen Approach**: Hybrid (90% Autonomous)
+- ✅ Upload notebook via API (automated)
+- ⏸️ User clicks "Run All" in Research UI (manual gate)
+- ✅ Read results via API (automated)
+
+**Why**:
+- API optimization costs $3-5 per run
+- Manual execution is FREE
+- 1-minute manual step saves $3-5
+- Still highly effective framework
+
+### Cost Model Corrections (Phase 6)
+
+**Previous Assumption (WRONG)**:
+- Local LEAN = Free
+- Cloud API = Paid
+
+**Actual Reality (CORRECTED)**:
+- Local LEAN = $2,000-4,000/year (Researcher subscription + Security Master + data)
+- Cloud API = $0-720/year (Free tier or Researcher tier)
+- **Cloud is 2-6x CHEAPER than local**
+
+### Character Encoding Limitations
+
+**Emoji Characters**: ❌ REJECTED by QC API
+```python
+# ❌ Will fail upload
+"✅ Success"
+"❌ Failed"
+"⚠️ Warning"
+
+# ✅ Use text equivalents
+"[OK] Success"
+"[ERROR] Failed"
+"[WARNING] Warning"
+```
+
+**Lesson**: Enterprise APIs often restrict character encoding. Stick to ASCII/basic Unicode for programmatic uploads.
+
 ## Status
 
 ✅ **VERIFIED: MCP server fully functional**
 ✅ **30 tools discovered and documented**
 ✅ **Workflow updated with compilation step**
-⏳ **Ready for Claude Code integration testing**
+✅ **Research Notebook API tested and documented** (Phase 6)
+✅ **Cost model corrected** (local vs cloud)
+✅ **API limitations identified** (no remote execution, no qb.Optimize)
+✅ **Hybrid architecture validated** (90% autonomous, $0 cost)

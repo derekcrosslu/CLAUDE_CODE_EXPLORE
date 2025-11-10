@@ -1,0 +1,215 @@
+{
+  "configuration": {
+    "project_id": "LOCAL_TEST",
+    "period": "2023-01-01 to 2024-12-31",
+    "train_test_split": 0.6,
+    "monte_carlo_runs": 10,
+    "parameters": {
+      "lookback_period": {
+        "min": 15,
+        "max": 25,
+        "step": 5
+      },
+      "volume_multiplier": {
+        "min": 1.3,
+        "max": 1.7,
+        "step": 0.2
+      }
+    },
+    "synthetic": {
+      "train_sharpe_mean": 1.5,
+      "train_sharpe_std": 0.3,
+      "degradation_mean": 0.2,
+      "degradation_std": 0.1
+    }
+  },
+  "summary": {
+    "successful_runs": 10,
+    "failed_runs": 0,
+    "mean_train_sharpe": 1.4044280718419953,
+    "mean_test_sharpe": 1.0546532189570266,
+    "mean_degradation": 0.24667589066898965,
+    "std_degradation": 0.07010121134037696,
+    "pct_overfit": 0.2,
+    "decision": "PROCEED_WITH_CAUTION",
+    "reason": "Moderate degradation (24.7%), acceptable stability",
+    "recommendation": "Strategy shows reasonable generalization. Additional validation recommended."
+  },
+  "recommended_parameters": {
+    "lookback_period": 25.0,
+    "volume_multiplier": 1.3
+  },
+  "detailed_results": [
+    {
+      "run": 1,
+      "train_period": "2023-01-01 to 2024-03-14",
+      "test_period": "2024-03-15 to 2025-01-01",
+      "train_sharpe": 1.6490142459033699,
+      "test_sharpe": 1.3420113769558115,
+      "degradation": 0.18617356988288156,
+      "best_params": {
+        "lookback_period": 25.0,
+        "volume_multiplier": 1.3
+      },
+      "test_metrics": {
+        "sharpe_ratio": 1.3420113769558115,
+        "total_trades": 70,
+        "win_rate": 0.4812037280884873
+      }
+    },
+    {
+      "run": 2,
+      "train_period": "2023-01-01 to 2024-03-14",
+      "test_period": "2024-03-15 to 2025-01-01",
+      "train_sharpe": 1.5837123876600414,
+      "test_sharpe": 1.1069333526812422,
+      "degradation": 0.30105152848065264,
+      "best_params": {
+        "lookback_period": 25.0,
+        "volume_multiplier": 1.5
+      },
+      "test_metrics": {
+        "sharpe_ratio": 1.1069333526812422,
+        "total_trades": 102,
+        "win_rate": 0.6439819704323989
+      }
+    },
+    {
+      "run": 3,
+      "train_period": "2023-01-01 to 2024-03-14",
+      "test_period": "2024-03-15 to 2025-01-01",
+      "train_sharpe": 1.3591576842195143,
+      "test_sharpe": 1.0135836821365778,
+      "degradation": 0.25425600435859647,
+      "best_params": {
+        "lookback_period": 15.0,
+        "volume_multiplier": 1.3
+      },
+      "test_metrics": {
+        "sharpe_ratio": 1.0135836821365778,
+        "total_trades": 107,
+        "win_rate": 0.5549512863264476
+      }
+    },
+    {
+      "run": 4,
+      "train_period": "2023-01-01 to 2024-03-14",
+      "test_period": "2024-03-15 to 2025-01-01",
+      "train_sharpe": 0.9825246502460901,
+      "test_sharpe": 0.8412658559973946,
+      "degradation": 0.14377124707590275,
+      "best_params": {
+        "lookback_period": 25.0,
+        "volume_multiplier": 1.7
+      },
+      "test_metrics": {
+        "sharpe_ratio": 0.8412658559973946,
+        "total_trades": 64,
+        "win_rate": 0.5412139968434072
+      }
+    },
+    {
+      "run": 5,
+      "train_period": "2023-01-01 to 2024-03-14",
+      "test_period": "2024-03-15 to 2025-01-01",
+      "train_sharpe": 1.3111575117227248,
+      "test_sharpe": 0.9705554413678917,
+      "degradation": 0.25977204669126086,
+      "best_params": {
+        "lookback_period": 25.0,
+        "volume_multiplier": 1.3
+      },
+      "test_metrics": {
+        "sharpe_ratio": 0.9705554413678917,
+        "total_trades": 180,
+        "win_rate": 0.6219880813472641
+      }
+    },
+    {
+      "run": 6,
+      "train_period": "2023-01-01 to 2024-03-14",
+      "test_period": "2024-03-15 to 2025-01-01",
+      "train_sharpe": 1.3424631446609974,
+      "test_sharpe": 0.8171880221321883,
+      "degradation": 0.3912771271359207,
+      "best_params": {
+        "lookback_period": 20.0,
+        "volume_multiplier": 1.3
+      },
+      "test_metrics": {
+        "sharpe_ratio": 0.8171880221321883,
+        "total_trades": 109,
+        "win_rate": 0.5626576435691079
+      }
+    },
+    {
+      "run": 7,
+      "train_period": "2023-01-01 to 2024-03-14",
+      "test_period": "2024-03-15 to 2025-01-01",
+      "train_sharpe": 1.4579344507928975,
+      "test_sharpe": 1.1711869407839148,
+      "degradation": 0.19668065999334552,
+      "best_params": {
+        "lookback_period": 20.0,
+        "volume_multiplier": 1.7
+      },
+      "test_metrics": {
+        "sharpe_ratio": 1.1711869407839148,
+        "total_trades": 57,
+        "win_rate": 0.4568777042230437
+      }
+    },
+    {
+      "run": 8,
+      "train_period": "2023-01-01 to 2024-03-14",
+      "test_period": "2024-03-15 to 2025-01-01",
+      "train_sharpe": 1.431164863850413,
+      "test_sharpe": 1.08920964263728,
+      "degradation": 0.23893489132561233,
+      "best_params": {
+        "lookback_period": 20.0,
+        "volume_multiplier": 1.5
+      },
+      "test_metrics": {
+        "sharpe_ratio": 1.08920964263728,
+        "total_trades": 183,
+        "win_rate": 0.49158833257363777
+      }
+    },
+    {
+      "run": 9,
+      "train_period": "2023-01-01 to 2024-03-14",
+      "test_period": "2024-03-15 to 2025-01-01",
+      "train_sharpe": 1.361560284547745,
+      "test_sharpe": 1.080172437328858,
+      "degradation": 0.20666572785086246,
+      "best_params": {
+        "lookback_period": 20.0,
+        "volume_multiplier": 1.5
+      },
+      "test_metrics": {
+        "sharpe_ratio": 1.080172437328858,
+        "total_trades": 93,
+        "win_rate": 0.6378997883128379
+      }
+    },
+    {
+      "run": 10,
+      "train_period": "2023-01-01 to 2024-03-14",
+      "test_period": "2024-03-15 to 2025-01-01",
+      "train_sharpe": 1.5655914948161587,
+      "test_sharpe": 1.1144254375491063,
+      "degradation": 0.2881761038948611,
+      "best_params": {
+        "lookback_period": 25.0,
+        "volume_multiplier": 1.5
+      },
+      "test_metrics": {
+        "sharpe_ratio": 1.1144254375491063,
+        "total_trades": 89,
+        "win_rate": 0.6189067697356303
+      }
+    }
+  ],
+  "errors": []
+}

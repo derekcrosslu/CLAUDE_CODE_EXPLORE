@@ -184,6 +184,239 @@ This prevented all trades from generating (0 trades in 2-year period)"
 
 ---
 
-**Last Updated**: 2025-11-10
+## API & Architecture Lessons (Nov 10, 2025)
+
+### Lesson #3: Always Verify API Methods Exist Before Building
+
+**Date**: 2025-11-10
+**Context**: Monte Carlo Walk-Forward Implementation
+
+**Assumption (WRONG)**:
+Based on examples and forum posts, assumed these methods existed:
+- `qb.Optimize()` - To run optimizations from research notebooks
+- `qb.Backtest()` - To run backtests from research notebooks
+
+**Reality**:
+These methods DO NOT EXIST in QuantConnect's QuantBook API.
+
+**What Actually Exists**:
+```python
+# From within Research notebooks (api variable is auto-available):
+from QuantConnect.Api import Api
+api = Api()  # Already authenticated
+
+# Create jobs (then wait for completion)
+optimization = api.create_optimization(...)  # Costs $3-5
+backtest = api.create_backtest(...)  # FREE
+
+# Read results
+opt_results = api.read_optimization(optimization_id)
+backtest_results = api.read_backtest(project_id, backtest_id)
+```
+
+**Impact**:
+- Entire Monte Carlo notebook built with wrong methods
+- 8 hours of research required to discover correct approach
+- Notebook requires complete rewrite
+
+**Lesson**: **Test API methods against real environment before building workflows. Don't rely solely on documentation or forum posts - verify with actual API calls.**
+
+---
+
+### Lesson #4: "Local" Doesn't Mean "Free"
+
+**Date**: 2025-11-10
+**Context**: Cost analysis for LEAN CLI
+
+**Assumption (WRONG)**:
+"Running LEAN locally = no costs" (compared to cloud API costs)
+
+**Reality**:
+Local LEAN CLI costs $2,000-4,000/year:
+- Researcher subscription: $720/year (required)
+- Security Master: $600/year (required for US Equities)
+- Data downloads: $600-2,500/year (per-file charges)
+
+**Comparison**:
+- Local LEAN: $2,000-4,000/year
+- Cloud API: $0-720/year
+- **Cloud is 2-6x CHEAPER**
+
+**Lesson**: **Infrastructure has costs. Always research actual pricing before recommending "local" solutions. Cloud services often include data, making them cheaper than self-hosted.**
+
+---
+
+### Lesson #5: Perfect is the Enemy of Good (90% vs 100% Autonomy)
+
+**Date**: 2025-11-10
+**Context**: Architecture decision
+
+**Trade-off Analysis**:
+- **100% Autonomous**: Use API optimization → Costs $3-5 per hypothesis
+- **90% Autonomous**: User clicks "Run All" once → Costs $0
+
+**Decision**: Accept 90% autonomy
+- Manual step takes 1 minute
+- Saves $3-5 per hypothesis
+- Framework still highly effective
+
+**Lesson**: **Don't over-engineer for 100% autonomy if 90% achieves the goal at a fraction of the cost. Consider cost/benefit carefully.**
+
+---
+
+### Lesson #6: API Limitations Shape Architecture
+
+**Date**: 2025-11-10
+**Context**: Research notebook execution
+
+**Discovery**:
+QuantConnect provides:
+- ✅ Full READ/WRITE access to notebook files via API
+- ✅ Can upload and download .ipynb files
+- ✅ Can read cell outputs after execution
+- ❌ NO remote execution capability
+- ❌ NO "Run All" trigger via API
+
+**Architectural Impact**:
+Can't build fully autonomous notebook execution. Must adopt hybrid approach:
+1. Upload notebook via API (automated)
+2. User runs notebook in Research UI (manual)
+3. Read results via API (automated)
+
+**Lesson**: **API limitations constrain architecture. Design around what's possible, not what's ideal. Hybrid approaches are often the pragmatic solution.**
+
+---
+
+### Lesson #7: Emoji Characters Break QC API
+
+**Date**: 2025-11-10
+**Context**: Notebook upload
+
+**Error**:
+```
+API Error: File not saved. The file contents of 'research.ipynb'
+contains invalid characters near 🔍
+```
+
+**Cause**: QC API rejects emoji characters in file uploads
+
+**Fix**: Remove all emojis, use text equivalents:
+- ✅ → [OK]
+- ❌ → [ERROR]
+- ⚠️ → [WARNING]
+- 🔍 → (remove or use "SEARCH")
+
+**Lesson**: **Enterprise APIs often have character encoding restrictions. Avoid emojis in programmatically-uploaded files. Stick to ASCII or basic Unicode.**
+
+---
+
+### Lesson #8: One Question Can Reveal Major Flaws
+
+**Date**: 2025-11-10
+**Context**: User asked "Did you include data costs?"
+
+**What Happened**:
+- I had recommended "free local LEAN" approach
+- One question revealed I hadn't researched data costs
+- Data costs made "free" solution actually the MOST expensive option
+
+**Impact**:
+- Complete architecture reversal (local → cloud)
+- 8 hours of corrective research
+- Multiple documentation updates
+
+**Lesson**: **Welcome challenging questions. They expose blind spots and prevent expensive mistakes. Always research ALL cost components before making recommendations.**
+
+---
+
+### Lesson #9: OptimizationParameter is NOT for API Calls
+
+**Date**: 2025-11-10
+**Context**: Monte Carlo notebook execution error
+
+**Error**:
+```
+NameError: name 'OptimizationParameter' is not defined
+at format_optimization_params()
+```
+
+**Root Cause**:
+`OptimizationParameter` is a LEAN algorithm framework class, NOT part of the Research/API framework.
+
+**Wrong Code**:
+```python
+# ❌ This is WRONG for API calls
+from QuantConnect.Optimizer import OptimizationParameter
+
+def format_optimization_params(params_config):
+    opt_params = []
+    for name, config in params_config.items():
+        param = OptimizationParameter(  # ❌ NOT available in Research
+            name,
+            config['min'],
+            config['max'],
+            config['step']
+        )
+        opt_params.append(param)
+    return opt_params
+```
+
+**Correct Code**:
+```python
+# ✅ Use plain dictionaries for API calls
+def format_optimization_params(params_config):
+    opt_params = []
+    for name, config in params_config.items():
+        param = {  # ✅ Plain dictionary
+            'key': name,
+            'min': config['min'],
+            'max': config['max'],
+            'step': config['step']
+        }
+        opt_params.append(param)
+    return opt_params
+```
+
+**API Usage**:
+```python
+# When calling api.create_optimization():
+response = requests.post(url, json={
+    "projectId": project_id,
+    "parameters[0][key]": "lookback_period",
+    "parameters[0][min]": 15,
+    "parameters[0][max]": 25,
+    "parameters[0][step]": 5
+})
+```
+
+**Lesson**: **Don't import framework classes for API calls. APIs use plain JSON/dictionaries, not framework-specific objects. Test imports in target environment before assuming availability.**
+
+---
+
+## Updated Best Practices
+
+### Architecture & Design
+1. **Test API methods exist** before building on them
+2. **Research ALL costs** (not just subscription fees)
+3. **Consider hybrid approaches** when pure automation is too expensive
+4. **Design around API limitations**, not ideal scenarios
+5. **90% solution at $0 often beats 100% solution at $$**
+
+### Development Process
+1. **Validate assumptions** with real API calls
+2. **Research pricing thoroughly** before recommending solutions
+3. **Welcome skeptical questions** - they catch errors
+4. **Document wrong assumptions** to avoid repeating
+5. **Update docs immediately** when errors are discovered
+
+### Cost Management
+1. **Compare total cost of ownership** (subscription + data + usage)
+2. **Cloud services often include data** (cheaper than local)
+3. **Manual gates can save money** if they're infrequent
+4. **Budget for API usage** before building workflows
+
+---
+
+**Last Updated**: 2025-11-10 17:00:00
 **Hypothesis**: 2 (Momentum Breakout Strategy)
-**Bugs Fixed**: 2
+**Bugs Fixed**: 2 (code) + 7 (architecture/API assumptions)

@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 """
+⚠️  DEPRECATED - DO NOT USE ⚠️
+
+This wrapper calls the QC Optimization API which COSTS MONEY.
+
+Use upload_research_notebook.py instead:
+- Uploads notebook to research.ipynb (FREE)
+- Run optimization inside QC Research (FREE)
+- No API costs
+
 QuantConnect Monte Carlo Walk-Forward Wrapper
 
 Fully operational wrapper for Monte Carlo walk-forward validation.
@@ -86,8 +95,14 @@ def generate_random_split(start_date, end_date, train_pct, seed=None):
         random.seed(seed)
 
     total_days = (end_date - start_date).days
-    train_days = int(total_days * train_pct)
-    test_days = total_days - train_days
+
+    # For Monte Carlo: use full period minus a buffer for random sampling
+    # Buffer is 20% or minimum 30 days (whichever is larger)
+    buffer_days = max(30, int(total_days * 0.2))
+    usable_days = total_days - buffer_days
+
+    train_days = int(usable_days * train_pct)
+    test_days = int(usable_days * (1 - train_pct))
 
     # Ensure we have at least 3 months for testing
     min_test_days = 90
@@ -95,13 +110,24 @@ def generate_random_split(start_date, end_date, train_pct, seed=None):
         raise ValueError(f"Test period too short ({test_days} days). Need at least {min_test_days} days.")
 
     # Random start point for training window
-    max_start_offset = total_days - train_days - test_days
-    start_offset = random.randint(0, max(0, max_start_offset))
+    # The train+test window can slide within the total period
+    required_days = train_days + 1 + test_days
+    max_start_offset = total_days - required_days
+
+    if max_start_offset < 0:
+        raise ValueError(f"Period too short. Need {required_days} days but only have {total_days}.")
+
+    # Random offset creates different train/test windows (Monte Carlo sampling)
+    start_offset = random.randint(0, max_start_offset)
 
     train_start = start_date + timedelta(days=start_offset)
-    train_end = train_start + timedelta(days=train_days)
-    test_start = train_end + timedelta(days=1)
-    test_end = test_start + timedelta(days=test_days)
+    train_end = train_start + timedelta(days=train_days - 1)  # Inclusive
+    test_start = train_end + timedelta(days=2)  # 1 day gap
+    test_end = test_start + timedelta(days=test_days - 1)  # Inclusive
+
+    # Ensure test_end doesn't exceed original end_date
+    if test_end > end_date:
+        test_end = end_date
 
     return train_start, train_end, test_start, test_end
 
@@ -159,10 +185,11 @@ def run_optimization_for_period(api, project_id, strategy_file, train_start, tra
     # Modify strategy with training dates
     modified_strategy = modify_strategy_dates(strategy_file, train_start, train_end)
 
-    # Upload modified strategy
-    upload_result = api.upload_file(project_id, strategy_file, modified_strategy)
-    if not upload_result.get('success'):
-        raise RuntimeError(f"Failed to upload strategy: {upload_result.get('error')}")
+    # Upload modified strategy (QC expects main.py)
+    upload_result = api.upload_file(project_id, "main.py", modified_strategy)
+    if not upload_result or not upload_result.get('success'):
+        error_detail = upload_result.get('errors') if upload_result else 'No response'
+        raise RuntimeError(f"Failed to upload strategy: {error_detail}")
 
     # Create optimization
     opt_name = f"MC_Train_Run{run_num}_{train_start.strftime('%Y%m%d')}"
@@ -238,10 +265,11 @@ def run_backtest_for_period(api, project_id, strategy_file, test_start, test_end
     # For now, we'll rely on the parameters being in the strategy via get_parameter()
     # In a full implementation, we'd inject parameter values here
 
-    # Upload modified strategy
-    upload_result = api.upload_file(project_id, strategy_file, modified_strategy)
-    if not upload_result.get('success'):
-        raise RuntimeError(f"Failed to upload strategy: {upload_result.get('error')}")
+    # Upload modified strategy (QC expects main.py)
+    upload_result = api.upload_file(project_id, "main.py", modified_strategy)
+    if not upload_result or not upload_result.get('success'):
+        error_detail = upload_result.get('errors') if upload_result else 'No response'
+        raise RuntimeError(f"Failed to upload strategy: {error_detail}")
 
     # Create backtest
     backtest_name = f"MC_Test_Run{run_num}_{test_start.strftime('%Y%m%d')}"
@@ -560,6 +588,8 @@ def main():
     parser.add_argument("--strategy", default="test_strategy.py",
                        help="Path to strategy file")
     parser.add_argument("--output", help="Path to save detailed results JSON")
+    parser.add_argument("--test", action="store_true",
+                       help="Test mode - skip prerequisite checks (for framework validation)")
 
     args = parser.parse_args()
 
@@ -570,11 +600,15 @@ def main():
         # Load iteration state
         state = load_iteration_state()
 
-        # Check prerequisites
-        has_prereq, error_msg = check_prerequisites(state)
-        if not has_prereq:
-            print(f"\n❌ ERROR: {error_msg}")
-            sys.exit(1)
+        # Check prerequisites (skip in test mode)
+        if not args.test:
+            has_prereq, error_msg = check_prerequisites(state)
+            if not has_prereq:
+                print(f"\n❌ ERROR: {error_msg}")
+                sys.exit(1)
+        else:
+            print("\n⚠️  TEST MODE: Prerequisite checks skipped")
+            print("    This is a functionality test, not a real validation\n")
 
         # Get project info
         project_id = state['project']['project_id']

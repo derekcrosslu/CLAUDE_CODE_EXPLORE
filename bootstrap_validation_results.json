@@ -1,0 +1,12 @@
+{
+  "target_sharpe": -9.462,
+  "bootstrap_mean_sharpe": -4.316862897312737,
+  "bootstrap_std_sharpe": 4.822343023098642,
+  "confidence_interval": {
+    "level": 0.95,
+    "lower": -18.26229649461722,
+    "upper": 2.395550054837045
+  },
+  "within_ci": true,
+  "n_runs": 1000
+}
