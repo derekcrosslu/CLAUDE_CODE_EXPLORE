@@ -89,23 +89,32 @@ Before starting work on ANY item, ask:
 If you don't understand how to complete an item:
 
 1. **Stop implementation immediately**
-2. **Switch to research mode:**
-   - Read relevant documentation
-   - Review PREVIOUS_WORK
-   - Check QuantConnect docs
-   - Test in isolation
-   - Document findings
+2. **Consult authoritative documentation (SOURCE OF TRUTH):**
 
-3. **Create a research document:**
+   **When confused about workflow, phases, or decisions:**
+   - Read: `PROJECT_DOCUMENTATION/autonomous_decision_framework.md`
+   - Contains: 5-phase workflow, decision thresholds, routing logic
+
+   **When confused about architecture or how components fit:**
+   - Read: `PREVIOUS_WORK/PROJECT_DOCUMENTATION/autonomous_workflow_architecture.md`
+   - Contains: Complete system architecture, state machine, integration patterns
+
+3. **Additional research sources:**
+   - Review PREVIOUS_WORK for implementation examples
+   - Check QuantConnect docs for API details
+   - Test in isolation if needed
+   - Review related skills (decision-framework, quantconnect-*, etc.)
+
+4. **Create a research document:**
    ```bash
    # Example: researching Phase 4 optimization approach
    touch RESEARCH_OPTIMIZATION_APPROACH.md
    ```
 
-4. **Document what you learned**
-5. **Return to implementation with clarity**
+5. **Document what you learned**
+6. **Return to implementation with clarity**
 
-**Never guess. Always research first.**
+**Never guess. Always research first. Use the authoritative docs as source of truth.**
 
 ### Step 4: Complete the Item
 
@@ -498,14 +507,16 @@ git push origin <branch>
 
 ### "I'm confused about what the checklist item means"
 
-**Research mode:**
+**Research mode (use authoritative docs):**
 
 1. Stop implementation
-2. Read related docs
-3. Check PREVIOUS_WORK
-4. Test in isolation
+2. **Read source of truth documentation:**
+   - Workflow/phases/decisions: `PROJECT_DOCUMENTATION/autonomous_decision_framework.md`
+   - Architecture/integration: `PREVIOUS_WORK/PROJECT_DOCUMENTATION/autonomous_workflow_architecture.md`
+3. Check PREVIOUS_WORK for implementation examples
+4. Test in isolation if needed
 5. Document findings
-6. Then implement
+6. Then implement with clarity
 
 ### "The checklist item is already complete (from PREVIOUS_WORK)"
 
@@ -571,6 +582,47 @@ git push origin <branch>
 ```
 
 **Load this skill at start of every session.**
+
+---
+
+## Authoritative Documentation (Source of Truth)
+
+**When confused, consult these documents FIRST:**
+
+### 1. Autonomous Decision Framework
+**File**: `PROJECT_DOCUMENTATION/autonomous_decision_framework.md`
+
+**Use when:**
+- Confused about 5-phase workflow (research → implementation → backtest → optimization → validation)
+- Unsure about decision thresholds (minimum_viable, optimization_worthy, production_ready)
+- Need to understand routing logic (ABANDON vs PROCEED_TO_OPTIMIZATION vs PROCEED_TO_VALIDATION)
+- Questions about Phase 3, 4, or 5 evaluation criteria
+
+**Contains:**
+- Complete 5-phase workflow description
+- Decision threshold definitions
+- Routing decision logic
+- Phase transition rules
+- Overfitting detection criteria
+
+### 2. Autonomous Workflow Architecture
+**File**: `PREVIOUS_WORK/PROJECT_DOCUMENTATION/autonomous_workflow_architecture.md`
+
+**Use when:**
+- Confused about how components fit together
+- Need to understand state machine transitions
+- Questions about iteration_state.json structure
+- Need integration patterns between phases
+- Unsure how commands (/qc-init, /qc-backtest, etc.) interact
+
+**Contains:**
+- Complete system architecture
+- State machine diagram and transitions
+- Component integration patterns
+- Data flow between phases
+- Command orchestration logic
+
+**IMPORTANT**: These documents are the **authoritative source of truth**. When confused, read these BEFORE guessing or implementing. Never skip research mode.
 
 ---
 
