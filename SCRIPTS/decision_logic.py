@@ -359,6 +359,195 @@ def evaluate_validation(
     )
 
 
+def route_decision(
+    current_phase: str,
+    decision: str,
+    iteration: int = 1,
+    max_iterations: int = 3
+) -> Dict[str, Any]:
+    """
+    Route decision to next phase based on current phase and decision.
+
+    This is the state machine that orchestrates the 5-phase workflow:
+    research → implementation → backtest → [optimization] → validation → deployed/abandoned
+
+    Args:
+        current_phase: Current workflow phase
+            - "research": Phase 1 (hypothesis defined)
+            - "implementation": Phase 2 (strategy code generated)
+            - "backtest": Phase 3 (backtest running/complete)
+            - "optimization": Phase 4 (parameter optimization)
+            - "validation": Phase 5 (walk-forward validation)
+            - "deployed": Strategy live
+            - "abandoned": Hypothesis rejected
+
+        decision: Decision from evaluate_* function
+            Backtest decisions:
+                - "ABANDON_HYPOTHESIS"
+                - "PROCEED_TO_OPTIMIZATION"
+                - "PROCEED_TO_VALIDATION"
+                - "ESCALATE_TO_HUMAN"
+
+            Optimization decisions:
+                - "USE_BASELINE_PARAMS"
+                - "PROCEED_TO_VALIDATION"
+                - "ESCALATE_TO_HUMAN"
+
+            Validation decisions:
+                - "ABANDON_HYPOTHESIS"
+                - "DEPLOY_STRATEGY"
+                - "PROCEED_WITH_CAUTION"
+                - "ESCALATE_TO_HUMAN"
+
+        iteration: Current iteration number (for retry logic)
+        max_iterations: Maximum iterations before forcing abandonment
+
+    Returns:
+        Dictionary with routing information:
+            {
+                "next_phase": str,           # Next phase to transition to
+                "next_action": str,          # Command to run (/qc-backtest, /qc-optimize, etc.)
+                "increment_iteration": bool, # Whether to increment iteration counter
+                "rationale": str,           # Why this routing decision was made
+                "terminal": bool            # Whether this is a terminal state (deployed/abandoned)
+            }
+
+    Example:
+        >>> route_decision("backtest", "PROCEED_TO_OPTIMIZATION", iteration=1)
+        {
+            "next_phase": "optimization",
+            "next_action": "/qc-optimize",
+            "increment_iteration": False,
+            "rationale": "Backtest shows decent performance, proceed to parameter optimization",
+            "terminal": False
+        }
+    """
+
+    # Check iteration limit
+    if iteration >= max_iterations:
+        return {
+            "next_phase": "abandoned",
+            "next_action": "/qc-init",
+            "increment_iteration": True,
+            "rationale": f"Maximum iterations ({max_iterations}) exceeded, abandoning hypothesis",
+            "terminal": True
+        }
+
+    # Phase: backtest (Phase 3)
+    if current_phase == "backtest":
+        if decision == "ABANDON_HYPOTHESIS":
+            return {
+                "next_phase": "abandoned",
+                "next_action": "/qc-init",
+                "increment_iteration": True,
+                "rationale": "Backtest results below minimum viable threshold, start new hypothesis",
+                "terminal": True
+            }
+
+        elif decision == "PROCEED_TO_OPTIMIZATION":
+            return {
+                "next_phase": "optimization",
+                "next_action": "/qc-optimize",
+                "increment_iteration": False,
+                "rationale": "Backtest shows decent performance, proceed to parameter optimization",
+                "terminal": False
+            }
+
+        elif decision == "PROCEED_TO_VALIDATION":
+            return {
+                "next_phase": "validation",
+                "next_action": "/qc-validate",
+                "increment_iteration": False,
+                "rationale": "Backtest shows strong performance, skip optimization and proceed to validation",
+                "terminal": False
+            }
+
+        elif decision == "ESCALATE_TO_HUMAN":
+            return {
+                "next_phase": "backtest",
+                "next_action": "manual",
+                "increment_iteration": False,
+                "rationale": "Suspicious backtest results (overfitting signals), human review required",
+                "terminal": False
+            }
+
+    # Phase: optimization (Phase 4)
+    elif current_phase == "optimization":
+        if decision == "USE_BASELINE_PARAMS":
+            return {
+                "next_phase": "validation",
+                "next_action": "/qc-validate --use-baseline",
+                "increment_iteration": False,
+                "rationale": "Optimization did not improve performance, use baseline parameters for validation",
+                "terminal": False
+            }
+
+        elif decision == "PROCEED_TO_VALIDATION":
+            return {
+                "next_phase": "validation",
+                "next_action": "/qc-validate --use-optimized",
+                "increment_iteration": False,
+                "rationale": "Optimization improved performance, use optimized parameters for validation",
+                "terminal": False
+            }
+
+        elif decision == "ESCALATE_TO_HUMAN":
+            return {
+                "next_phase": "optimization",
+                "next_action": "manual",
+                "increment_iteration": False,
+                "rationale": "Optimization results suspicious (excessive improvement), human review required",
+                "terminal": False
+            }
+
+    # Phase: validation (Phase 5)
+    elif current_phase == "validation":
+        if decision == "ABANDON_HYPOTHESIS":
+            return {
+                "next_phase": "abandoned",
+                "next_action": "/qc-init",
+                "increment_iteration": True,
+                "rationale": "Validation failed (severe degradation or low robustness), start new hypothesis",
+                "terminal": True
+            }
+
+        elif decision == "DEPLOY_STRATEGY":
+            return {
+                "next_phase": "deployed",
+                "next_action": "manual",
+                "increment_iteration": False,
+                "rationale": "Validation passed with minimal degradation, strategy ready for deployment",
+                "terminal": True
+            }
+
+        elif decision == "PROCEED_WITH_CAUTION":
+            return {
+                "next_phase": "deployed",
+                "next_action": "manual",
+                "increment_iteration": False,
+                "rationale": "Validation passed with moderate degradation, deploy with close monitoring",
+                "terminal": True
+            }
+
+        elif decision == "ESCALATE_TO_HUMAN":
+            return {
+                "next_phase": "validation",
+                "next_action": "manual",
+                "increment_iteration": False,
+                "rationale": "Validation results borderline, human judgment required",
+                "terminal": False
+            }
+
+    # Unknown phase or decision
+    return {
+        "next_phase": current_phase,
+        "next_action": "manual",
+        "increment_iteration": False,
+        "rationale": f"Unknown phase '{current_phase}' or decision '{decision}', manual intervention required",
+        "terminal": False
+    }
+
+
 if __name__ == "__main__":
     # Simple self-test
     print("=== Decision Logic Module Self-Test ===\n")
@@ -467,3 +656,96 @@ if __name__ == "__main__":
         print()
 
     print("✅ Self-test complete")
+
+    # Test routing logic
+    print("\n=== Routing Logic Self-Test ===\n")
+
+    routing_tests = [
+        {
+            "name": "Backtest → Abandon",
+            "phase": "backtest",
+            "decision": "ABANDON_HYPOTHESIS",
+            "iteration": 1,
+            "expected_phase": "abandoned",
+            "expected_action": "/qc-init"
+        },
+        {
+            "name": "Backtest → Optimization",
+            "phase": "backtest",
+            "decision": "PROCEED_TO_OPTIMIZATION",
+            "iteration": 1,
+            "expected_phase": "optimization",
+            "expected_action": "/qc-optimize"
+        },
+        {
+            "name": "Backtest → Validation (skip optimization)",
+            "phase": "backtest",
+            "decision": "PROCEED_TO_VALIDATION",
+            "iteration": 1,
+            "expected_phase": "validation",
+            "expected_action": "/qc-validate"
+        },
+        {
+            "name": "Optimization → Validation (optimized params)",
+            "phase": "optimization",
+            "decision": "PROCEED_TO_VALIDATION",
+            "iteration": 1,
+            "expected_phase": "validation",
+            "expected_action": "/qc-validate --use-optimized"
+        },
+        {
+            "name": "Optimization → Validation (baseline params)",
+            "phase": "optimization",
+            "decision": "USE_BASELINE_PARAMS",
+            "iteration": 1,
+            "expected_phase": "validation",
+            "expected_action": "/qc-validate --use-baseline"
+        },
+        {
+            "name": "Validation → Deploy",
+            "phase": "validation",
+            "decision": "DEPLOY_STRATEGY",
+            "iteration": 1,
+            "expected_phase": "deployed",
+            "expected_action": "manual"
+        },
+        {
+            "name": "Validation → Abandon",
+            "phase": "validation",
+            "decision": "ABANDON_HYPOTHESIS",
+            "iteration": 1,
+            "expected_phase": "abandoned",
+            "expected_action": "/qc-init"
+        },
+        {
+            "name": "Max iterations → Abandon",
+            "phase": "backtest",
+            "decision": "PROCEED_TO_OPTIMIZATION",
+            "iteration": 3,
+            "expected_phase": "abandoned",
+            "expected_action": "/qc-init"
+        }
+    ]
+
+    for i, test in enumerate(routing_tests, 1):
+        print(f"Test {i}: {test['name']}")
+        routing = route_decision(
+            test["phase"],
+            test["decision"],
+            test["iteration"]
+        )
+        print(f"  Next Phase: {routing['next_phase']}")
+        print(f"  Next Action: {routing['next_action']}")
+        print(f"  Increment Iteration: {routing['increment_iteration']}")
+        print(f"  Terminal: {routing['terminal']}")
+        print(f"  Rationale: {routing['rationale']}")
+
+        # Validate expected results
+        assert routing['next_phase'] == test['expected_phase'], \
+            f"Expected phase {test['expected_phase']}, got {routing['next_phase']}"
+        assert routing['next_action'] == test['expected_action'], \
+            f"Expected action {test['expected_action']}, got {routing['next_action']}"
+        print("  ✅ PASS")
+        print()
+
+    print("✅ All routing tests passed!")
