@@ -863,15 +863,15 @@ This checklist shows all dependencies for each milestone with current status.
 #### Week 2 Tasks (Decision Threshold Calibration)
 
 **Backtesting Analysis Skill**
-- [ ] Create .claude/skills/backtesting-analysis/ directory
-- [ ] Create skill.md with:
-  - [ ] Sharpe ratio interpretation guidelines
-  - [ ] Trade frequency analysis
-  - [ ] Drawdown interpretation
-  - [ ] Overfitting detection patterns
-  - [ ] Strategy-type specific thresholds
-  - [ ] Examples of good vs bad backtests
-- [ ] Test skill in decision-making
+- [x] Create .claude/skills/backtesting-analysis/ directory
+- [x] Create skill.md with:
+  - [x] Sharpe ratio interpretation guidelines
+  - [x] Trade frequency analysis
+  - [x] Drawdown interpretation
+  - [x] Overfitting detection patterns
+  - [x] Strategy-type specific thresholds
+  - [x] Examples of good vs bad backtests
+- [ ] Test skill in decision-making (will be tested during next backtest evaluation)
 
 **Threshold Calibration Research**
 - [ ] Generate 10 diverse hypotheses:
