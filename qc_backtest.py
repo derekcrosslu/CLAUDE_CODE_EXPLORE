@@ -313,6 +313,40 @@ class QuantConnectAPI:
 
             time.sleep(poll_interval)
 
+    def upload_file(self, project_id, filename, content):
+        """
+        Upload/update file in project (alias for create_file)
+
+        Args:
+            project_id: QC project ID
+            filename: File name
+            content: File content
+
+        Returns:
+            API response
+        """
+        return self.create_file(project_id, filename, content)
+
+    def read_backtest_results(self, project_id, backtest_id):
+        """
+        Read and parse backtest results into standardized format
+
+        Args:
+            project_id: Project ID
+            backtest_id: Backtest ID
+
+        Returns:
+            Parsed results dict with performance, trading, and risk metrics
+        """
+        # Wait for backtest to complete
+        result = self.wait_for_backtest(project_id, backtest_id, timeout=600)
+
+        if not result.get('success'):
+            return result
+
+        # Parse using module-level function
+        return parse_backtest_results(result)
+
 
 def parse_backtest_results(backtest_data):
     """
