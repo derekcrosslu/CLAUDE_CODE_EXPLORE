@@ -510,3 +510,52 @@ else:
 - Manual overrides are clearly marked
 - Cost tracking helps stay within budget
 - Decision framework can be tuned based on risk tolerance
+
+---
+
+## Session 2: Hypothesis 2 - Momentum Breakout Strategy
+
+### 2025-11-10 00:00:00 - Hypothesis Initialized
+
+**Phase**: Research
+**Hypothesis**: Momentum Breakout Strategy
+**Description**: Buy when price breaks above 20-day high with volume surge (>1.5x average)
+
+**Decision**: `INITIALIZE_NEW_HYPOTHESIS`
+
+**Context**:
+- Previous hypothesis (ID 1) abandoned after 3 iterations, 0 trades
+- Root cause: Mean reversion strategy incompatible with 2023 bull market
+- Key learning: Strategy type must match market regime
+
+**New Strategy Details**:
+- **Entry Logic**:
+  - Price breaks above 20-day rolling high
+  - Volume > 1.5x average volume (confirmation)
+  - Long-only strategy
+- **Testing Period**: 2023-01-01 to 2024-12-31
+- **Hypothesis**: Momentum strategies should perform better in trending markets
+- **Expected Trades**: 15-30 (based on breakout frequency in bull markets)
+
+**Implementation Plan**:
+1. Create `momentum_breakout.py` strategy file
+2. Set up QuantConnect project: "MomentumBreakout_2023_2024"
+3. Implement entry logic with volume confirmation
+4. Run initial backtest with `/qc-backtest`
+
+**Strategic Rationale**:
+- 2023-2024 characterized by strong uptrend
+- Momentum/breakout strategies align with trend direction
+- Volume confirmation reduces false breakouts
+- Complementary to previous mean-reversion approach
+
+**Cost Reset**:
+- API calls: 0
+- Backtests: 0
+- Optimization attempts: 0
+- Starting fresh with new hypothesis
+
+**Iteration Status**: 0/3 iterations available
+**Next Action**: Implement strategy and run initial backtest
+
+---

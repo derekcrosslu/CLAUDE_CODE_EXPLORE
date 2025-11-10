@@ -4,153 +4,79 @@
   "description": "Persistent state for autonomous QuantConnect strategy development workflow",
 
   "current_hypothesis": {
-    "id": 1,
-    "name": "RSI Mean Reversion with Trend Filter",
-    "description": "Buy on RSI oversold + BB lower, only in uptrends (above 200 SMA) - RELAXED THRESHOLDS",
-    "created": "2025-11-09T22:30:00Z",
-    "status": "requires_period_change_or_abandon"
+    "id": 2,
+    "name": "Momentum Breakout Strategy",
+    "description": "Buy when price breaks above 20-day high with volume surge (>1.5x average)",
+    "created": "2025-11-10T00:00:00Z",
+    "status": "initialized"
   },
 
   "project": {
-    "project_id": 26120873,
-    "project_name": "TestStrategy_Phase1_VALIDATED",
-    "strategy_file": "test_strategy.py",
+    "project_id": null,
+    "project_name": "MomentumBreakout_2023_2024",
+    "strategy_file": "momentum_breakout.py",
     "language": "Python"
   },
 
-  "current_phase": "validation",
-  "phases_completed": ["research", "implementation", "backtest"],
+  "current_phase": "research",
+  "phases_completed": [],
 
   "backtest_results": {
-    "backtest_id": "04bde2ce97514c7cd9044a9768e7c890",
-    "completed": true,
+    "backtest_id": null,
+    "completed": false,
     "performance": {
-      "sharpe_ratio": 0.0,
-      "max_drawdown": 0.0,
-      "total_return": 0.0,
-      "total_trades": 0
+      "sharpe_ratio": null,
+      "max_drawdown": null,
+      "total_return": null,
+      "total_trades": null
     },
-    "decision": "escalate_or_abandon",
-    "reason": "Max iterations reached (3/3), zero trades despite relaxed thresholds - 2023 period unsuitable"
+    "decision": null,
+    "reason": null
   },
 
   "optimization": {
-    "status": "blocked_paid_tier_required",
-    "attempts": 2,
+    "status": "not_started",
+    "attempts": 0,
     "best_parameters": null,
-    "limitation": "QuantConnect cloud optimization API requires paid tier subscription",
-    "implementation_status": "complete_and_ready",
-    "details": {
-      "native_qc_optimization_implemented": true,
-      "parameterized_strategy": true,
-      "api_methods_added": [
-        "create_optimization()",
-        "estimate_optimization()",
-        "read_optimization()",
-        "wait_for_optimization()"
-      ],
-      "configuration_file": "optimization_params.json",
-      "slash_command": "/qc-optimize",
-      "error_received": "Not valid parameter set (requires paid tier)",
-      "workaround": "Manual parameter testing via /qc-backtest with different param values"
-    },
-    "test_results": [
-      {
-        "test_name": "OptTest1_MaxPermissive_Manual",
-        "backtest_id": "bb1e37298ec6912d0ebe5cd0ae5cdd49",
-        "project_id": 26121392,
-        "parameters": {
-          "rsi_threshold": 50,
-          "bb_distance_pct": 1.10,
-          "use_200sma_filter": false
-        },
-        "result": {
-          "sharpe_ratio": 0.0,
-          "total_trades": 0,
-          "total_return": 0.0
-        },
-        "conclusion": "No parameter combination can generate trades in 2023 period"
-      }
-    ]
+    "limitation": null
   },
 
   "validation": {
-    "status": "skipped",
+    "status": "not_started",
     "oos_backtest_id": null,
-    "oos_performance": null,
-    "skip_reason": "No in-sample performance to validate"
+    "oos_performance": null
   },
 
-  "iteration_count": 3,
+  "iteration_count": 0,
   "max_iterations": 3,
 
   "cost_tracking": {
-    "api_calls": 12,
-    "backtests_run": 4,
-    "optimization_attempts": 1,
+    "api_calls": 0,
+    "backtests_run": 0,
+    "optimization_attempts": 0,
     "estimated_cost_usd": 0.0
   },
 
-  "decisions_log": [
-    {
-      "timestamp": "2025-11-09T22:45:00Z",
-      "phase": "backtest",
-      "decision": "escalate",
-      "reason": "Too few trades (0 < 10), insufficient data",
-      "metrics": {
-        "sharpe_ratio": 0.0,
-        "total_trades": 0
-      },
-      "next_action": "review_entry_conditions"
-    },
-    {
-      "timestamp": "2025-11-09T23:20:15Z",
-      "phase": "backtest",
-      "decision": "escalate",
-      "reason": "Too few trades (0 < 10), insufficient data - strategy contradiction detected",
-      "metrics": {
-        "sharpe_ratio": 0.0,
-        "total_trades": 0,
-        "backtest_id": "12bf569d1f4b03459378c208ee0d3f94"
-      },
-      "next_action": "resolve_strategy_contradiction",
-      "analysis": "Mean reversion signals (RSI oversold, BB lower) conflict with trend filter (200 SMA). Rare alignment in 2023 bull market."
-    },
-    {
-      "timestamp": "2025-11-09T23:25:30Z",
-      "phase": "backtest",
-      "decision": "escalate_or_abandon",
-      "reason": "Max iterations (3/3), zero trades despite relaxed thresholds (RSI<40, BB 5%)",
-      "metrics": {
-        "sharpe_ratio": 0.0,
-        "total_trades": 0,
-        "backtest_id": "04bde2ce97514c7cd9044a9768e7c890",
-        "threshold_changes": "RSI: 30→40, BB: 2%→5%"
-      },
-      "next_action": "change_period_or_abandon",
-      "analysis": "Relaxing thresholds had zero impact. 2023 strong bull market fundamentally incompatible with mean-reversion + trend filter combination. No tradeable conditions exist in this period."
-    }
-  ],
+  "decisions_log": [],
 
   "next_steps": [
-    "RECOMMENDED: Test 2020-2022 period (volatile market with COVID crash)",
-    "ALTERNATIVE: Remove 200 SMA filter entirely (pure mean reversion)",
-    "FINAL OPTION: Abandon hypothesis, start fresh with /qc-init"
+    "Implement momentum_breakout.py with 20-day high breakout logic",
+    "Add volume confirmation (>1.5x average)",
+    "Set testing period: 2023-01-01 to 2024-12-31",
+    "Run initial backtest with /qc-backtest"
   ],
 
   "metadata": {
-    "session_id": "phase5_operational_wrappers",
-    "created_at": "2025-11-09T22:30:00Z",
-    "updated_at": "2025-11-10T00:45:00Z",
+    "session_id": "hypothesis_2_momentum_breakout",
+    "created_at": "2025-11-10T00:00:00Z",
+    "updated_at": "2025-11-10T00:00:00Z",
     "claude_model": "claude-sonnet-4-5",
-    "final_status": "phase5_complete_production_ready_wrappers",
-    "phases_completed": [
-      "phase1_validation_complete",
-      "phase2_automation_complete",
-      "phase3_git_integration_complete",
-      "phase4_walkforward_validation_complete",
-      "phase5_operational_wrappers_complete"
-    ]
+    "previous_hypothesis": {
+      "id": 1,
+      "name": "RSI Mean Reversion with Trend Filter",
+      "status": "abandoned",
+      "reason": "Max iterations reached, zero trades in 2023 period"
+    }
   },
 
   "git_integration": {
