@@ -1,0 +1,127 @@
+{
+  "schema_version": "1.0.0",
+  "workflow": {
+    "autonomy_mode": "medium",
+    "current_phase": "research",
+    "iteration": 1,
+    "session_id": "hypothesis_1_example_strategy",
+    "created_at": "2025-11-10T14:00:00Z",
+    "updated_at": "2025-11-10T14:00:00Z"
+  },
+  "hypothesis": {
+    "id": 1,
+    "name": "Example Strategy",
+    "description": "Example strategy description",
+    "rationale": "Theoretical justification for the strategy",
+    "status": "active",
+    "created": "2025-11-10T14:00:00Z"
+  },
+  "project": {
+    "project_id": null,
+    "project_name": null,
+    "strategy_file": "example_strategy.py",
+    "language": "Python",
+    "qc_url": null
+  },
+  "thresholds": {
+    "minimum_viable": {
+      "sharpe_ratio": 0.5,
+      "max_drawdown": 0.40,
+      "min_trades": 30
+    },
+    "optimization_worthy": {
+      "sharpe_ratio": 0.7,
+      "max_drawdown": 0.35,
+      "min_trades": 50
+    },
+    "production_ready": {
+      "sharpe_ratio": 1.0,
+      "max_drawdown": 0.30,
+      "min_trades": 100,
+      "win_rate": 0.40
+    },
+    "exceptional": {
+      "sharpe_ratio": 1.5,
+      "max_drawdown": 0.15,
+      "min_trades": 100,
+      "win_rate": 0.45
+    },
+    "overfitting_signals": {
+      "too_perfect_sharpe": 3.0,
+      "too_few_trades": 20,
+      "win_rate_too_high": 0.75,
+      "max_single_trade_impact": 0.30
+    }
+  },
+  "limits": {
+    "max_iterations_per_hypothesis": 3,
+    "max_optimization_attempts": 3,
+    "max_backtests_per_optimization": 30,
+    "max_context_tokens": 150000
+  },
+  "phase_results": {
+    "research": {
+      "completed": false,
+      "timestamp": null
+    },
+    "implementation": {
+      "completed": false,
+      "timestamp": null,
+      "validation_issues": [],
+      "attempt": 0
+    },
+    "backtest": {
+      "completed": false,
+      "timestamp": null,
+      "backtest_id": null,
+      "performance": {
+        "sharpe_ratio": null,
+        "max_drawdown": null,
+        "total_return": null,
+        "total_trades": null,
+        "win_rate": null,
+        "loss_rate": null,
+        "net_profit": null
+      },
+      "decision": null,
+      "decision_reason": null
+    },
+    "optimization": {
+      "completed": false,
+      "attempt": 0,
+      "optimization_id": null,
+      "baseline_sharpe": null,
+      "optimized_sharpe": null,
+      "improvement_pct": null,
+      "best_parameters": null,
+      "overfitting_detected": false
+    },
+    "validation": {
+      "completed": false,
+      "oos_backtest_id": null,
+      "oos_performance": null,
+      "degradation_pct": null,
+      "robustness_score": null,
+      "decision": null
+    }
+  },
+  "decisions_log": [],
+  "hypothesis_history": [],
+  "cost_tracking": {
+    "api_calls": 0,
+    "backtests_run": 0,
+    "optimizations_run": 0,
+    "validations_run": 0,
+    "estimated_cost_usd": 0.0
+  },
+  "git": {
+    "branch": "hypotheses/hypothesis-1-example-strategy",
+    "commits": [],
+    "tags": []
+  },
+  "next_action": {
+    "command": "/qc-backtest",
+    "reason": "Hypothesis initialized, ready for implementation and backtest",
+    "wait_for_user": false
+  }
+}

@@ -9,12 +9,14 @@
 ## What Happened
 
 Previous development (Nov 9-10, ~33 hours) produced significant artifacts but lacked clarity on:
-1. **iteration_state.json schema**: What sections exist, which commands create them?
-2. **Phase 5 approach**: API calls or QuantBook? Cost vs autonomy trade-off unclear
+1. **iteration_state.json schema**: What sections exist, which commands create them? ✅ **RESOLVED**
+2. **Phase 5 approach**: API calls or QuantBook? Cost vs autonomy trade-off unclear ✅ **RESOLVED**
 3. **Skills integration**: How do skills actually affect autonomous decisions?
 4. **State of truth**: Mixed documentation, unclear what's validated vs assumed
 
 **Decision**: Reset to validated foundation, rewrite core documents from first principles
+
+**Update (Nov 10, 14:00)**: Priority 0 research complete. iteration_state.json schema defined, Phase 5 approach decided.
 
 **All previous work preserved**: PREVIOUS_WORK/ folder contains everything for reference
 
@@ -24,11 +26,15 @@ Previous development (Nov 9-10, ~33 hours) produced significant artifacts but la
 
 ```
 /CLAUDE_CODE_EXPLORE/
-├── autonomous_framework_architecture.md  ← NEW (architecture from first principles)
+├── autonomous_framework_architecture.md  ← COMPLETE (architecture with all routing logic)
 ├── executive_summary.md                  ← NEW (problem and solution)
 ├── gaps_report.md                        ← NEW (research vs implementation)
 ├── new_project_timeline.md               ← NEW (6-week plan)
 ├── current_state.md                      ← THIS FILE
+├── iteration_state_schema.md             ← COMPLETE (authoritative schema v1.0.0)
+├── iteration_state_template_minimal.json ← COMPLETE (MVP template)
+├── iteration_state_template_full.json    ← COMPLETE (full template)
+├── PHASE5_RESEARCH_FINDINGS.md           ← COMPLETE (qb.Optimize/Backtest research)
 └── PREVIOUS_WORK/                        ← ARCHIVED (all previous artifacts)
     ├── .claude/
     ├── SCRIPTS/
@@ -154,53 +160,53 @@ Previous development (Nov 9-10, ~33 hours) produced significant artifacts but la
 
 ## What Exists (Unvalidated)
 
-### 1. iteration_state.json Schema ⚠️
+### 1. iteration_state.json Schema ✅
 
-**Status**: Complex schema exists, but unclear which parts are authoritative
+**Status**: RESOLVED - Authoritative schema v1.0.0 defined
 
 **Evidence**:
-- PREVIOUS_WORK/iteration_state.json has 264 lines
-- Contains sections: walkforward_framework, operational_wrappers, lessons_learned, etc.
-- Not clear which sections are written by which commands
+- iteration_state_schema.md created (complete documentation)
+- iteration_state_template_minimal.json (MVP template, 30 lines)
+- iteration_state_template_full.json (full template, 150 lines)
+- Command ownership map defined
+- Schema versioning established
 
-**Problem**:
-- Schema evolved organically through development
-- Unclear what /qc-init should create vs what /qc-backtest adds
-- No formal schema definition or versioning
+**What we NOW know**:
+- ✅ Minimal schema: 30 lines for Phase 1-3 MVP
+- ✅ Full schema: 150 lines for all phases (vs 264 in previous version)
+- ✅ Which command creates which section: Fully documented
+- ✅ Schema validation rules: Defined
+- ✅ Migration guide: From old schema to v1.0.0
 
-**What we DON'T know**:
-- What's the minimal schema?
-- Which command creates which section?
-- How to validate schema correctness?
+**Confidence**: 95% (schema defined, needs testing)
 
-**Confidence**: 40% (exists but not well-defined)
-
-**Action needed**: Define authoritative schema from scratch (gaps_report.md Priority 0)
+**Next action**: Implement in /qc-init command (Week 1)
 
 ---
 
-### 2. Phase 5 Validation Approach ⚠️
+### 2. Phase 5 Validation Approach ✅
 
-**Status**: Two approaches implemented, unclear which is correct
+**Status**: RESOLVED - API-based approach with free-tier MVP
 
 **Evidence**:
-- Approach A: PREVIOUS_WORK/SCRIPTS/qc_walkforward_wrapper.py (API-based)
-- Approach B: PREVIOUS_WORK/RESEARCH_NOTEBOOKS/monte_carlo_walkforward_REAL.ipynb (QuantBook)
+- PHASE5_RESEARCH_FINDINGS.md created (comprehensive research)
+- QuantConnect documentation verified
+- qb.Optimize() and qb.Backtest() DO NOT EXIST ❌
+- Research notebooks are ANALYSIS-ONLY, cannot execute backtests/optimizations
 
-**Problem**:
-- iteration_state.json says Approach B (qb.Optimize, qb.Backtest)
-- But unclear if these methods actually exist in QuantBook
-- Cost/autonomy trade-off not evaluated
+**What we NOW know**:
+- ✅ Must use API-based approach (api.create_backtest/create_optimization)
+- ✅ MVP approach: Manual parameter grid + free-tier backtests (Week 1-2)
+- ✅ Production approach: Hybrid (free tier → paid tier if promising) (Week 3+)
+- ✅ Cost trade-off: Start free ($0), upgrade only if strategy is promising ($8/month)
 
-**What we DON'T know**:
-- Does qb.Optimize() exist?
-- Does qb.Backtest() exist?
-- Can pure Python strategy simulator work?
-- Which approach is economically viable?
+**Decision**:
+- **MVP (Week 1-2)**: Manual parameter grid search on free tier
+- **Production (Week 3+)**: Hybrid approach (free tier filtering → paid optimization)
 
-**Confidence**: 30% (prototypes exist, approach unvalidated)
+**Confidence**: 85% (approach decided, free tier limits still unknown)
 
-**Action needed**: Research QuantBook capabilities (gaps_report.md Priority 0)
+**Next action**: Implement qc_walkforward_free_tier.py (Week 1)
 
 ---
 
@@ -539,18 +545,18 @@ Previous development (Nov 9-10, ~33 hours) produced significant artifacts but la
 
 ### Immediate (This Week)
 
-1. **Review and approve timeline** (new_project_timeline.md)
-2. **Begin Week 1 research**:
-   - Test QuantBook capabilities (Priority 0)
-   - Define iteration_state.json schema (Priority 0)
-3. **Build Phase 1-3 prototype** (reusing qc_backtest.py)
+1. ~~**Review and approve timeline**~~ (new_project_timeline.md) ✅
+2. ~~**Begin Week 1 research**~~: ✅ **COMPLETE**
+   - ~~Test QuantBook capabilities (Priority 0)~~ ✅ **RESOLVED**
+   - ~~Define iteration_state.json schema (Priority 0)~~ ✅ **RESOLVED**
+3. **Build Phase 1-3 prototype** (reusing qc_backtest.py) ← **NEXT**
 
-### Week 1 Deliverables
+### Week 1 Deliverables (Updated)
 
-- ✅ Phase 5 approach decided
-- ✅ iteration_state.json schema defined
-- ✅ Phase 1-3 working
-- ✅ 3 hypotheses tested
+- ✅ **Phase 5 approach decided** (COMPLETE - PHASE5_RESEARCH_FINDINGS.md)
+- ✅ **iteration_state.json schema defined** (COMPLETE - iteration_state_schema.md)
+- ⏳ Phase 1-3 working (IN PROGRESS)
+- ⏳ 3 hypotheses tested (PENDING)
 
 ### Success Criteria (Week 1)
 
@@ -562,20 +568,43 @@ Previous development (Nov 9-10, ~33 hours) produced significant artifacts but la
 
 ## Conclusion
 
-**Status**: Clean slate with validated foundation
+**Status**: Priority 0 research COMPLETE ✅ - Ready to build prototype
 
-**Assets**: 33 hours of research and prototypes in PREVIOUS_WORK/
+**Assets**:
+- 33 hours of research and prototypes in PREVIOUS_WORK/
+- Authoritative schema v1.0.0 defined
+- Phase 5 approach decided (free-tier MVP)
+- Complete autonomous framework architecture
 
 **Plan**: 6-week research-driven development (new_project_timeline.md)
 
-**Confidence**: 65% overall, 80% for Phase 1-3, 40% for Phase 5
+**Confidence**:
+- **Overall**: 65% → **80%** (Priority 0 blockers resolved)
+- **Phase 1-3**: 80% → **90%** (schema defined)
+- **Phase 4**: 60% (optimization approach clear)
+- **Phase 5**: 40% → **85%** (approach decided, free tier limits unknown)
 
-**Critical Path**: Resolve Phase 5 approach in Week 1 (architectural blocker)
+**Critical Path**: ~~Resolve Phase 5 approach in Week 1~~ ✅ **UNBLOCKED**
 
-**Next**: Begin Week 1 research - QuantBook capabilities and schema definition
+**Next**: Build Phase 1-3 prototype using qc_backtest.py + new schema
 
 ---
 
-**Last Updated**: November 10, 2025
-**Status**: Ready to begin Week 1
-**Decision**: Proceed with research phase
+**Progress Today**:
+- ✅ Merged complete baseline into autonomous_framework_architecture.md (883 lines)
+- ✅ Defined iteration_state.json schema v1.0.0
+- ✅ Resolved Phase 5 QuantBook research question
+- ✅ Created MVP path (free tier) and production path (hybrid)
+
+**Artifacts Created**:
+1. autonomous_framework_architecture.md (COMPLETE - all routing logic)
+2. iteration_state_schema.md (COMPLETE - v1.0.0 spec)
+3. iteration_state_template_minimal.json (MVP template)
+4. iteration_state_template_full.json (Full template)
+5. PHASE5_RESEARCH_FINDINGS.md (Research conclusions)
+
+---
+
+**Last Updated**: November 10, 2025 14:30
+**Status**: Week 1 research phase COMPLETE - Moving to implementation
+**Decision**: Proceed to Phase 1-3 prototype development

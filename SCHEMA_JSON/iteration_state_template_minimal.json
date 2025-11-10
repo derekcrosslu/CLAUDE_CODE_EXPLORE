@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0.0",
+  "workflow": {
+    "autonomy_mode": "minimal",
+    "current_phase": "research",
+    "iteration": 1,
+    "session_id": "",
+    "created_at": "",
+    "updated_at": ""
+  },
+  "hypothesis": {
+    "id": 0,
+    "name": "",
+    "description": "",
+    "rationale": "",
+    "status": "active",
+    "created": ""
+  },
+  "project": {
+    "project_id": null,
+    "project_name": null,
+    "strategy_file": null,
+    "language": "Python",
+    "qc_url": null
+  },
+  "thresholds": {
+    "minimum_viable": {
+      "sharpe_ratio": 0.5,
+      "max_drawdown": 0.40,
+      "min_trades": 30
+    }
+  },
+  "limits": {
+    "max_iterations_per_hypothesis": 3
+  },
+  "phase_results": {},
+  "decisions_log": [],
+  "hypothesis_history": [],
+  "cost_tracking": {
+    "api_calls": 0,
+    "backtests_run": 0
+  },
+  "git": {
+    "branch": "",
+    "commits": [],
+    "tags": []
+  },
+  "next_action": {
+    "command": "/qc-backtest",
+    "reason": "Hypothesis initialized",
+    "wait_for_user": true
+  }
+}

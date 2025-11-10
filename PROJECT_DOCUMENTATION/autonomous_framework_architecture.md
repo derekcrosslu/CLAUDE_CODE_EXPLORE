@@ -2,6 +2,8 @@
 
 **Purpose**: Design an autonomous system for developing, testing, and validating quantitative trading strategies on QuantConnect with minimal human intervention.
 
+**Baseline Source**: autonomous_decision_framework.md (complete routing logic)
+
 ---
 
 ## Core Problem
@@ -26,19 +28,19 @@ Developing profitable trading strategies requires iterating through multiple hyp
 │                   AUTONOMOUS LOOP                            │
 │                                                              │
 │  1. RESEARCH                                                │
-│     ├─ Generate hypothesis                                  │
-│     ├─ Initialize state (iteration_state.json)              │
-│     └─ Decision: Hypothesis viable? → Phase 2 or ABANDON    │
+│     ├─ Generate hypotheses                                  │
+│     ├─ Score hypotheses                                     │
+│     └─ Decision: Select hypothesis → Phase 2 or ESCALATE    │
 │                                                              │
 │  2. IMPLEMENTATION                                          │
 │     ├─ Code strategy using QuantConnect Lean Framework      │
-│     ├─ Upload to QuantConnect                               │
-│     └─ Decision: Code compiles? → Phase 3 or FIX            │
+│     ├─ Validate code (syntax, entry/exit, risk mgmt)        │
+│     └─ Decision: Code valid? → Phase 3 or FIX               │
 │                                                              │
 │  3. BACKTEST                                                │
 │     ├─ Run backtest on historical data                      │
 │     ├─ Parse results (Sharpe, trades, drawdown, etc.)       │
-│     └─ Decision: Performance acceptable? → Phase 4 or ABANDON│
+│     └─ Decision: Performance acceptable? → Phase 4/5 or ABANDON│
 │                                                              │
 │  4. OPTIMIZATION                                            │
 │     ├─ Parameter sweep on training period                   │
@@ -87,63 +89,49 @@ Developing profitable trading strategies requires iterating through multiple hyp
   "iteration_count": 0,
   "max_iterations": 3,
   "decisions_log": [],
-  "next_steps": []
-}
-```
-
-### Schema Evolution Through Phases
-
-Each phase **reads** the current state, **performs** its action, **writes** results back, and **decides** next action.
-
-**Phase 3 (Backtest) adds**:
-```json
-"backtest_results": {
-  "backtest_id": "...",
-  "completed": true,
-  "performance": {
-    "sharpe_ratio": 1.2,
-    "total_trades": 45,
-    "win_rate": 0.58,
-    ...
-  },
-  "decision": "proceed_to_optimization|abandon_hypothesis|escalate",
-  "reason": "..."
-}
-```
-
-**Phase 4 (Optimization) adds**:
-```json
-"optimization": {
-  "status": "completed",
-  "best_parameters": {...},
-  "improvement_pct": 15.2,
-  "decision": "proceed_to_validation|use_baseline|escalate",
-  "reason": "..."
-}
-```
-
-**Phase 5 (Validation) adds**:
-```json
-"validation": {
-  "status": "completed",
-  "robustness_score": 0.85,
-  "degradation_pct": 12,
-  "decision": "deploy_strategy|abandon_strategy|proceed_with_caution",
-  "reason": "..."
+  "next_steps": [],
+  "hypothesis_log": [],
+  "remaining_hypotheses": [],
+  "hypothesis_generation_count": 0,
+  "fix_attempts": 0,
+  "optimization_attempts": 0,
+  "total_iterations": 0,
+  "total_cost": 0.0,
+  "context_tokens": 0
 }
 ```
 
 ---
 
-## Autonomous Decision Framework
+## Global Configuration
 
-**Source**: PREVIOUS_WORK/PROJECT_DOCUMENTATION/autonomous_decision_framework.md
+### Autonomy Levels
 
-This is the CORE of autonomous operation - explicit routing logic at each phase.
+```json
+{
+  "autonomy_mode": "minimal" | "medium" | "full",
+  "modes": {
+    "minimal": {
+      "description": "Human approval at every phase transition",
+      "auto_decisions": ["technical_error_fixes", "parameter_generation"],
+      "human_gates": ["hypothesis_selection", "implementation_start", "optimization_start", "validation", "deployment"]
+    },
+    "medium": {
+      "description": "Human approval at hypothesis selection and final validation",
+      "auto_decisions": ["implementation", "backtesting", "optimization", "iteration_routing"],
+      "human_gates": ["hypothesis_selection", "final_validation", "deployment"]
+    },
+    "full": {
+      "description": "Fully autonomous with human review only at completion",
+      "auto_decisions": ["all_phases", "all_iterations"],
+      "human_gates": ["final_deployment_approval"]
+    }
+  }
+}
+```
 
-### Global Configuration
+### Performance Thresholds
 
-#### Performance Thresholds
 ```json
 {
   "performance_criteria": {
@@ -164,23 +152,32 @@ This is the CORE of autonomous operation - explicit routing logic at each phase.
       "max_drawdown": 0.20,
       "min_trades": 50,
       "win_rate": 0.40
+    },
+    "exceptional": {
+      "sharpe_ratio": 1.5,
+      "max_drawdown": 0.15,
+      "min_trades": 100,
+      "win_rate": 0.45
     }
   },
   "overfitting_signals": {
     "too_perfect_sharpe": 3.0,
     "too_few_trades": 10,
-    "win_rate_too_high": 0.80
+    "win_rate_too_high": 0.80,
+    "max_single_trade_impact": 0.30
   }
 }
 ```
 
-#### Iteration Limits
+### Iteration Limits
+
 ```json
 {
   "limits": {
     "max_hypotheses_per_session": 5,
     "max_implementations_per_hypothesis": 3,
     "max_optimization_attempts_per_strategy": 3,
+    "max_backtests_per_optimization": 30,
     "max_total_iterations": 15,
     "max_cost_usd": 50,
     "max_context_tokens": 150000
@@ -188,15 +185,114 @@ This is the CORE of autonomous operation - explicit routing logic at each phase.
 }
 ```
 
-### Phase 3: Backtest Decision Logic
+---
 
+## Decision Logic: Phase Transitions
+
+### Phase 1: After Research Phase
+
+**Input**: List of 3-5 hypotheses with scores
+
+**Decision Logic**:
+```python
+def select_hypothesis(hypotheses, config):
+    # Filter invalid hypotheses
+    valid = [h for h in hypotheses if h.data_available and h.theoretically_sound]
+
+    if len(valid) == 0:
+        return ESCALATE_TO_HUMAN("No valid hypotheses generated")
+
+    # Score hypotheses
+    for h in valid:
+        h.score = (
+            h.novelty * 0.3 +
+            h.theoretical_strength * 0.3 +
+            h.implementation_simplicity * 0.2 +
+            h.data_quality * 0.2
+        )
+
+    # Sort by score
+    ranked = sorted(valid, key=lambda h: h.score, reverse=True)
+
+    # Decision based on autonomy mode
+    if config.autonomy_mode == "minimal" or config.autonomy_mode == "medium":
+        return ASK_USER({
+            "question": "Which hypothesis should we implement?",
+            "options": [
+                {"label": f"H{i+1}: {h.name}", "description": h.rationale}
+                for i, h in enumerate(ranked[:4])
+            ]
+        })
+    else:  # full autonomy
+        selected = ranked[0]
+        LOG_DECISION(f"Selected hypothesis: {selected.name} (score: {selected.score})")
+        return PROCEED_TO_IMPLEMENTATION(selected)
+```
+
+**Actions**:
+- `PROCEED_TO_IMPLEMENTATION(hypothesis)` → Phase 2
+- `ASK_USER(question)` → Wait for user input
+- `ESCALATE_TO_HUMAN(reason)` → Stop and request guidance
+
+---
+
+### Phase 2: After Implementation Phase
+
+**Input**: Implemented algorithm code
+
+**Decision Logic**:
+```python
+def validate_implementation(code, hypothesis, config):
+    # Run static checks
+    syntax_valid = run_syntax_check(code)
+    has_entry_logic = check_for_pattern(code, "SetHoldings|MarketOrder")
+    has_exit_logic = check_for_pattern(code, "Liquidate|stop")
+    has_risk_mgmt = check_for_pattern(code, "drawdown|position_size|risk")
+
+    issues = []
+    if not syntax_valid:
+        issues.append("Syntax errors detected")
+    if not has_entry_logic:
+        issues.append("No entry logic found")
+    if not has_exit_logic:
+        issues.append("No exit logic found")
+    if not has_risk_mgmt:
+        issues.append("No risk management found")
+
+    # Decision
+    if len(issues) > 0:
+        if attempt_count < 3:
+            LOG_DECISION(f"Implementation issues: {issues}. Auto-fixing...")
+            return FIX_ISSUES(issues)
+        else:
+            return ESCALATE_TO_HUMAN(f"Cannot fix issues after 3 attempts: {issues}")
+    else:
+        LOG_DECISION("Implementation validated. Proceeding to backtest.")
+        return PROCEED_TO_BACKTEST(code)
+```
+
+**Actions**:
+- `PROCEED_TO_BACKTEST(code)` → Phase 3
+- `FIX_ISSUES(issues)` → Retry implementation (Phase 2)
+- `ESCALATE_TO_HUMAN(reason)` → Stop and request guidance
+
+---
+
+### Phase 3: After Backtest Phase
+
+**Input**: Backtest results (metrics, logs, trades)
+
+**Decision Logic**:
 ```python
 def evaluate_backtest(results, thresholds, state, config):
     # Check for technical failures
     if results.status == "error":
         error_type = classify_error(results.error_message)
 
-        if error_type == "runtime_error" and state.fix_attempts < 3:
+        if error_type == "data_missing":
+            return ESCALATE_TO_HUMAN(f"Data not available: {results.error_message}")
+        elif error_type == "runtime_error" and state.fix_attempts < 3:
+            LOG_DECISION(f"Runtime error detected. Attempting fix #{state.fix_attempts + 1}")
             return FIX_BUG(results.error_message)
         else:
             return ESCALATE_TO_HUMAN(f"Backtest failed: {results.error_message}")
@@ -205,19 +301,22 @@ def evaluate_backtest(results, thresholds, state, config):
     sharpe = results.metrics.sharpe_ratio
     drawdown = abs(results.metrics.max_drawdown)
     num_trades = results.metrics.total_trades
+    win_rate = results.metrics.win_rate
 
-    # Overfitting detection
+    # Check for overfitting signals
     if sharpe > thresholds.overfitting_signals.too_perfect_sharpe:
+        LOG_DECISION(f"OVERFITTING ALERT: Sharpe {sharpe} is suspiciously high")
         return ESCALATE_TO_HUMAN("Possible overfitting - results too good to be true")
 
     if num_trades < thresholds.overfitting_signals.too_few_trades:
+        LOG_DECISION(f"Too few trades ({num_trades}). Strategy may be overfit.")
         return ABANDON_HYPOTHESIS("Insufficient trade sample size")
 
     # Performance categorization
-    meets_production = (
-        sharpe >= thresholds.performance_criteria.production_ready.sharpe_ratio and
-        drawdown <= thresholds.performance_criteria.production_ready.max_drawdown and
-        num_trades >= thresholds.performance_criteria.production_ready.min_trades
+    meets_minimum = (
+        sharpe >= thresholds.performance_criteria.minimum_viable.sharpe_ratio and
+        drawdown <= thresholds.performance_criteria.minimum_viable.max_drawdown and
+        num_trades >= thresholds.performance_criteria.minimum_viable.min_trades
     )
 
     meets_optimization = (
@@ -225,23 +324,27 @@ def evaluate_backtest(results, thresholds, state, config):
         drawdown <= thresholds.performance_criteria.optimization_worthy.max_drawdown
     )
 
-    meets_minimum = (
-        sharpe >= thresholds.performance_criteria.minimum_viable.sharpe_ratio and
-        drawdown <= thresholds.performance_criteria.minimum_viable.max_drawdown and
-        num_trades >= thresholds.performance_criteria.minimum_viable.min_trades
+    meets_production = (
+        sharpe >= thresholds.performance_criteria.production_ready.sharpe_ratio and
+        drawdown <= thresholds.performance_criteria.production_ready.max_drawdown and
+        num_trades >= thresholds.performance_criteria.production_ready.min_trades
     )
 
-    # Decision routing
+    # Decision logic
     if meets_production:
-        return PROCEED_TO_VALIDATION(results)  # Skip optimization, already excellent
+        LOG_DECISION(f"Excellent performance: Sharpe={sharpe}, DD={drawdown}. Proceeding to validation.")
+        return PROCEED_TO_VALIDATION(results)
 
     elif meets_optimization and state.optimization_attempts < config.limits.max_optimization_attempts_per_strategy:
-        return PROCEED_TO_OPTIMIZATION(results)  # Can improve further
+        LOG_DECISION(f"Good performance (Sharpe={sharpe}), but can optimize. Attempting optimization #{state.optimization_attempts + 1}")
+        return PROCEED_TO_OPTIMIZATION(results)
 
     elif meets_minimum:
-        return PROCEED_TO_VALIDATION(results)  # Marginal but acceptable
+        LOG_DECISION(f"Marginal performance (Sharpe={sharpe}). Skipping optimization, proceeding to validation.")
+        return PROCEED_TO_VALIDATION(results)
 
     else:
+        LOG_DECISION(f"Poor performance: Sharpe={sharpe}, DD={drawdown}. Abandoning hypothesis.")
         return ABANDON_HYPOTHESIS(f"Performance below minimum thresholds")
 ```
 
@@ -252,8 +355,13 @@ def evaluate_backtest(results, thresholds, state, config):
 - `ABANDON_HYPOTHESIS(reason)` → Next hypothesis or generate new (Phase 1)
 - `ESCALATE_TO_HUMAN(reason)` → Stop and request guidance
 
-### Phase 4: Optimization Decision Logic
+---
 
+### Phase 4: After Optimization Phase
+
+**Input**: Optimization results (all parameter combinations tested)
+
+**Decision Logic**:
 ```python
 def evaluate_optimization(optimization_results, baseline_results, thresholds, state):
     # Find best parameter set
@@ -262,41 +370,53 @@ def evaluate_optimization(optimization_results, baseline_results, thresholds, st
     # Calculate improvement
     improvement = (best.sharpe_ratio - baseline_results.sharpe_ratio) / baseline_results.sharpe_ratio
 
-    # Check parameter sensitivity (fragility)
+    # Check for overfitting in optimization
     parameter_sensitivity = calculate_sensitivity(optimization_results)
 
-    if parameter_sensitivity > 0.5:  # High sensitivity = overfitting risk
-        # Use robust parameters (median of top 25%)
+    if parameter_sensitivity > 0.5:  # High sensitivity = fragile parameters
+        LOG_DECISION(f"High parameter sensitivity ({parameter_sensitivity}). Optimization may be overfit.")
+
+        # Use more conservative parameters (median of top 25%)
         top_quartile = sorted(optimization_results, key=lambda r: r.sharpe_ratio, reverse=True)[:len(optimization_results)//4]
         robust_params = calculate_median_parameters(top_quartile)
+
+        LOG_DECISION(f"Using robust parameters (median of top 25%) instead of best.")
         return PROCEED_TO_VALIDATION_WITH_PARAMS(robust_params)
 
-    # Decision based on improvement magnitude
+    # Decision based on improvement
     if improvement < 0.05:  # Less than 5% improvement
-        return PROCEED_TO_VALIDATION(baseline_results)  # Use baseline
+        LOG_DECISION(f"Optimization yielded minimal improvement ({improvement*100:.1f}%). Proceeding with baseline.")
+        return PROCEED_TO_VALIDATION(baseline_results)
 
     elif improvement > 0.30:  # More than 30% improvement - suspicious
+        LOG_DECISION(f"Optimization yielded suspiciously large improvement ({improvement*100:.1f}%). Manual review recommended.")
         return ASK_USER({
-            "question": f"Optimization improved Sharpe by {improvement*100:.1f}%. Proceed?",
+            "question": f"Optimization improved Sharpe by {improvement*100:.1f}%. Proceed with optimized parameters?",
             "options": [
                 {"label": "Yes, use optimized params", "description": f"Sharpe: {best.sharpe_ratio:.2f}"},
                 {"label": "No, use baseline params", "description": f"Sharpe: {baseline_results.sharpe_ratio:.2f}"},
-                {"label": "Re-optimize with tighter constraints", "description": "Try again"}
+                {"label": "Re-optimize with tighter constraints", "description": "Run optimization again"}
             ]
         })
 
     else:  # Reasonable improvement (5-30%)
+        LOG_DECISION(f"Optimization improved performance by {improvement*100:.1f}%. Using optimized parameters.")
         return PROCEED_TO_VALIDATION_WITH_PARAMS(best.parameters)
 ```
 
 **Actions**:
-- `PROCEED_TO_VALIDATION(results)` → Phase 5 with baseline params
-- `PROCEED_TO_VALIDATION_WITH_PARAMS(params)` → Phase 5 with optimized params
+- `PROCEED_TO_VALIDATION(results)` → Phase 5
+- `PROCEED_TO_VALIDATION_WITH_PARAMS(params)` → Phase 5 with new parameters
 - `ASK_USER(question)` → Wait for user input
 - `ABANDON_HYPOTHESIS(reason)` → Phase 1
 
-### Phase 5: Validation Decision Logic
+---
 
+### Phase 5: After Validation Phase
+
+**Input**: Out-of-sample backtest results, in-sample results
+
+**Decision Logic**:
 ```python
 def evaluate_validation(in_sample, out_of_sample, thresholds, state, config):
     # Calculate performance degradation
@@ -308,15 +428,22 @@ def evaluate_validation(in_sample, out_of_sample, thresholds, state, config):
         abs(out_of_sample.max_drawdown) <= thresholds.performance_criteria.minimum_viable.max_drawdown
     )
 
-    # Decision logic based on degradation
-    if sharpe_degradation > 0.50:  # More than 50% degradation - severe overfitting
+    # Decision logic
+    if sharpe_degradation > 0.50:  # More than 50% degradation
+        LOG_DECISION(f"OVERFITTING DETECTED: Out-of-sample Sharpe degraded by {sharpe_degradation*100:.1f}%")
+
         if state.optimization_attempts < config.limits.max_optimization_attempts_per_strategy:
+            LOG_DECISION("Attempting re-optimization with walk-forward analysis")
             return RETRY_OPTIMIZATION_WALKFORWARD()
         else:
+            LOG_DECISION("Max optimization attempts reached. Abandoning hypothesis.")
             return ABANDON_HYPOTHESIS("Strategy does not generalize to out-of-sample data")
 
-    elif sharpe_degradation > 0.30:  # 30-50% degradation - concerning
+    elif sharpe_degradation > 0.30:  # 30-50% degradation
+        LOG_DECISION(f"Significant performance degradation ({sharpe_degradation*100:.1f}%), but within acceptable range.")
+
         if oos_meets_minimum:
+            LOG_DECISION("Out-of-sample performance meets minimum criteria. Flagging for human review.")
             return ASK_USER({
                 "question": f"Strategy shows {sharpe_degradation*100:.1f}% degradation OOS. Proceed?",
                 "options": [
@@ -329,10 +456,14 @@ def evaluate_validation(in_sample, out_of_sample, thresholds, state, config):
             return ABANDON_HYPOTHESIS("Out-of-sample performance below minimum criteria")
 
     else:  # Less than 30% degradation - good generalization
+        LOG_DECISION(f"Strategy validates well: {sharpe_degradation*100:.1f}% degradation OOS.")
+
         if out_of_sample.sharpe_ratio >= thresholds.performance_criteria.production_ready.sharpe_ratio:
-            return STRATEGY_COMPLETE(out_of_sample)  # Success!
+            LOG_DECISION("Strategy meets production criteria!")
+            return STRATEGY_COMPLETE(out_of_sample)
         else:
-            return STRATEGY_VALIDATED_SUBOPTIMAL(out_of_sample)  # Document but keep searching
+            LOG_DECISION("Strategy validated but below production criteria. Documenting for reference.")
+            return STRATEGY_VALIDATED_SUBOPTIMAL(out_of_sample)
 ```
 
 **Actions**:
@@ -342,9 +473,9 @@ def evaluate_validation(in_sample, out_of_sample, thresholds, state, config):
 - `ABANDON_HYPOTHESIS(reason)` → Phase 1
 - `ASK_USER(question)` → Wait for user input
 
-### Master Routing Loop
+---
 
-This is the autonomous engine that orchestrates the entire workflow:
+## Master Routing Loop
 
 ```python
 def autonomous_strategy_development(initial_config):
@@ -359,7 +490,7 @@ def autonomous_strategy_development(initial_config):
             return ESCALATE_TO_HUMAN("Reached cost budget limit")
 
         if state.context_tokens >= config.limits.max_context_tokens:
-            execute_compact()
+            handle_context_overflow(state, config)
 
         # Route to current phase
         if state.current_phase == "research":
@@ -370,6 +501,8 @@ def autonomous_strategy_development(initial_config):
                 state.current_hypothesis = decision.hypothesis
                 state.current_phase = "implementation"
                 checkpoint_create()
+            elif decision.action == "ESCALATE_TO_HUMAN":
+                return decision
 
         elif state.current_phase == "implementation":
             code = execute_implementation_phase(state.current_hypothesis)
@@ -382,6 +515,8 @@ def autonomous_strategy_development(initial_config):
             elif decision.action == "FIX_ISSUES":
                 state.fix_attempts += 1
                 continue  # Retry implementation
+            elif decision.action == "ESCALATE_TO_HUMAN":
+                return decision
 
         elif state.current_phase == "backtest":
             results = execute_backtest_phase(state.current_code)
@@ -400,6 +535,8 @@ def autonomous_strategy_development(initial_config):
                 state.fix_attempts += 1
             elif decision.action == "ABANDON_HYPOTHESIS":
                 state = abandon_and_next_hypothesis(state)
+            elif decision.action == "ESCALATE_TO_HUMAN":
+                return decision
 
         elif state.current_phase == "optimization":
             opt_results = execute_optimization_phase(state.current_code, state.backtest_results)
@@ -413,6 +550,8 @@ def autonomous_strategy_development(initial_config):
                 checkpoint_create()
             elif decision.action == "ABANDON_HYPOTHESIS":
                 state = abandon_and_next_hypothesis(state)
+            elif decision.action == "ASK_USER":
+                return decision
 
         elif state.current_phase == "validation":
             oos_results = execute_validation_phase(state.current_code)
@@ -428,6 +567,8 @@ def autonomous_strategy_development(initial_config):
                 state.current_phase = "optimization"
             elif decision.action == "ABANDON_HYPOTHESIS":
                 state = abandon_and_next_hypothesis(state)
+            elif decision.action == "ASK_USER":
+                return decision
 
         state.total_iterations += 1
         save_state(state)
@@ -436,31 +577,38 @@ def abandon_and_next_hypothesis(state):
     """Handle hypothesis abandonment and routing to next hypothesis"""
     log_hypothesis_outcome(state.current_hypothesis, "ABANDONED", state.backtest_results)
 
-    # Check if we have more hypotheses queued
+    # Check if we have more hypotheses to try
     if len(state.remaining_hypotheses) > 0:
         state.current_hypothesis = state.remaining_hypotheses.pop(0)
         state.current_phase = "implementation"
         state.fix_attempts = 0
         state.optimization_attempts = 0
+        LOG_DECISION(f"Trying next hypothesis: {state.current_hypothesis.name}")
         return state
 
-    # Generate new hypotheses
+    # Check if we can generate more hypotheses
     elif state.hypothesis_generation_count < config.limits.max_hypotheses_per_session:
         state.current_phase = "research"
         state.hypothesis_generation_count += 1
+        LOG_DECISION(f"All hypotheses exhausted. Generating new set (round #{state.hypothesis_generation_count})")
         return state
 
     # Exhausted all options
     else:
+        LOG_DECISION("Exhausted all hypotheses and generation attempts.")
         return ESCALATE_TO_HUMAN("Unable to find profitable strategy within constraints")
 ```
 
-### Special Case Handling
+---
 
-#### Overfitting Detection
+## Special Case Handling
+
+### Case 1: Exceptional Performance (Too Good to Be True)
+
 ```python
 def handle_exceptional_performance(results, thresholds):
-    """Detect suspiciously good results"""
+    """Detect and handle suspiciously good results"""
+
     flags = []
 
     if results.sharpe_ratio > thresholds.overfitting_signals.too_perfect_sharpe:
@@ -472,29 +620,135 @@ def handle_exceptional_performance(results, thresholds):
     if results.win_rate > thresholds.overfitting_signals.win_rate_too_high:
         flags.append(f"Win rate ({results.win_rate:.1%}) unrealistically high")
 
+    # Check if a single trade dominates returns
+    if max(results.trade_returns) / results.total_return > thresholds.overfitting_signals.max_single_trade_impact:
+        flags.append("Single trade accounts for >30% of total returns")
+
     if len(flags) > 0:
+        LOG_DECISION(f"OVERFITTING RED FLAGS: {flags}")
         return ASK_USER({
-            "question": "Strategy shows exceptional performance with overfitting warnings. Proceed?",
+            "question": "Strategy shows exceptional performance but with overfitting warning signs. How to proceed?",
+            "options": [
+                {"label": "Proceed with caution", "description": "Continue to validation with scrutiny"},
+                {"label": "Increase sample size", "description": "Extend backtest period"},
+                {"label": "Abandon", "description": "Results not trustworthy"}
+            ],
             "flags": flags
         })
+
+    return None  # No issues
 ```
 
-#### Systematic Failure Detection
+### Case 2: Consistent Failures Across Hypotheses
+
 ```python
 def detect_systematic_failure(state):
-    """Detect if all hypotheses fail for same reason"""
+    """Detect if all hypotheses are failing for same reason"""
+
     if len(state.hypothesis_log) < 3:
-        return None
+        return None  # Not enough data
 
     recent_failures = [h for h in state.hypothesis_log[-5:] if h.outcome == "ABANDONED"]
 
     if len(recent_failures) >= 3:
+        # Analyze failure reasons
         failure_reasons = [h.failure_reason for h in recent_failures]
 
-        if all("trades" in reason.lower() for reason in failure_reasons):
-            return ESCALATE_TO_HUMAN("Strategies consistently generating insufficient trades")
+        # Group by failure type
+        if all("data" in reason.lower() for reason in failure_reasons):
+            return ESCALATE_TO_HUMAN("Systematic data availability issues detected across multiple hypotheses")
+
+        elif all("trades" in reason.lower() or "insufficient" in reason.lower() for reason in failure_reasons):
+            return ESCALATE_TO_HUMAN("Strategies consistently generating insufficient trades - consider relaxing entry criteria")
+
         elif all("drawdown" in reason.lower() for reason in failure_reasons):
-            return ESCALATE_TO_HUMAN("Risk management issues across strategies")
+            return ESCALATE_TO_HUMAN("Risk management issues across strategies - consider different approach or asset class")
+
+    return None  # No systematic issue
+```
+
+### Case 3: Context Overflow Imminent
+
+```python
+def handle_context_overflow(state, config):
+    """Proactive context management before overflow"""
+
+    current_usage = get_context_usage()
+
+    if current_usage > config.limits.max_context_tokens * 0.9:
+        LOG_DECISION(f"Context at {current_usage} tokens (90% of limit). Emergency compact.")
+
+        # Archive current state to files
+        write_file("iteration_state.json", json.dumps(state))
+        write_file("hypotheses_log.md", format_hypothesis_log(state.hypothesis_log))
+        write_file("backtest_results.json", json.dumps(state.backtest_results))
+
+        # Execute aggressive compact
+        execute_compact()
+
+        # Reload essential state
+        LOG_DECISION("State archived to files. Context compacted. Continuing with essential state only.")
+
+    elif current_usage > config.limits.max_context_tokens * 0.7:
+        LOG_DECISION(f"Context at {current_usage} tokens (70% of limit). Micro-compact.")
+        # Let micro-compact handle automatically
+```
+
+---
+
+## Logging & Auditability
+
+### Decision Log Format
+
+```json
+{
+  "timestamp": "2025-01-15T10:30:00Z",
+  "iteration": 7,
+  "phase": "backtest",
+  "decision_point": "evaluate_backtest",
+  "inputs": {
+    "sharpe_ratio": 0.85,
+    "max_drawdown": 0.22,
+    "total_trades": 67,
+    "win_rate": 0.42
+  },
+  "options_considered": [
+    "PROCEED_TO_VALIDATION",
+    "PROCEED_TO_OPTIMIZATION",
+    "ABANDON_HYPOTHESIS"
+  ],
+  "decision": "PROCEED_TO_OPTIMIZATION",
+  "rationale": "Performance meets optimization threshold (Sharpe 0.85 >= 0.7) and under max optimization attempts (1 < 3)",
+  "confidence": 0.8,
+  "outcome": "pending"
+}
+```
+
+### Hypothesis Log Format
+
+```json
+{
+  "hypothesis_id": "h1_momentum_crypto",
+  "name": "Multi-timeframe momentum in BTC/ETH",
+  "generated_at": "2025-01-15T09:00:00Z",
+  "selected_at": "2025-01-15T09:15:00Z",
+  "implementation_attempts": 1,
+  "backtest_results": {
+    "sharpe": 0.85,
+    "drawdown": 0.22,
+    "trades": 67
+  },
+  "optimization_attempts": 1,
+  "validation_results": {
+    "in_sample_sharpe": 0.92,
+    "out_of_sample_sharpe": 0.71,
+    "degradation": 0.23
+  },
+  "outcome": "VALIDATED_SUBOPTIMAL",
+  "outcome_timestamp": "2025-01-15T11:30:00Z",
+  "total_time_minutes": 150,
+  "total_cost_usd": 8.50
+}
 ```
 
 ---
@@ -511,6 +765,7 @@ Commands that orchestrate the workflow:
 - **/qc-validate**: Run validation, update state, make decision
 - **/qc-status**: Show current state
 - **/qc-report**: Generate complete report
+- **/qc-auto-iterate**: Master autonomous loop (full automation)
 
 Each command:
 1. Reads iteration_state.json
@@ -544,6 +799,34 @@ Claude skills that provide domain knowledge:
 
 ---
 
+## Implementation Checklist
+
+### Phase 1: Build Decision Engine
+- [ ] Implement decision functions for each phase (Phase 1-5)
+- [ ] Create configuration schema (thresholds.json, limits.json, autonomy_mode.json)
+- [ ] Build decision logging system (decisions_log.json, hypothesis_log.json)
+- [ ] Test decision logic with mock data
+
+### Phase 2: Integrate with Claude Code
+- [ ] Create wrapper functions for Bash/Read/Write tools
+- [ ] Implement state persistence (iteration_state.json)
+- [ ] Build checkpoint automation (git commits)
+- [ ] Test iteration loop with manual steps
+
+### Phase 3: Add Monitoring
+- [ ] Create decision log viewer
+- [ ] Build cost tracking dashboard
+- [ ] Implement context usage monitoring
+- [ ] Add systematic failure detection
+
+### Phase 4: Production Hardening
+- [ ] Add error recovery for API failures
+- [ ] Implement retry logic with exponential backoff
+- [ ] Create human escalation notifications
+- [ ] Add performance benchmarking
+
+---
+
 ## Critical Research Questions (Unresolved)
 
 ### 1. Phase 5 Implementation Approach
@@ -568,36 +851,16 @@ Claude skills that provide domain knowledge:
 - Can Research notebooks run strategies without full API?
 - What's the cost/autonomy trade-off?
 
-### 2. Skills Integration with Autonomous Decisions
+---
 
-**Question**: How should Claude use skills to make autonomous decisions?
+## Next Steps
 
-**Current Gap**: Skills provide knowledge, but how does Claude apply them in decision framework?
-
-**Example**:
-- Backtest shows Sharpe=1.5, Trades=8, Win Rate=45%
-- Should Claude autonomously decide this is "acceptable" or "abandon"?
-- What if there's a subtle overfitting pattern that requires domain knowledge?
-
-**Research Needed**:
-- Can skills contain decision thresholds?
-- Should thresholds be in iteration_state.json?
-- How to balance rigid rules vs flexible analysis?
-
-### 3. Monte Carlo Validation Methodology
-
-**Question**: What's the correct statistical approach for robustness testing?
-
-**Options**:
-1. Random time periods (Monte Carlo temporal)
-2. Bootstrapping from actual trades
-3. Synthetic data generation (GARCH + Jump-Diffusion)
-4. Combination of above
-
-**Status**: Research exists on synthetic data generation, but unclear:
-- Should synthetic data match specific backtest or general market properties?
-- How to validate synthetic data is realistic?
-- What robustness score threshold indicates "deployable"?
+1. **Validate Decision Logic**: Test each decision function with real backtest data
+2. **Build State Machine**: Implement master control loop in Python
+3. **Create Plugin Commands**: Wrap decision logic in `/qc-auto-iterate` command
+4. **Test with Simple Hypothesis**: Run one full cycle manually, observe decision quality
+5. **Iterate on Thresholds**: Adjust performance thresholds based on real results
+6. **Resolve Phase 5 Approach**: Research QuantBook capabilities (Priority 0)
 
 ---
 
@@ -612,54 +875,8 @@ Claude skills that provide domain knowledge:
 5. **Reproducibility**: Same hypothesis → same decision (deterministic)
 6. **Audit Trail**: Complete git log + decisions_log.md for every decision
 
-### Key Metrics
-
-- **Hypotheses tested**: Target 10+ to validate framework
-- **False positives**: Strategies that passed validation but failed in live (should be <10%)
-- **False negatives**: Strategies abandoned that were actually good (acceptable if high threshold)
-- **Cost per viable strategy**: Total cost / strategies deployed
-
 ---
 
-## Non-Goals
-
-This project is NOT about:
-- Finding the "holy grail" strategy
-- Live trading execution
-- Real-time data streaming
-- Order management systems
-- Production infrastructure
-
-This project IS about:
-- Autonomous hypothesis testing
-- Decision-making frameworks
-- Research workflow automation
-- Validation methodology
-
----
-
-## Architecture Principles
-
-1. **State-Driven**: iteration_state.json is the single source of truth
-2. **Idempotent**: Running same command twice should be safe
-3. **Transparent**: Every decision logged with reasoning
-4. **Fail-Safe**: Errors should pause, not corrupt state
-5. **Reversible**: Git allows rollback to any hypothesis
-6. **Modular**: Each phase can be run independently for testing
-
----
-
-## Open Questions
-
-1. What is the complete schema for iteration_state.json?
-2. Which sections are written by /qc-init vs /qc-backtest vs wrappers?
-3. How do skills integrate with autonomous decisions?
-4. What is the correct Phase 5 validation approach (API vs QuantBook)?
-5. What decision thresholds should be configurable vs hard-coded?
-6. How to handle rate limits, API failures, data issues?
-7. What's the minimum viable framework to test with one hypothesis?
-
----
-
-**Status**: Architecture defined, implementation approach unclear
-**Next**: Write gaps_report.md to identify what research is needed vs what can be implemented directly
+**Last Updated**: November 10, 2025
+**Status**: Complete baseline merged from autonomous_decision_framework.md
+**Next**: Implement decision functions, resolve Phase 5 approach
