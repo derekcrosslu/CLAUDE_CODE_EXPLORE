@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0.0",
+  "workflow": {
+    "autonomy_mode": "minimal",
+    "current_phase": "research",
+    "iteration": 1,
+    "session_id": "hypothesis_3_simple-momentum-strategy",
+    "created_at": "2025-11-10T20:02:12Z",
+    "updated_at": "2025-11-10T20:02:12Z"
+  },
+  "hypothesis": {
+    "id": 3,
+    "name": "Simple Momentum Strategy",
+    "description": "Buy when price crosses above 20-day MA with volume > 1.5x average",
+    "rationale": "Moving average identifies trend, volume confirms strength",
+    "status": "active",
+    "created": "2025-11-10T20:02:12Z"
+  },
+  "project": {
+    "project_id": null,
+    "project_name": null,
+    "strategy_file": null,
+    "language": "Python",
+    "qc_url": null
+  },
+  "thresholds": {
+    "minimum_viable": {
+      "sharpe_ratio": 0.5,
+      "max_drawdown": 0.40,
+      "min_trades": 30
+    }
+  },
+  "limits": {
+    "max_iterations_per_hypothesis": 3
+  },
+  "phase_results": {},
+  "decisions_log": [],
+  "hypothesis_history": [],
+  "cost_tracking": {
+    "api_calls": 0,
+    "backtests_run": 0
+  },
+  "git": {
+    "branch": "hypotheses/hypothesis-3-simple-momentum-strategy",
+    "commits": [],
+    "tags": []
+  },
+  "next_action": {
+    "command": "/qc-backtest",
+    "reason": "Hypothesis initialized",
+    "wait_for_user": true
+  }
+}
