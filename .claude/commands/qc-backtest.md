@@ -176,52 +176,72 @@ WIN_RATE=$(cat backtest_result.json | jq -r '.performance.win_rate')
 
 ### Step 8: Apply Decision Framework
 
-```bash
-# Decision logic (pseudocode - implement in actual command)
-DECISION="UNKNOWN"
-REASON=""
+**Use decision_logic.py module for consistent, tested decision-making:**
 
-# Check overfitting signals first
-if (( $(echo "$SHARPE > 3.0" | bc -l) )); then
-    DECISION="ESCALATE_TO_HUMAN"
-    REASON="Sharpe ratio too perfect ($SHARPE > 3.0), possible overfitting"
-elif (( $TOTAL_TRADES < 20 )); then
-    DECISION="ESCALATE_TO_HUMAN"
-    REASON="Too few trades ($TOTAL_TRADES < 20), unreliable statistics"
-elif (( $(echo "$WIN_RATE > 0.75" | bc -l) )); then
-    DECISION="ESCALATE_TO_HUMAN"
-    REASON="Win rate suspiciously high ($WIN_RATE > 0.75)"
-    
-# Check minimum viable
-elif (( $(echo "$SHARPE < 0.5" | bc -l) )); then
-    DECISION="ABANDON_HYPOTHESIS"
-    REASON="Sharpe ratio below minimum viable ($SHARPE < 0.5)"
-elif (( $(echo "$MAX_DRAWDOWN > 0.40" | bc -l) )); then
-    DECISION="ABANDON_HYPOTHESIS"
-    REASON="Max drawdown too high ($MAX_DRAWDOWN > 0.40)"
-elif (( $TOTAL_TRADES < 30 )); then
-    DECISION="ABANDON_HYPOTHESIS"
-    REASON="Insufficient trades for statistical significance ($TOTAL_TRADES < 30)"
-    
-# Check production ready (can skip optimization)
-elif (( $(echo "$SHARPE >= 1.0" | bc -l) )) && (( $(echo "$MAX_DRAWDOWN <= 0.30" | bc -l) )) && (( $TOTAL_TRADES >= 100 )); then
-    DECISION="PROCEED_TO_VALIDATION"
-    REASON="Strong baseline performance (Sharpe $SHARPE, DD $MAX_DRAWDOWN), ready for validation"
-    
-# Check optimization worthy
-elif (( $(echo "$SHARPE >= 0.7" | bc -l) )) && (( $(echo "$MAX_DRAWDOWN <= 0.35" | bc -l) )) && (( $TOTAL_TRADES >= 50 )); then
-    DECISION="PROCEED_TO_OPTIMIZATION"
-    REASON="Decent performance (Sharpe $SHARPE), worth optimizing parameters"
-    
-# Marginal case - try optimization
-elif (( $(echo "$SHARPE >= 0.5" | bc -l) )); then
-    DECISION="PROCEED_TO_OPTIMIZATION"
-    REASON="Marginal performance (Sharpe $SHARPE), attempting optimization"
-    
-else
-    DECISION="ABANDON_HYPOTHESIS"
-    REASON="Performance does not meet criteria"
-fi
+```python
+# Call decision_logic.py module to evaluate backtest results
+python3 << 'PYTHON_EOF'
+import json
+import sys
+sys.path.insert(0, 'SCRIPTS')
+from decision_logic import evaluate_backtest
+
+# Load backtest results
+with open('PROJECT_LOGS/backtest_result.json', 'r') as f:
+    results = json.load(f)
+
+# Load thresholds from iteration_state.json
+with open('iteration_state.json', 'r') as f:
+    state = json.load(f)
+
+performance = results['performance']
+thresholds = state['thresholds']
+
+# Evaluate using tested decision framework
+decision, reason, details = evaluate_backtest(performance, thresholds)
+
+# Output for bash to capture
+output = {
+    'decision': decision,
+    'reason': reason,
+    'details': details
+}
+
+print(json.dumps(output, indent=2))
+PYTHON_EOF
+```
+
+**Alternative: Simple bash wrapper**
+
+```bash
+# Create Python script to call decision_logic
+cat > /tmp/evaluate_decision.py << 'EOF'
+import json
+import sys
+sys.path.insert(0, 'SCRIPTS')
+from decision_logic import evaluate_backtest
+
+with open('PROJECT_LOGS/backtest_result.json') as f:
+    results = json.load(f)
+with open('iteration_state.json') as f:
+    state = json.load(f)
+
+decision, reason, details = evaluate_backtest(
+    results['performance'],
+    state['thresholds']
+)
+
+print(f"DECISION={decision}")
+print(f"REASON={reason}")
+EOF
+
+# Run decision logic
+python3 /tmp/evaluate_decision.py > /tmp/decision_output.txt
+
+# Parse output
+source /tmp/decision_output.txt
+echo "Decision: $DECISION"
+echo "Reason: $REASON"
 ```
 
 ### Step 9: Update iteration_state.json
