@@ -66,6 +66,10 @@ class MomentumBreakoutStrategy(QCAlgorithm):
         # Get current bar data
         bar = data[self.symbol]
 
+        # Validate bar is not None before accessing attributes
+        if bar is None:
+            return
+
         # Update rolling windows
         self.price_window.add(bar.close)
         self.volume_window.add(bar.volume)
@@ -84,12 +88,13 @@ class MomentumBreakoutStrategy(QCAlgorithm):
         current_price = self.securities[self.symbol].price
         current_volume = self.securities[self.symbol].volume
 
-        # Calculate indicators
-        high_20 = max([self.price_window[i] for i in range(self.price_window.count)])
-        avg_volume = sum([self.volume_window[i] for i in range(self.volume_window.count)]) / self.volume_window.count
+        # Calculate indicators from PREVIOUS days (exclude today)
+        # price_window[0] is most recent (today), so start from index 1
+        high_20 = max([self.price_window[i] for i in range(1, self.price_window.count)])
+        avg_volume = sum([self.volume_window[i] for i in range(1, self.volume_window.count)]) / (self.volume_window.count - 1)
 
         # Entry signal: Breakout above 20-day high with volume confirmation
-        breakout = current_price > high_20
+        breakout = current_price > high_20  # Now comparing to PREVIOUS highs
         volume_surge = current_volume > (avg_volume * self.volume_multiplier)
 
         # Check if we should enter a position
@@ -109,7 +114,7 @@ class MomentumBreakoutStrategy(QCAlgorithm):
 
             # Exit conditions
             trailing_stop_hit = unrealized_profit_pct < -0.10  # 10% stop loss
-            below_breakout = current_price < high_20  # Price fell back below 20-day high
+            below_breakout = current_price < high_20  # Price fell back below previous 20-day high
 
             if trailing_stop_hit or below_breakout:
                 self.liquidate(self.symbol)
