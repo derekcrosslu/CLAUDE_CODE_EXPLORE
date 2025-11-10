@@ -25,10 +25,10 @@ venv/
 ENV/
 env/
 .venv
+.env
 
 # Jupyter Notebook
 .ipynb_checkpoints
-*.ipynb
 
 # QuantConnect
 *.cache
