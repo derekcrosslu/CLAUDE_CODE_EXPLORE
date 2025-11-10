@@ -56,8 +56,11 @@ Only after Priority 1 is complete:
 ### Step 1: Load Timeline
 
 ```bash
-# Read the current checklist section
-cat project_timeline.md | grep -A 100 "Week 1 Implementation Tasks"
+# Read the current week's tasks (JSON format)
+cat project_timeline.json | jq '.weeks[] | select(.week == 1)'
+
+# Or get specific section
+cat project_timeline.json | jq '.weeks[0].sections[] | select(.id == "w1-api-integration")'
 ```
 
 ### Step 2: Validate Current Item
@@ -125,8 +128,12 @@ If you don't understand how to complete an item:
 **Update the checklist:**
 
 ```bash
-# Example: mark item complete in project_timeline.md
-# Change [ ] to [x] for completed item
+# Example: mark item complete in project_timeline.json
+# Update status from "pending" to "completed"
+cat project_timeline.json | jq '.weeks[0].sections[0].items[0].status = "completed"' > /tmp/timeline.json && mv /tmp/timeline.json project_timeline.json
+
+# Add completion timestamp and git commit
+cat project_timeline.json | jq '.weeks[0].sections[0].items[0] += {"completed_at": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'", "git_commit": "'$(git rev-parse --short HEAD)'"}' > /tmp/timeline.json && mv /tmp/timeline.json project_timeline.json
 ```
 
 **Create git commit:**
@@ -160,8 +167,11 @@ git push origin <current-branch>
 **Check what's next:**
 
 ```bash
-# Find next uncompleted item in checklist
-cat project_timeline.md | grep "^\- \[ \]" | head -1
+# Find next pending item in current week
+cat project_timeline.json | jq '.weeks[0].sections[].items[] | select(.status == "pending") | {id, task}' | head -1
+
+# Or get first pending item across all weeks
+cat project_timeline.json | jq '[.weeks[].sections[].items[] | select(.status == "pending")] | .[0] | {id, task}'
 ```
 
 **Return to Step 1 (Validate Current Item)**
@@ -196,8 +206,8 @@ When you load this skill, immediately check current status:
 ### 1. What Week Are We In?
 
 ```bash
-# Read timeline
-cat project_timeline.md | grep -A 5 "## CURRENT STATUS"
+# Read current status
+cat project_timeline.json | jq '.current_status'
 ```
 
 ### 2. What's Already Complete?
@@ -213,8 +223,8 @@ git log --grep="Corresponds to" --oneline
 ### 3. What's Next?
 
 ```bash
-# Find first incomplete item
-cat project_timeline.md | grep -B 5 "^\- \[ \]" | head -10
+# Find first pending item
+cat project_timeline.json | jq '[.weeks[].sections[].items[] | select(.status == "pending")] | .[0] | {id, task, section: .id | split("-")[1]}'
 ```
 
 ### 4. Any Blockers?
@@ -310,7 +320,7 @@ Check for:
 
 ## Week 1 Checklist Reference
 
-**Current location**: `project_timeline.md` lines 741-861
+**Current location**: `project_timeline.json` - Week 1 object
 
 **Sections**:
 1. Prerequisites (COMPLETE ✅)
@@ -536,19 +546,23 @@ If yes → Validate → Implement → Test → Commit → Push → Next
 
 ```bash
 # Check current status
-cat project_timeline.md | grep -A 10 "## CURRENT STATUS"
+cat project_timeline.json | jq '.current_status'
 
-# Find next item
-cat project_timeline.md | grep "^\- \[ \]" | head -1
+# Find next pending item
+cat project_timeline.json | jq '[.weeks[].sections[].items[] | select(.status == "pending")] | .[0] | {id, task}'
 
 # Check recent completions
 git log --grep="Corresponds to" --oneline -5
 
-# Mark item complete
-# (edit project_timeline.md, change [ ] to [x])
+# Mark item complete (update JSON)
+TASK_ID="w1-test-002"
+cat project_timeline.json | jq --arg id "$TASK_ID" '
+  (.weeks[].sections[].items[] | select(.id == $id)) |=
+  . + {"status": "completed", "completed_at": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'", "git_commit": "'$(git rev-parse --short HEAD)'"}
+' > /tmp/timeline.json && mv /tmp/timeline.json project_timeline.json
 
 # Commit and push
-git add <files>
+git add project_timeline.json <other-files>
 git commit -m "feat: <description>
 
 Corresponds to checklist item: '<item>'
