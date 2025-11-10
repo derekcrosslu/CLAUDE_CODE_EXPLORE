@@ -4,17 +4,25 @@ Run QuantConnect native parameter optimization to find optimal strategy paramete
 
 Execute a QuantConnect optimization job using the native QC optimization API:
 
-1. **Check Current State**:
-   - Read `iteration_state.json` to get current project_id
-   - Verify strategy file exists and is parameterized with `get_parameter()`
-   - Check that baseline backtest has been run (need starting point)
+1. **PREREQUISITE - Verify Baseline Backtest Exists**:
+   - Read `iteration_state.json` to check if a baseline backtest has been completed
+   - If NO baseline backtest exists OR backtest_results is empty:
+     - **STOP and run baseline first**: `/qc-backtest`
+     - Display error message: "ERROR: No baseline backtest found. Run /qc-backtest first to establish baseline performance before optimization."
+     - EXIT without running optimization
+   - If baseline exists, continue to step 2
 
-2. **Upload Parameterized Strategy**:
+2. **Check Current State**:
+   - Read `iteration_state.json` to get current project_id and baseline metrics
+   - Verify strategy file exists and is parameterized with `get_parameter()`
+   - Extract baseline Sharpe ratio for comparison
+
+3. **Upload Parameterized Strategy**:
    - Upload `test_strategy.py` to QuantConnect project
    - Ensure strategy uses `get_parameter("param_name", default_value)` for all optimizable parameters
    - Compile the project to get compile ID
 
-3. **Configure Optimization**:
+4. **Configure Optimization**:
    - Read or create `optimization_params.json` with native QC format:
      ```json
      {
@@ -31,13 +39,13 @@ Execute a QuantConnect optimization job using the native QC optimization API:
    - Estimate cost and total combinations
    - Show user the optimization plan
 
-4. **Run Native QC Optimization**:
+5. **Run Native QC Optimization**:
    - Use `qc_backtest.py --optimize` with native QC API
    - Submit optimization job via `/optimizations/create` endpoint
    - Wait for completion (can take 10-30 minutes)
    - Poll status every 15-30 seconds
 
-5. **Analyze Results**:
+6. **Analyze Results**:
    - Parse optimization results from QC API
    - Extract best parameters (by Sharpe ratio or specified target)
    - Calculate improvement vs baseline
@@ -46,7 +54,7 @@ Execute a QuantConnect optimization job using the native QC optimization API:
      - Sharp peaks in parameter space (overfitted)
      - High parameter sensitivity (not robust)
 
-6. **Apply Decision Framework**:
+7. **Apply Decision Framework**:
    ```python
    if improvement > 0.30:
        decision = "ESCALATE"
@@ -66,7 +74,7 @@ Execute a QuantConnect optimization job using the native QC optimization API:
        reason = "Minimal improvement, test OOS with baseline params"
    ```
 
-7. **Update State Files**:
+8. **Update State Files**:
    - Update `iteration_state.json`:
      ```json
      {
@@ -82,7 +90,7 @@ Execute a QuantConnect optimization job using the native QC optimization API:
    - Log to `decisions_log.md` with full optimization results
    - Save raw results to `optimization_results_YYYYMMDD_HHMMSS.json`
 
-8. **Present Results**:
+9. **Present Results**:
    ```
    ═══════════════════════════════════════════════════════════
    OPTIMIZATION COMPLETE
@@ -111,7 +119,7 @@ Execute a QuantConnect optimization job using the native QC optimization API:
       - Consider out-of-sample validation on different period
    ```
 
-9. **Next Steps Guidance**:
+10. **Next Steps Guidance**:
    - If PROCEED_TO_VALIDATION → Use `/qc-validate`
    - If ESCALATE → Review results, manual analysis
    - If USE_ROBUST_PARAMS → Re-run with median params from top quartile
@@ -133,10 +141,16 @@ Execute a QuantConnect optimization job using the native QC optimization API:
 
 ## Error Handling
 
+- **If no baseline backtest** → **CRITICAL ERROR**: Display "ERROR: No baseline backtest found. Run /qc-backtest first." and EXIT. Do NOT proceed with optimization.
 - If strategy not parameterized → Error with instructions to add `get_parameter()`
-- If no baseline backtest → Run baseline first with `/qc-backtest`
 - If optimization fails → Log error, suggest reducing parameter combinations
 - If API error → Check credentials, network, QC service status
+
+## Command Separation
+
+- **`/qc-backtest`**: Runs a SINGLE backtest with current parameters. Use this for baseline and validation runs.
+- **`/qc-optimize`**: Runs MULTIPLE backtests with different parameter combinations via QC's native optimization API. Requires baseline first.
+- Never mix these two operations. Always run `/qc-backtest` before `/qc-optimize`.
 
 ---
 

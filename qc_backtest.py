@@ -237,7 +237,7 @@ class QuantConnectAPI:
             "parallelNodes": parallel_nodes
         }
 
-        return self._request("POST", "optimizations/create", data=data)
+        return self._request("POST", "optimizations/create", json=data)
 
     def estimate_optimization(self, project_id, parameters, node_type="O2-8", parallel_nodes=2):
         """
@@ -259,7 +259,7 @@ class QuantConnectAPI:
             "parallelNodes": parallel_nodes
         }
 
-        return self._request("POST", "optimizations/estimate", data=data)
+        return self._request("POST", "optimizations/estimate", json=data)
 
     def read_optimization(self, optimization_id):
         """
@@ -682,27 +682,33 @@ def main():
             print(f"ERROR: Failed to create optimization: {opt_result.get('error')}")
             result = opt_result
         else:
-            optimization_id = opt_result.get("optimization", {}).get("optimizationId")
-            print(f"\nOptimization created: {optimization_id}")
-            print("Waiting for completion...")
-
-            # Wait for optimization to complete
-            final_result = api.wait_for_optimization(optimization_id, timeout=1800)
-
-            if final_result.get("success"):
-                # Parse and analyze results
-                optimization = final_result.get("optimization", {})
-                result = {
-                    "success": True,
-                    "optimization_id": optimization_id,
-                    "status": optimization.get("status"),
-                    "best_parameters": optimization.get("parameterSet"),
-                    "best_backtest_id": optimization.get("backtestId"),
-                    "statistics": optimization.get("statistics", {}),
-                    "raw_data": optimization
-                }
+            # Extract optimization ID from optimizations array
+            optimizations = opt_result.get("optimizations", [])
+            if not optimizations:
+                print("ERROR: No optimizations returned in response")
+                result = opt_result
             else:
-                result = final_result
+                optimization_id = optimizations[0].get("optimizationId")
+                print(f"\nOptimization created: {optimization_id}")
+                print("Waiting for completion...")
+
+                # Wait for optimization to complete
+                final_result = api.wait_for_optimization(optimization_id, timeout=1800)
+
+                if final_result.get("success"):
+                    # Parse and analyze results
+                    optimization = final_result.get("optimization", {})
+                    result = {
+                        "success": True,
+                        "optimization_id": optimization_id,
+                        "status": optimization.get("status"),
+                        "best_parameters": optimization.get("parameterSet"),
+                        "best_backtest_id": optimization.get("backtestId"),
+                        "statistics": optimization.get("statistics", {}),
+                        "raw_data": optimization
+                    }
+                else:
+                    result = final_result
 
     else:
         parser.print_help()
