@@ -1,0 +1,29 @@
+=== Phase 3: Backtest Results Analysis ===
+
+Backtest Results:
+- Sharpe Ratio: 0.0
+- Max Drawdown: 0.0  
+- Total Return: 0.0
+- Total Trades: 0
+- Win Rate: 0.0
+- Backtest ID: 9039ebca3adbc27235ee27de847352cb
+- Project ID: 26135853
+- Project URL: https://www.quantconnect.com/project/26135853
+
+Decision Framework Application:
+
+1. ✅ Check overfitting signals:
+   - Sharpe > 3.0? NO (0.0 < 3.0)
+   - Trades < 20? YES (0 < 20) but total is 0, so not applicable
+   - Win rate > 0.75? NO (0.0 < 0.75)
+   
+2. ✅ Check minimum viable thresholds:
+   - Sharpe < 0.5? YES (0.0 < 0.5) → ABANDON
+   - Max drawdown > 0.40? NO
+   - Total trades < 30? YES (0 < 30) → ABANDON
+
+DECISION: ABANDON_HYPOTHESIS
+
+REASON: Insufficient trades for statistical significance (0 < 30). Strategy never executed any trades - entry conditions too restrictive or never met during backtest period.
+
+Analysis: The strategy required price to cross above SMA(20) with volume > 1.5x average on the same bar. This combination never occurred during the 2-year backtest period (2022-2024), suggesting the entry criteria is either too strict or the market conditions didn't present such opportunities.
