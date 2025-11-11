@@ -268,32 +268,44 @@ WebSearch: "QuantConnect {specific problem} 2025"
 **Goal**: Test EXACT QC code locally before uploading to cloud
 
 **Approach**:
-1. **Mock the API, NOT the code**
+1. **Use Lean CLI Docker with QC API (PRIMARY METHOD)**
    - Use actual notebook code (research.ipynb)
+   - Run via `lean research` in Docker
+   - Uses ACTUAL QuantConnect QuantBook API
+   - This is the CORRECT way to test locally
+
+2. **Vanilla Python with Mock API (ONLY IF EXPLICITLY REQUESTED)**
+   - Only use when user explicitly asks for vanilla Python
    - Mock QuantBook API to return synthetic data
    - Verify logic works with synthetic data
-   - THEN upload to cloud with real data
+   - Much less reliable than Lean CLI Docker
 
-2. **Wrong Approach** (DON'T DO THIS):
+3. **Wrong Approach** (DON'T DO THIS):
    - ❌ Rewrite notebook code
    - ❌ Create "simplified version"
    - ❌ Test different logic locally vs cloud
 
 **Example**:
-```python
-# ✅ CORRECT: Mock API, use real code
-from mock_quantbook import QuantBook  # Fake API
-qb = QuantBook()
-# ... rest of ACTUAL notebook code unchanged ...
+```bash
+# ✅ CORRECT: Use Lean CLI Docker (DEFAULT FOR LOCAL TESTING)
+lean research "STRATEGIES/hypothesis_5_statistical_arbitrage"
+# This runs ACTUAL notebook with REAL QC QuantBook API
 
-# ❌ WRONG: Rewrite logic
-# Completely new code that "approximates" notebook
+# ⚠ ONLY IF USER EXPLICITLY REQUESTS VANILLA PYTHON:
+python3 test_with_mock.py  # Mock QuantBook API
 ```
 
 **When User Says**:
-- "test with synthetic data" → Mock API responses
-- "test locally" → Use actual code with mock API
-- "debug offline" → Lean CLI Docker OR mock API
+- "test with synthetic data" → USE LEAN CLI DOCKER (real code with QC API)
+- "test locally" → USE LEAN CLI DOCKER (real code with QC API)
+- "debug offline" → USE LEAN CLI DOCKER (this is the CORRECT local testing method)
+- "vanilla Python" → ONLY THEN use mock API
+
+**CRITICAL CORRECTION FROM USER**:
+- "test with synthetic data" does NOT mean mock API - it means use REAL code with Lean CLI Docker
+- "test locally" does NOT mean vanilla Python/mock API - it means Lean CLI Docker with QC API
+- "debug offline" means Lean CLI Docker, NOT vanilla Python with mocks
+- Mock API should ONLY be used when user explicitly requests vanilla Python testing
 ```
 
 ---
