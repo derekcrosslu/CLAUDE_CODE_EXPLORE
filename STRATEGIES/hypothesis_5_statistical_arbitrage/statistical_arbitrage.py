@@ -36,18 +36,20 @@ class StatisticalArbitrageStrategy(QCAlgorithm):
         self.set_end_date(2025, 10, 31)
         self.set_cash(100000)
 
-        # Strategy parameters (Aider can optimize these)
-        self.z_entry_threshold = 2.0      # |Z| > 2.0 to enter
-        self.z_exit_threshold = 0.5       # |Z| < 0.5 to exit (mean reversion)
-        self.lookback_period = 60         # Days for Z-score calculation
-        self.max_holding_days = 20        # Timeout exit
-        self.stop_loss_z = 5.5            # Stop loss if |Z| exceeds this (FIXED: was 4.5, too tight)
-        self.position_size_per_pair = 0.25  # 25% per pair
+        # All optimizable parameters (read from QC optimization)
+        # Use GetParameter() for optimization parameters
 
-        # Default strategy parameters
-        self.fast_ema = 12
-        self.slow_ema = 26
-        self.stop_loss = 0.02
+        # Round 1 optimized (baseline from optimization results):
+        self.position_size_per_pair = float(self.GetParameter("position_size_per_pair", 0.40))
+        self.max_holding_days = int(self.GetParameter("max_holding_days", 30))
+        self.stop_loss_z = float(self.GetParameter("stop_loss_z", 4.0))
+
+        # Round 2 parameters (entry/exit logic):
+        self.z_entry_threshold = float(self.GetParameter("z_entry_threshold", 2.0))
+        self.z_exit_threshold = float(self.GetParameter("z_exit_threshold", 0.5))
+        self.lookback_period = int(self.GetParameter("lookback_period", 60))
+
+        # Pairs configuration
         self.pairs = [
             {
                 'name': 'PNC_KBE',

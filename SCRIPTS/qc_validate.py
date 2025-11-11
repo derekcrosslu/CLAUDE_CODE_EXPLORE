@@ -111,9 +111,13 @@ def run(strategy: str, state: str, output: str, split: float):
         strategy_code
     )
     
-    api.upload_file(project_id, strategy_is, "Main.py")
+    upload_result = api.upload_file(project_id, strategy_is, "Main.py")
+    if not upload_result.get('success'):
+        click.echo(f"❌ Failed to upload in-sample strategy: {upload_result.get('errors', upload_result.get('error', 'Unknown'))}", err=True)
+        sys.exit(1)
+
     backtest_is = api.create_backtest(project_id, "InSample_Validation")
-    
+
     if not backtest_is.get('success'):
         click.echo(f"❌ In-sample backtest failed: {backtest_is.get('error', 'Unknown')}", err=True)
         sys.exit(1)
@@ -138,9 +142,13 @@ def run(strategy: str, state: str, output: str, split: float):
         strategy_code
     )
     
-    api.upload_file(project_id, strategy_oos, "Main.py")
+    upload_result = api.upload_file(project_id, strategy_oos, "Main.py")
+    if not upload_result.get('success'):
+        click.echo(f"❌ Failed to upload out-of-sample strategy: {upload_result.get('errors', upload_result.get('error', 'Unknown'))}", err=True)
+        sys.exit(1)
+
     backtest_oos = api.create_backtest(project_id, "OutOfSample_Validation")
-    
+
     if not backtest_oos.get('success'):
         click.echo(f"❌ Out-of-sample backtest failed: {backtest_oos.get('error', 'Unknown')}", err=True)
         sys.exit(1)

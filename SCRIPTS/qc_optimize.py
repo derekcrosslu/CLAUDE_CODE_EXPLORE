@@ -45,7 +45,9 @@ def cli():
 @click.option('--state', default='iteration_state.json', help='Iteration state JSON')
 @click.option('--output', default='PROJECT_LOGS/optimization_result.json', help='Output file')
 @click.option('--estimate-only', is_flag=True, help='Only estimate cost, don\'t run')
-def run(config: str, state: str, output: str, estimate_only: bool):
+@click.option('--strategy', default='grid', help='Optimization strategy: grid (exhaustive), euler (random sampling), or custom class name')
+@click.option('--max-backtests', type=int, help='Maximum backtests (for Euler/random strategies)')
+def run(config: str, state: str, output: str, estimate_only: bool, strategy: str, max_backtests: int):
     """Run parameter optimization on QuantConnect.
     
     Requires baseline backtest to be completed first.
@@ -98,6 +100,18 @@ def run(config: str, state: str, output: str, estimate_only: bool):
     target_to = opt_config.get('targetTo', 'max')
     node_type = opt_config.get('nodeType', 'O2-8')
     parallel_nodes = opt_config.get('parallelNodes', 2)
+
+    # Map strategy name to QC class
+    strategy_map = {
+        'grid': 'QuantConnect.Optimizer.Strategies.GridSearchOptimizationStrategy',
+        'euler': 'QuantConnect.Optimizer.Strategies.EulerSearchOptimizationStrategy',
+    }
+
+    opt_strategy = strategy_map.get(strategy, strategy)  # Use custom name if not in map
+
+    # Override with config if specified
+    if 'strategy' in opt_config:
+        opt_strategy = opt_config['strategy']
     
     # Calculate combinations
     total_combinations = 1
@@ -136,13 +150,15 @@ def run(config: str, state: str, output: str, estimate_only: bool):
     # Run optimization
     opt_name = f"Optimization_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     click.echo(f"\n🚀 Creating optimization: {opt_name}...")
-    
+    click.echo(f"   Strategy: {opt_strategy.split('.')[-1]}")
+
     opt_result = api.create_optimization(
         project_id=project_id,
         name=opt_name,
         target=target,
         parameters=parameters,
         target_to=target_to,
+        strategy=opt_strategy,
         node_type=node_type,
         parallel_nodes=parallel_nodes
     )

@@ -1,0 +1,432 @@
+{
+  "optimization_completed": "2025-11-11T03:18:10.227984Z",
+  "project_id": 26140717,
+  "baseline_sharpe": 0.127,
+  "parameter_grid": {
+    "z_entry_threshold": [
+      1.5,
+      2.0,
+      2.5
+    ],
+    "lookback_period": [
+      40,
+      60,
+      80
+    ],
+    "max_holding_days": [
+      15,
+      20,
+      30
+    ]
+  },
+  "total_combinations": 27,
+  "successful_backtests": 27,
+  "analysis": {
+    "best_parameters": {
+      "z_entry_threshold": 1.5,
+      "lookback_period": 60,
+      "max_holding_days": 20
+    },
+    "best_performance": {
+      "sharpe_ratio": 1.4541,
+      "total_return": 0.6135,
+      "max_drawdown": 0.028,
+      "total_trades": 334,
+      "win_rate": 0.6078
+    },
+    "statistics": {
+      "mean_sharpe": 0.2245148148148148,
+      "max_sharpe": 1.4541,
+      "min_sharpe": -0.9588,
+      "std_sharpe": 0.7049426794158534,
+      "improvement_vs_baseline_pct": 1044.9606299212596
+    },
+    "robustness": {
+      "parameter_sensitivity": 3.1398492789765657,
+      "top_quartile_median": 1.126,
+      "assessment": "HIGH"
+    },
+    "all_results": [
+      {
+        "parameters": {
+          "z_entry_threshold": 1.5,
+          "lookback_period": 60,
+          "max_holding_days": 20
+        },
+        "backtest_id": "cab672f4ae491fb0200bd723f7ba00bc",
+        "sharpe_ratio": 1.4541,
+        "total_return": 0.6135,
+        "max_drawdown": 0.028,
+        "total_trades": 334,
+        "win_rate": 0.6078,
+        "timestamp": "2025-11-11T03:10:11.005802Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 1.5,
+          "lookback_period": 60,
+          "max_holding_days": 15
+        },
+        "backtest_id": "7d0b2b26c1c30ff7bbfa7bf8789f4282",
+        "sharpe_ratio": 1.1931,
+        "total_return": 0.536,
+        "max_drawdown": 0.026,
+        "total_trades": 362,
+        "win_rate": 0.616,
+        "timestamp": "2025-11-11T03:09:47.291430Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 1.5,
+          "lookback_period": 60,
+          "max_holding_days": 30
+        },
+        "backtest_id": "6836a0918fd59545ad9fa3d3564f7671",
+        "sharpe_ratio": 1.126,
+        "total_return": 0.5385,
+        "max_drawdown": 0.032,
+        "total_trades": 288,
+        "win_rate": 0.6215,
+        "timestamp": "2025-11-11T03:10:35.116188Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 1.5,
+          "lookback_period": 40,
+          "max_holding_days": 15
+        },
+        "backtest_id": "dd22437414a7bcc4a525d844a90deb84",
+        "sharpe_ratio": 0.9897,
+        "total_return": 0.4743,
+        "max_drawdown": 0.034,
+        "total_trades": 406,
+        "win_rate": 0.5837,
+        "timestamp": "2025-11-11T03:08:34.413542Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 1.5,
+          "lookback_period": 80,
+          "max_holding_days": 20
+        },
+        "backtest_id": "f2aba460e180a9c8b25defdcf6291ffb",
+        "sharpe_ratio": 0.9869,
+        "total_return": 0.4849,
+        "max_drawdown": 0.031,
+        "total_trades": 316,
+        "win_rate": 0.5854,
+        "timestamp": "2025-11-11T03:11:16.245324Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 1.5,
+          "lookback_period": 40,
+          "max_holding_days": 20
+        },
+        "backtest_id": "5dca83a445898a631eea61f453295247",
+        "sharpe_ratio": 0.8383,
+        "total_return": 0.442,
+        "max_drawdown": 0.029,
+        "total_trades": 378,
+        "win_rate": 0.5767,
+        "timestamp": "2025-11-11T03:08:58.232163Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 1.5,
+          "lookback_period": 80,
+          "max_holding_days": 15
+        },
+        "backtest_id": "85a0fe19aa4e0b9d045447b8660c878c",
+        "sharpe_ratio": 0.8281,
+        "total_return": 0.4487,
+        "max_drawdown": 0.041,
+        "total_trades": 338,
+        "win_rate": 0.5769,
+        "timestamp": "2025-11-11T03:10:54.926803Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 1.5,
+          "lookback_period": 80,
+          "max_holding_days": 30
+        },
+        "backtest_id": "706c30b8bb7634e4652e8799bf994130",
+        "sharpe_ratio": 0.7429,
+        "total_return": 0.4333,
+        "max_drawdown": 0.041,
+        "total_trades": 262,
+        "win_rate": 0.584,
+        "timestamp": "2025-11-11T03:11:37.623335Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 1.5,
+          "lookback_period": 40,
+          "max_holding_days": 30
+        },
+        "backtest_id": "5fa604362250be8cdbf8f24effde0ee6",
+        "sharpe_ratio": 0.7275,
+        "total_return": 0.4228,
+        "max_drawdown": 0.038,
+        "total_trades": 332,
+        "win_rate": 0.5904,
+        "timestamp": "2025-11-11T03:09:20.546017Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.0,
+          "lookback_period": 40,
+          "max_holding_days": 30
+        },
+        "backtest_id": "b5bfb5495b03f2903ef06a52936bfa75",
+        "sharpe_ratio": 0.6172,
+        "total_return": 0.3681,
+        "max_drawdown": 0.022,
+        "total_trades": 208,
+        "win_rate": 0.601,
+        "timestamp": "2025-11-11T03:12:46.409014Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.0,
+          "lookback_period": 40,
+          "max_holding_days": 15
+        },
+        "backtest_id": "aa1a45a530536fdc9fa7723e8e764b3d",
+        "sharpe_ratio": 0.5086,
+        "total_return": 0.3375,
+        "max_drawdown": 0.022,
+        "total_trades": 230,
+        "win_rate": 0.613,
+        "timestamp": "2025-11-11T03:11:59.760163Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.0,
+          "lookback_period": 60,
+          "max_holding_days": 30
+        },
+        "backtest_id": "b8a75d92670c71aaa5453e410a421dcf",
+        "sharpe_ratio": 0.3977,
+        "total_return": 0.3225,
+        "max_drawdown": 0.023,
+        "total_trades": 164,
+        "win_rate": 0.628,
+        "timestamp": "2025-11-11T03:13:52.917532Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.0,
+          "lookback_period": 40,
+          "max_holding_days": 20
+        },
+        "backtest_id": "db5b2258443eb1f8944fc2c51354023d",
+        "sharpe_ratio": 0.3884,
+        "total_return": 0.3183,
+        "max_drawdown": 0.027,
+        "total_trades": 216,
+        "win_rate": 0.5833,
+        "timestamp": "2025-11-11T03:12:22.490225Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.0,
+          "lookback_period": 80,
+          "max_holding_days": 15
+        },
+        "backtest_id": "7f4f8c22d1a41641a8f78919bc3a68fa",
+        "sharpe_ratio": 0.3125,
+        "total_return": 0.3025,
+        "max_drawdown": 0.019,
+        "total_trades": 168,
+        "win_rate": 0.619,
+        "timestamp": "2025-11-11T03:14:12.627264Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.0,
+          "lookback_period": 60,
+          "max_holding_days": 15
+        },
+        "backtest_id": "e34bef741ab31040624f2806f8b27116",
+        "sharpe_ratio": 0.2724,
+        "total_return": 0.2948,
+        "max_drawdown": 0.023,
+        "total_trades": 182,
+        "win_rate": 0.6044,
+        "timestamp": "2025-11-11T03:13:08.869001Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.0,
+          "lookback_period": 80,
+          "max_holding_days": 30
+        },
+        "backtest_id": "60bddb4cab043e7e93f2f15d53cf0b3a",
+        "sharpe_ratio": 0.1989,
+        "total_return": 0.2871,
+        "max_drawdown": 0.027,
+        "total_trades": 146,
+        "win_rate": 0.637,
+        "timestamp": "2025-11-11T03:14:56.102962Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.0,
+          "lookback_period": 60,
+          "max_holding_days": 20
+        },
+        "backtest_id": "09e39ce64fa024cbb26e507bf4d16f48",
+        "sharpe_ratio": 0.1268,
+        "total_return": 0.2717,
+        "max_drawdown": 0.023,
+        "total_trades": 176,
+        "win_rate": 0.6023,
+        "timestamp": "2025-11-11T03:13:31.413565Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.0,
+          "lookback_period": 80,
+          "max_holding_days": 20
+        },
+        "backtest_id": "fed2b88ef2b2c5207c41edc5d96650e6",
+        "sharpe_ratio": 0.0169,
+        "total_return": 0.2543,
+        "max_drawdown": 0.02,
+        "total_trades": 156,
+        "win_rate": 0.6218,
+        "timestamp": "2025-11-11T03:14:35.139798Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.5,
+          "lookback_period": 40,
+          "max_holding_days": 30
+        },
+        "backtest_id": "8d2c7436d3c0733e011df1385ff5730f",
+        "sharpe_ratio": -0.0234,
+        "total_return": 0.2489,
+        "max_drawdown": 0.02,
+        "total_trades": 112,
+        "win_rate": 0.6518,
+        "timestamp": "2025-11-11T03:16:01.461709Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.5,
+          "lookback_period": 40,
+          "max_holding_days": 20
+        },
+        "backtest_id": "3da7ae6ba3c26a152862232e1a432697",
+        "sharpe_ratio": -0.3307,
+        "total_return": 0.2103,
+        "max_drawdown": 0.022,
+        "total_trades": 112,
+        "win_rate": 0.6518,
+        "timestamp": "2025-11-11T03:15:37.868798Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.5,
+          "lookback_period": 40,
+          "max_holding_days": 15
+        },
+        "backtest_id": "baf46998378bef3c4898f6f22f264e36",
+        "sharpe_ratio": -0.4072,
+        "total_return": 0.2033,
+        "max_drawdown": 0.02,
+        "total_trades": 114,
+        "win_rate": 0.6316,
+        "timestamp": "2025-11-11T03:15:15.495305Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.5,
+          "lookback_period": 80,
+          "max_holding_days": 30
+        },
+        "backtest_id": "c77e043693a8aac411d3b452510193d1",
+        "sharpe_ratio": -0.5886,
+        "total_return": 0.1807,
+        "max_drawdown": 0.018,
+        "total_trades": 70,
+        "win_rate": 0.7714,
+        "timestamp": "2025-11-11T03:18:10.227787Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.5,
+          "lookback_period": 60,
+          "max_holding_days": 30
+        },
+        "backtest_id": "45da3b7faa55675c87901c1b13934610",
+        "sharpe_ratio": -0.7275,
+        "total_return": 0.1569,
+        "max_drawdown": 0.026,
+        "total_trades": 80,
+        "win_rate": 0.6125,
+        "timestamp": "2025-11-11T03:17:07.524726Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.5,
+          "lookback_period": 80,
+          "max_holding_days": 15
+        },
+        "backtest_id": "dc66fd39bd7820b1b830b80ae0882499",
+        "sharpe_ratio": -0.8655,
+        "total_return": 0.1586,
+        "max_drawdown": 0.017,
+        "total_trades": 72,
+        "win_rate": 0.7222,
+        "timestamp": "2025-11-11T03:17:28.266300Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.5,
+          "lookback_period": 60,
+          "max_holding_days": 20
+        },
+        "backtest_id": "29c6bd9805f1eb66fa5e359dbd865408",
+        "sharpe_ratio": -0.8685,
+        "total_return": 0.1494,
+        "max_drawdown": 0.022,
+        "total_trades": 82,
+        "win_rate": 0.5976,
+        "timestamp": "2025-11-11T03:16:43.854529Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.5,
+          "lookback_period": 80,
+          "max_holding_days": 20
+        },
+        "backtest_id": "64c32a17d083a8fcf1e007eae371c354",
+        "sharpe_ratio": -0.8939,
+        "total_return": 0.1534,
+        "max_drawdown": 0.025,
+        "total_trades": 72,
+        "win_rate": 0.7361,
+        "timestamp": "2025-11-11T03:17:49.124638Z"
+      },
+      {
+        "parameters": {
+          "z_entry_threshold": 2.5,
+          "lookback_period": 60,
+          "max_holding_days": 15
+        },
+        "backtest_id": "1dc852775f7c67130196eec80bcd3896",
+        "sharpe_ratio": -0.9588,
+        "total_return": 0.1442,
+        "max_drawdown": 0.019,
+        "total_trades": 82,
+        "win_rate": 0.6341,
+        "timestamp": "2025-11-11T03:16:21.289953Z"
+      }
+    ]
+  },
+  "decision": "ESCALATE",
+  "decision_reason": "Suspicious improvement (1045.0% > 30%), possible overfitting"
+}

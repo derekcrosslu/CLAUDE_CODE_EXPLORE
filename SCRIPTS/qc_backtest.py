@@ -103,6 +103,23 @@ class QuantConnectAPI:
             "projectId": project_id
         })
 
+    def read_files(self, project_id, filename=None):
+        """
+        Read files from a project
+
+        Args:
+            project_id: Project ID
+            filename: Optional specific filename to read. If None, reads all files.
+
+        Returns:
+            API response with files array
+        """
+        payload = {"projectId": project_id}
+        if filename:
+            payload["name"] = filename
+
+        return self._request("POST", "files/read", json=payload)
+
     def create_file(self, project_id, name, content):
         """Create or update file in project"""
         # Try update first (files/update endpoint)
@@ -112,13 +129,16 @@ class QuantConnectAPI:
             "content": content
         })
 
-        # If update fails because file doesn't exist, try create
-        if not result.get("success") and "does not exist" in str(result.get("errors", [])):
-            result = self._request("POST", "files/create", json={
-                "projectId": project_id,
-                "name": name,
-                "content": content
-            })
+        # FIXED: Check for multiple error patterns indicating file doesn't exist
+        if not result.get("success"):
+            errors_str = str(result.get("errors", []))
+            # Check for both "does not exist" and "not found" patterns
+            if "does not exist" in errors_str or "not found" in errors_str.lower():
+                result = self._request("POST", "files/create", json={
+                    "projectId": project_id,
+                    "name": name,
+                    "content": content
+                })
 
         return result
 

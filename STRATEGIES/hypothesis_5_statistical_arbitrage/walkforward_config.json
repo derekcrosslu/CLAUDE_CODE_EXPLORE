@@ -1,0 +1,41 @@
+{
+  "total_period": {
+    "start": "2022-01-01",
+    "end": "2025-10-31",
+    "comment": "Full period from strategy backtest"
+  },
+  "train_test_split": 0.70,
+  "monte_carlo_runs": 10,
+  "method": "monte_carlo",
+  "parameters_to_optimize": [
+    "z_entry_threshold",
+    "z_exit_threshold",
+    "lookback_period"
+  ],
+  "parameter_ranges": {
+    "z_entry_threshold": {
+      "min": 1.5,
+      "max": 2.5,
+      "step": 0.5
+    },
+    "z_exit_threshold": {
+      "min": 0.3,
+      "max": 1.0,
+      "step": 0.2
+    },
+    "lookback_period": {
+      "min": 30,
+      "max": 70,
+      "step": 20
+    }
+  },
+  "fixed_parameters": {
+    "position_size_per_pair": 0.40,
+    "max_holding_days": 30,
+    "stop_loss_z": 4.0
+  },
+  "validation_metric": "sharpe_ratio",
+  "baseline_sharpe": 1.829,
+  "optimization_id": "O-b683c36445c24649f85a1aa45f1d442c",
+  "notes": "Monte Carlo validation of optimized statistical arbitrage parameters. Testing if z_entry=1.5, z_exit=1.0, lookback=30 are robust across different time periods."
+}

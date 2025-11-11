@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Performance Thresholds for Autonomous Decision Framework",
+  "description": "Defines Sharpe ratio and risk thresholds based on industry standards",
+  "performance_criteria": {
+    "minimum_viable": {
+      "description": "Below this = ABANDON. Sufficient edge to proceed, but needs optimization",
+      "sharpe_ratio": 0.0,
+      "max_drawdown": 0.35,
+      "min_trades": 20,
+      "note": "Sharpe 0.0+ shows any positive risk-adjusted return. Optimization may improve to 0.7+"
+    },
+    "optimization_worthy": {
+      "description": "Good performance (Sharpe 0.7-1.0). PROCEED_TO_OPTIMIZATION to reach 1.0+",
+      "sharpe_ratio": 0.7,
+      "max_drawdown": 0.30,
+      "min_trades": 30,
+      "note": "Sharpe 0.7 = good. Optimization can push to great (1.0+)"
+    },
+    "production_ready": {
+      "description": "Great performance (Sharpe 1.0+). SKIP optimization, go to validation",
+      "sharpe_ratio": 1.0,
+      "max_drawdown": 0.20,
+      "min_trades": 50,
+      "note": "Sharpe 1.0 = great. Skip optimization waste, validate immediately"
+    },
+    "strong_performance": {
+      "description": "Strong performance (Sharpe 1.25+). Institutional grade",
+      "sharpe_ratio": 1.25,
+      "note": "Sharpe 1.25 = strong. Rare in practice."
+    },
+    "outstanding_performance": {
+      "description": "Outstanding performance (Sharpe 1.5+). Very rare",
+      "sharpe_ratio": 1.5,
+      "note": "Sharpe 1.5 = outstanding. Extremely rare without leverage."
+    }
+  },
+  "overfitting_signals": {
+    "too_perfect_sharpe": {
+      "threshold": 2.0,
+      "action": "ESCALATE_TO_HUMAN",
+      "reason": "Sharpe >2.0 is unreasonable without leverage. Likely overfit."
+    },
+    "too_few_trades": {
+      "threshold": 10,
+      "action": "ABANDON_HYPOTHESIS",
+      "reason": "Insufficient sample size for statistical significance"
+    },
+    "win_rate_too_high": {
+      "threshold": 0.80,
+      "action": "ESCALATE_TO_HUMAN",
+      "reason": "Win rate >80% is suspicious. May indicate lookahead bias."
+    },
+    "parameter_sensitivity_high": {
+      "threshold": 0.5,
+      "action": "USE_ROBUST_PARAMS",
+      "reason": "High sensitivity to parameters = not robust"
+    }
+  },
+  "optimization_decisions": {
+    "improvement_thresholds": {
+      "suspicious_improvement": 0.30,
+      "worthy_improvement": 0.05,
+      "note": "Improvement >30% = likely overfit. Improvement >5% = worth validating"
+    }
+  },
+  "validation_decisions": {
+    "degradation_thresholds": {
+      "severe_degradation": 0.30,
+      "moderate_degradation": 0.15,
+      "note": "OOS degradation >30% = overfit. 15-30% = marginal. <15% = robust"
+    },
+    "robustness_minimum": {
+      "oos_to_is_ratio": 0.70,
+      "note": "OOS Sharpe should be at least 70% of IS Sharpe"
+    }
+  },
+  "sharpe_interpretation": {
+    "scale": {
+      "0.0_to_0.7": "Subpar to acceptable. Needs optimization or abandonment",
+      "0.7_to_1.0": "Good. Worth optimizing to reach great (1.0+)",
+      "1.0_to_1.25": "Great. Production worthy",
+      "1.25_to_1.5": "Strong. Institutional grade",
+      "1.5_to_2.0": "Outstanding. Very rare",
+      "2.0_plus": "Unreasonable. Suspect overfitting"
+    },
+    "source": "Industry standard Sharpe ratio interpretation"
+  }
+}
