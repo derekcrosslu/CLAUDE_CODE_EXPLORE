@@ -129,28 +129,46 @@ If validation fails:
 
 ### Step 5: Create/Update QC Project
 
+**⚠️ CRITICAL RULE: ONE PROJECT ID PER HYPOTHESIS**
+
+**IMPERATIVE**: Reuse the SAME project_id for:
+- All backtests of this hypothesis
+- All optimizations of this hypothesis
+- All validations of this hypothesis
+
+**ONLY create new project if**:
+- project_id is null (first time)
+- User explicitly requests new project
+- Major strategy rewrite (not bug fixes)
+
 ```bash
-# If PROJECT_ID is null, create new project
+# If PROJECT_ID is null, create new project ONLY ONCE
 if [ "$PROJECT_ID" == "null" ]; then
-    python SCRIPTS/qc_backtest.py --create --name "${HYPOTHESIS_NAME}_$(date +%Y%m%d)" --output project_result.json
+    python SCRIPTS/qc_backtest.py --create --name "${HYPOTHESIS_NAME}" --output project_result.json
     PROJECT_ID=$(cat project_result.json | jq -r '.projects.projects[0].projectId')
     PROJECT_URL="https://www.quantconnect.com/project/${PROJECT_ID}"
-    
-    # Update iteration_state.json:
+
+    # Update iteration_state.json with project_id (SAVE THIS!)
     # project.project_id = $PROJECT_ID
     # project.project_name = ...
     # project.strategy_file = ...
     # project.qc_url = $PROJECT_URL
 fi
+
+# For ALL subsequent backtests: REUSE existing PROJECT_ID
+# Update code in existing project, don't create new one
 ```
 
 ### Step 6: Upload Strategy and Run Backtest
 
+**⚠️ CRITICAL: Always use --project-id flag to reuse existing project**
+
 ```bash
-# Upload strategy file to project (qc_backtest.py handles this)
-# Run backtest
+# ALWAYS pass existing project_id to reuse the same project
+# This updates code in existing project instead of creating new one
 python SCRIPTS/qc_backtest.py --run \
-    --name "${HYPOTHESIS_NAME}" \
+    --project-id "${PROJECT_ID}" \
+    --name "Backtest_iteration_${ITERATION}" \
     --file "${STRATEGY_FILE}" \
     --output backtest_result.json
 
@@ -161,6 +179,14 @@ if [ $? -ne 0 ]; then
     # ESCALATE_TO_HUMAN or retry
 fi
 ```
+
+**Project ID Lifecycle**:
+- `/qc-init` → Creates project, saves PROJECT_ID to iteration_state.json
+- `/qc-backtest` → Reuses PROJECT_ID (updates code, runs new backtest)
+- `/qc-optimize` → Reuses PROJECT_ID (runs optimization)
+- `/qc-validate` → Reuses PROJECT_ID (runs validation)
+
+**Result**: One hypothesis = One project with complete history
 
 ### Step 7: Parse Results
 
