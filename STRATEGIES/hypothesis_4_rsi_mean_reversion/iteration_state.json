@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Autonomous Strategy Development Iteration State",
+  "description": "Persistent state for autonomous QuantConnect strategy development workflow",
+  "schema_version": "1.0.0",
+  "current_hypothesis": {
+    "id": 4,
+    "name": "RSI Mean Reversion Strategy",
+    "description": "Buy when RSI < 30 (oversold), sell when RSI > 70 (overbought)",
+    "created": "2025-11-10T19:25:00Z",
+    "status": "research"
+  },
+  "project": {
+    "project_id": null,
+    "project_name": "RSI_MeanReversion_2023_2024",
+    "strategy_file": "rsi_mean_reversion.py",
+    "language": "Python"
+  },
+  "workflow": {
+    "current_phase": "research",
+    "phases_completed": [],
+    "iteration": 1,
+    "max_iterations": 3
+  },
+  "thresholds": {
+    "minimum_viable": {
+      "sharpe_ratio": 0.5,
+      "min_trades": 30,
+      "max_drawdown": 0.25
+    },
+    "optimization_worthy": {
+      "sharpe_ratio": 1.0,
+      "min_trades": 50,
+      "max_drawdown": 0.20
+    },
+    "production_ready": {
+      "sharpe_ratio": 1.5,
+      "min_trades": 100,
+      "max_drawdown": 0.15,
+      "win_rate": 0.45,
+      "profit_factor": 1.5
+    },
+    "overfitting": {
+      "max_improvement": 0.30,
+      "max_degradation": 0.15,
+      "max_variance": 0.10
+    }
+  },
+  "phase_results": {
+    "backtest": {
+      "status": "not_started",
+      "backtest_id": null,
+      "completed": false,
+      "performance": null,
+      "decision": null,
+      "reason": null
+    },
+    "optimization": {
+      "status": "not_started",
+      "optimization_id": null,
+      "attempts": 0,
+      "best_parameters": null,
+      "improvement": null,
+      "decision": null
+    },
+    "validation": {
+      "status": "not_started",
+      "oos_backtest_id": null,
+      "oos_performance": null,
+      "degradation": null,
+      "decision": null
+    }
+  },
+  "cost_tracking": {
+    "api_calls": 0,
+    "backtests_run": 0,
+    "optimization_attempts": 0,
+    "estimated_cost_usd": 0.0
+  },
+  "decisions_log": [
+    {
+      "timestamp": "2025-11-10T19:25:00Z",
+      "phase": "research",
+      "decision": "initialize_hypothesis",
+      "reason": "Starting new hypothesis: RSI mean reversion strategy",
+      "metrics": null,
+      "next_action": "implement_strategy"
+    }
+  ],
+  "next_steps": [
+    "Implement RSI mean reversion strategy in rsi_mean_reversion.py",
+    "Test strategy locally for errors",
+    "Upload to QuantConnect",
+    "Run backtest with /qc-backtest"
+  ],
+  "metadata": {
+    "session_id": "hypothesis_4_rsi_mean_reversion",
+    "created_at": "2025-11-10T19:25:00Z",
+    "updated_at": "2025-11-10T19:25:00Z",
+    "claude_model": "claude-sonnet-4-5",
+    "previous_hypothesis": {
+      "id": 3,
+      "name": "Simple Momentum Strategy",
+      "status": "abandoned",
+      "reason": "Insufficient trades for statistical significance (0 trades)"
+    }
+  }
+}
