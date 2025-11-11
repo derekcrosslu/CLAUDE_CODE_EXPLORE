@@ -16,6 +16,8 @@ Load this skill when:
 - Making Phase 4 routing decisions
 - Deciding between baseline and optimized parameters
 
+**Important**: Always store optimization results and logs in `PROJECT_LOGS/` folder. See `PROJECT_LOGS/README.md` for naming conventions.
+
 ---
 
 ## ⚠️ CRITICAL CONSTRAINT: Project ID Requirements

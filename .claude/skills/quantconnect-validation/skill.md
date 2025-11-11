@@ -16,6 +16,8 @@ Load this skill when:
 - Evaluating strategy robustness
 - Making deployment decisions
 
+**Important**: Always store validation results and logs in `PROJECT_LOGS/` folder. See `PROJECT_LOGS/README.md` for naming conventions.
+
 ---
 
 ## Walk-Forward Validation Approach

@@ -17,6 +17,8 @@ Load this skill when:
 - Making Phase 3 routing decisions
 - Debugging backtest API errors
 
+**Important**: Always store backtest results and logs in `PROJECT_LOGS/` folder. See `PROJECT_LOGS/README.md` for naming conventions.
+
 ---
 
 ## QuantConnect API Integration
