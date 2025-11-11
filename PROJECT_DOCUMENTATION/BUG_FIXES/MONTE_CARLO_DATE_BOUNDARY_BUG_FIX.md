@@ -52,6 +52,38 @@ test_end = datetime(2026, 5, 16)
 
 This cell was causing errors by testing future dates.
 
+### 3. Fixed generate_random_split() Function Logic (Cell 4)
+
+**Second Bug Discovered**: The original fix still allowed test dates to extend beyond 2024-12-31 due to flawed forward-calculation logic.
+
+**Problem**: Testing period showed `2024-08-22 to 2025-07-16` (extends to 2025!)
+
+**Root Cause**: The function calculated `test_end = test_start + timedelta(days=test_days)` and then tried to cap it with `min()`, but this approach failed when random offsets were applied.
+
+**Solution**: Completely rewrote the function to work **backwards from end_date**:
+
+```python
+def generate_random_split(start_date, end_date, train_pct, seed=None):
+    """Work backwards from end_date to guarantee test_end <= end_date"""
+
+    # Calculate test period bounds
+    earliest_test_start = start_date + timedelta(days=train_days + 1)
+    latest_test_start = end_date - timedelta(days=test_days)
+
+    # Randomly position test start, then calculate test_end
+    test_start = earliest_test_start + timedelta(days=random_offset)
+    test_end = test_start + timedelta(days=test_days)
+
+    # CRITICAL: Cap at end_date
+    if test_end > end_date:
+        test_end = end_date
+        test_start = test_end - timedelta(days=test_days)
+
+    # Final assertions to catch bugs
+    assert test_end <= end_date, f"BUG: test_end {test_end} exceeds end_date {end_date}"
+    assert train_start >= start_date, f"BUG: train_start before start_date"
+```
+
 ## Upload Process
 
 Used the existing `QuantConnectAPI` class from `SCRIPTS/qc_backtest.py` to upload the fixed notebook:
@@ -60,10 +92,11 @@ Used the existing `QuantConnectAPI` class from `SCRIPTS/qc_backtest.py` to uploa
 python3 /tmp/upload_fixed_notebook.py
 ```
 
-Upload successful:
-- Size: 37,637 bytes
-- Cells: 8 (down from 9 after removing debug cell)
+Upload successful (second iteration):
+- Size: 54,683 bytes
+- Cells: 9 (includes HTML report generation)
 - Target: research.ipynb in project 26140717
+- **CRITICAL FIX**: generate_random_split() now guarantees test_end <= 2024-12-31
 
 ## Verification
 
