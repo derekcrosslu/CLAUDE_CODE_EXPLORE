@@ -80,8 +80,8 @@ class StatisticalArbitrageStrategy(QCAlgorithm):
 
         for pair in self.pairs:
             # Add securities
-            long_symbol = self.add_equity(pair['long'], Resolution.Daily).symbol
-            short_symbol = self.add_equity(pair['short'], Resolution.Daily).symbol
+            long_symbol = self.add_equity(pair['long'], Resolution.DAILY).symbol
+            short_symbol = self.add_equity(pair['short'], Resolution.DAILY).symbol
 
             # Initialize data structure for this pair
             self.pair_data[pair['name']] = {
