@@ -1,0 +1,13 @@
+#!/bin/bash
+# Strategy Component Library CLI wrapper
+#
+# Usage:
+#   ./component list
+#   ./component show add_rsi
+#   ./component explain mean_reversion
+
+# Get the directory of this script (absolute path resolution - Beyond MCP pattern)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Execute component CLI with venv python
+exec "${SCRIPT_DIR}/venv/bin/python" "${SCRIPT_DIR}/SCRIPTS/component_cli.py" "$@"
