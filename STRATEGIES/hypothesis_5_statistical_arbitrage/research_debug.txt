@@ -1,0 +1,31 @@
+# Debug notes for Monte Carlo fix
+
+## Issue: 0 trades generated
+
+Likely causes:
+1. qb.History() returns multi-index DataFrame - need to handle correctly
+2. Accessing 'close' may need different syntax
+3. May need to reset_index() or handle the DataFrame structure
+
+## QuantConnect History DataFrame structure:
+- Multi-index: (symbol, time)
+- Columns: open, high, low, close, volume
+- Need to access: hist['close'] or hist.close for single symbol
+
+## Fix needed:
+Replace:
+  long_hist['close']
+
+With one of:
+  long_hist['close'] if hist is already sliced by symbol
+  OR hist.close if single symbol
+  OR need to check what qb.History actually returns
+
+## Test approach:
+Add debug cell to print:
+- type(long_hist)
+- long_hist.head()
+- long_hist.columns
+- long_hist.index
+
+This will show exact structure.
