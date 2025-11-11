@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Autonomous Strategy Development Iteration State",
+  "description": "Persistent state for autonomous QuantConnect strategy development workflow",
+  "current_hypothesis": {
+    "id": null,
+    "name": "",
+    "description": "",
+    "created": "",
+    "status": "research"
+  },
+  "project": {
+    "project_id": null,
+    "project_name": "",
+    "strategy_file": "",
+    "language": "Python"
+  },
+  "current_phase": "research",
+  "phases_completed": [],
+  "iteration_count": 1,
+  "max_iterations": 3,
+  "cost_tracking": {
+    "api_calls": 0,
+    "backtests_run": 0,
+    "optimization_attempts": 0,
+    "estimated_cost_usd": 0.0
+  },
+  "decisions_log": [],
+  "next_steps": [],
+  "metadata": {
+    "session_id": "",
+    "created_at": "",
+    "updated_at": "",
+    "claude_model": "claude-sonnet-4-5",
+    "previous_hypothesis": null
+  }
+}
