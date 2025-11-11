@@ -29,7 +29,7 @@ class RSIMeanReversionStrategy(QCAlgorithm):
 
         # Create RSI indicator
         self.rsi_period = 14
-        self.rsi = self.RSI(self.symbol, self.rsi_period, Resolution.Daily)
+        self.rsi = self.RSI(self.symbol, self.rsi_period)
 
         # RSI thresholds
         self.oversold_threshold = 30
