@@ -11,14 +11,21 @@ Run parameter optimization to find the best parameter combinations for the curre
 - Optimization runs on the SAME project created during /qc-init
 - Keeps all work (backtests, optimizations) in one place
 
+**⚠️ AUTONOMOUS MODE: AUTO-DETECT PARAMETERS**
+
 This command will:
-1. Prompt for parameters to optimize
-2. Generate parameter grid
+1. **Auto-detect** parameters from strategy code (no prompts)
+   - Scan for self.parameter_name = value patterns
+   - Generate sensible ranges (±30% from baseline)
+2. Generate parameter grid (3-5 values per parameter)
 3. Run multiple backtests via QuantConnect API (using EXISTING project_id)
 4. Analyze results and rank by Sharpe ratio
 5. Check for overfitting (parameter sensitivity)
 6. Update iteration_state.json with best parameters
-7. Log optimization results to decisions_log.md
+7. **Auto-execute** `/qc-validate` if improvement > 5%
+8. Log optimization results to decisions_log.md
+
+**User intervention**: NONE (unless error/blocker)
 
 **Usage**:
 ```

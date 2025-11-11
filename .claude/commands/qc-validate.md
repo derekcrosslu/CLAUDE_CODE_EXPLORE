@@ -11,15 +11,22 @@ Run out-of-sample (OOS) validation to test strategy generalization on unseen dat
 - Validation runs on the SAME project created during /qc-init
 - Keeps entire hypothesis lifecycle in one project
 
+**⚠️ AUTONOMOUS MODE: AUTO-CONFIGURE OOS PERIOD**
+
 This command will:
 1. Read current strategy and best parameters
-2. Configure OOS time period (different from in-sample)
+2. **Auto-configure** OOS time period (no prompts)
+   - If in-sample: 2022-2024 → OOS: 2024-2025
+   - Use last 20-30% of data as OOS
 3. Run OOS backtest via QuantConnect API (using EXISTING project_id)
 4. Compare OOS vs in-sample performance
-5. Check for degradation
+5. Check for degradation (Sharpe drop > 30% = fail)
 6. Make final validation decision
 7. Update iteration_state.json
-8. Log validation results to decisions_log.md
+8. **Auto-proceed or STOP** based on result
+9. Log validation results to decisions_log.md
+
+**User intervention**: NONE (unless validation fails - blocker)
 
 **Usage**:
 ```

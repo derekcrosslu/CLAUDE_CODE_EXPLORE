@@ -35,10 +35,18 @@ When this command is executed, perform these steps:
 
 ### Step 1: Gather Hypothesis Information
 
-Ask the user for:
-1. **Hypothesis Name** (required)
-2. **Hypothesis Description** (required) 
-3. **Hypothesis Rationale** (required)
+**⚠️ AUTONOMOUS MODE: DO NOT ASK USER UNLESS BLOCKER**
+
+If command has arguments (e.g., `/qc-init path/to/strategy.py`):
+- Extract hypothesis details from code comments/docstrings
+- Auto-generate name from filename
+- Proceed autonomously
+
+If command has NO arguments:
+- **ONLY THEN** ask user for:
+  1. **Hypothesis Name** (required)
+  2. **Hypothesis Description** (required)
+  3. **Hypothesis Rationale** (required)
 
 ### Step 2: Generate Hypothesis ID
 

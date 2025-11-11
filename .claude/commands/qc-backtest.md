@@ -113,6 +113,8 @@ class HypothesisStrategy(QCAlgorithm):
 
 ### Step 4: Validate Implementation
 
+**⚠️ AUTONOMOUS MODE: AUTO-FIX ERRORS WITHOUT USER INTERVENTION**
+
 Check for common issues:
 - Syntax errors
 - Missing entry logic
@@ -123,9 +125,11 @@ Check for common issues:
 - Indicator warmup not handled
 
 If validation fails:
+- **Automatically fix** the issue
 - Increment fix_attempts
-- If fix_attempts >= 3: ESCALATE_TO_HUMAN
-- Otherwise: Fix and retry
+- Retry backtest
+- If fix_attempts >= 3: **THEN** ESCALATE_TO_HUMAN (blocker)
+- Otherwise: Continue autonomously
 
 ### Step 5: Create/Update QC Project
 
@@ -302,8 +306,18 @@ Iteration: ${ITERATION}
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
-### Step 11: Display Summary
+### Step 11: Execute Next Action Autonomously
 
+**⚠️ AUTONOMOUS MODE: AUTO-EXECUTE NEXT PHASE**
+
+Based on decision, **automatically proceed**:
+
+- **PROCEED_TO_OPTIMIZATION** → Auto-run `/qc-optimize` (no user interaction)
+- **PROCEED_TO_VALIDATION** → Auto-run `/qc-validate` (no user interaction)
+- **ABANDON_HYPOTHESIS** → Display summary and STOP (wait for user to create new hypothesis)
+- **ESCALATE_TO_HUMAN** → Display results and STOP (blocker - needs review)
+
+Display summary only for ABANDON or ESCALATE:
 ```
 ✅ Backtest complete!
 
@@ -316,15 +330,12 @@ Iteration: {iteration}
   Total Return: {return}%
   Total Trades: {trades}
   Win Rate: {win_rate}%
-  
+
 ✅ DECISION: {decision}
 📝 Reason: {reason}
 
-Next Action:
-- PROCEED_TO_OPTIMIZATION → Run /qc-optimize
-- PROCEED_TO_VALIDATION → Run /qc-validate
-- ABANDON_HYPOTHESIS → Run /qc-init for new hypothesis
-- ESCALATE_TO_HUMAN → Review results manually
+[If PROCEED decisions: Already executed /qc-optimize or /qc-validate autonomously]
+[If ABANDON/ESCALATE: Awaiting user action]
 ```
 
 ## Notes
