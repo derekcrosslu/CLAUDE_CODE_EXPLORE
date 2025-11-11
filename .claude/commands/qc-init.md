@@ -53,7 +53,7 @@ echo "Generated Hypothesis ID: $NEW_ID"
 
 ```bash
 # Copy minimal template
-cp iteration_state_template_minimal.json iteration_state.json
+cp PROJECT_SCHEMAS/iteration_state_template_minimal.json iteration_state.json
 
 # Populate fields using jq or manual sed/awk
 SESSION_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
