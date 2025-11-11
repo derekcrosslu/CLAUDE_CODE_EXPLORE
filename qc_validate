@@ -1,0 +1,12 @@
+#!/bin/bash
+# QuantConnect Validation CLI wrapper
+#
+# Usage:
+#   ./qc_validate run --strategy strategy.py
+#   ./qc_validate analyze --results validation_result.json
+
+# Get the directory of this script (absolute path resolution - Beyond MCP pattern)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Execute validation CLI with venv python
+exec "${SCRIPT_DIR}/venv/bin/python" "${SCRIPT_DIR}/SCRIPTS/qc_validate.py" "$@"

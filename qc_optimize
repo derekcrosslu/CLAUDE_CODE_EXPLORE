@@ -1,0 +1,12 @@
+#!/bin/bash
+# QuantConnect Optimization CLI wrapper
+#
+# Usage:
+#   ./qc_optimize run --config optimization_params.json
+#   ./qc_optimize status --optimization-id abc123
+
+# Get the directory of this script (absolute path resolution - Beyond MCP pattern)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Execute optimization CLI with venv python
+exec "${SCRIPT_DIR}/venv/bin/python" "${SCRIPT_DIR}/SCRIPTS/qc_optimize.py" "$@"
