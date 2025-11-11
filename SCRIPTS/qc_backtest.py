@@ -362,10 +362,16 @@ def parse_backtest_results(backtest_data):
         }
 
     backtest = backtest_data.get("backtest", {})
-    result = backtest.get("result", {})
-    statistics = result.get("Statistics", {})
 
-    # Extract key metrics
+    # Get statistics (formatted strings)
+    statistics = backtest.get("statistics", {})
+
+    # Get totalPerformance (numeric values)
+    total_perf = backtest.get("totalPerformance", {})
+    portfolio_stats = total_perf.get("portfolioStatistics", {})
+    trade_stats = total_perf.get("tradeStatistics", {})
+
+    # Extract key metrics using totalPerformance for numeric values
     metrics = {
         "success": True,
         "backtest_id": backtest.get("backtestId"),
@@ -375,26 +381,34 @@ def parse_backtest_results(backtest_data):
         "completed": backtest.get("completed"),
         "created": backtest.get("created"),
         "performance": {
-            "sharpe_ratio": float(statistics.get("Sharpe Ratio", 0)),
-            "sortino_ratio": float(statistics.get("Sortino Ratio", 0)),
-            "max_drawdown": float(statistics.get("Drawdown", "0%").replace("%", "")) / 100,
-            "total_return": float(statistics.get("Total Net Profit", "0%").replace("%", "")) / 100,
-            "annual_return": float(statistics.get("Annual Return", "0%").replace("%", "")) / 100,
-            "win_rate": float(statistics.get("Win Rate", "0%").replace("%", "")) / 100,
-            "loss_rate": float(statistics.get("Loss Rate", "0%").replace("%", "")) / 100,
+            "sharpe_ratio": float(portfolio_stats.get("sharpeRatio", 0)),
+            "sortino_ratio": float(portfolio_stats.get("sortinoRatio", 0)),
+            "max_drawdown": float(portfolio_stats.get("drawdown", 0)),
+            "total_return": float(portfolio_stats.get("totalNetProfit", 0)),
+            "annual_return": float(portfolio_stats.get("compoundingAnnualReturn", 0)),
+            "win_rate": float(portfolio_stats.get("winRate", 0)),
+            "loss_rate": float(portfolio_stats.get("lossRate", 0)),
+            "psr": float(portfolio_stats.get("probabilisticSharpeRatio", 0)),
         },
         "trading": {
-            "total_trades": int(statistics.get("Total Orders", 0)),
-            "average_win": float(statistics.get("Average Win", "0%").replace("%", "")) / 100,
-            "average_loss": float(statistics.get("Average Loss", "0%").replace("%", "")) / 100,
-            "profit_loss_ratio": float(statistics.get("Profit-Loss Ratio", 0)),
+            "total_orders": int(statistics.get("Total Orders", "0").replace(",", "")),
+            "total_trades": int(trade_stats.get("totalNumberOfTrades", 0)),
+            "winning_trades": int(trade_stats.get("numberOfWinningTrades", 0)),
+            "losing_trades": int(trade_stats.get("numberOfLosingTrades", 0)),
+            "average_win": float(trade_stats.get("averageProfit", 0)),
+            "average_loss": float(trade_stats.get("averageLoss", 0)),
+            "profit_loss_ratio": float(trade_stats.get("profitLossRatio", 0)),
+            "largest_win": float(trade_stats.get("largestProfit", 0)),
+            "largest_loss": float(trade_stats.get("largestLoss", 0)),
         },
         "risk": {
-            "alpha": float(statistics.get("Alpha", 0)),
-            "beta": float(statistics.get("Beta", 0)),
-            "volatility": float(statistics.get("Annual Standard Deviation", 0)),
+            "alpha": float(portfolio_stats.get("alpha", 0)),
+            "beta": float(portfolio_stats.get("beta", 0)),
+            "volatility": float(portfolio_stats.get("annualStandardDeviation", 0)),
         },
-        "raw_statistics": statistics
+        "raw_statistics": statistics,
+        "raw_portfolio_stats": portfolio_stats,
+        "raw_trade_stats": trade_stats
     }
 
     # Add error/runtime info if available
