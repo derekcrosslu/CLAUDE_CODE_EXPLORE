@@ -280,6 +280,242 @@ Use `--help` for details.
 
 ---
 
+### Phase 2.5: Optimization & Validation Wrappers (Week 2.5) ⭐ **HIGH PRIORITY**
+
+**Why Now?**
+- Required to complete autonomous workflow (Phases 4-5)
+- Decision CLI (Phase 2) evaluates results, but we need wrappers to GENERATE results
+- Existing code in PREVIOUS_WORK just needs CLI conversion
+- Blocks full autonomous hypothesis testing
+
+**Objective**: Create execution wrappers for optimization and validation operations
+
+**Current Gap**:
+```
+✅ Phase 1 (research):    /qc-init working
+✅ Phase 3 (backtest):    /qc-backtest + qc_backtest.py working
+❌ Phase 4 (optimization): /qc-optimize exists but NO qc_optimize.py wrapper!
+❌ Phase 5 (validation):   /qc-validate exists but NO qc_validate.py wrapper!
+```
+
+**Existing Assets in PREVIOUS_WORK**:
+- `qc_optimize_wrapper.py` (12KB, production-ready)
+- `qc_walkforward_wrapper.py` (22KB, Monte Carlo validation)
+
+#### Tasks
+
+**2.5.1 Copy & Refactor Optimization Wrapper** (2 days)
+
+**From**: `PREVIOUS_WORK/SCRIPTS/qc_optimize_wrapper.py`
+**To**: `SCRIPTS/qc_optimize.py` (CLI-based)
+
+**Current features** (from PREVIOUS_WORK):
+- Full QC native optimization API integration
+- Prerequisite validation (baseline backtest required)
+- Parameter configuration loading
+- Cost estimation before execution
+- Real-time progress monitoring
+- Overfitting detection (>30% improvement = escalate)
+- State file management
+
+**Refactor to CLI**:
+```bash
+# Target commands:
+qc_optimize run --config optimization_params.json --state iteration_state.json
+qc_optimize status --optimization-id abc123
+qc_optimize results --optimization-id abc123 --output results.json
+```
+
+**Implementation**:
+```python
+#!/usr/bin/env python3
+"""
+QuantConnect Optimization CLI
+
+Usage:
+    qc_optimize run --config params.json --state iteration_state.json
+    qc_optimize status --optimization-id abc123
+    qc_optimize results --optimization-id abc123
+"""
+
+import click
+from pathlib import Path
+from qc_backtest import QuantConnectAPI
+
+@click.group()
+def cli():
+    """QuantConnect optimization CLI."""
+    pass
+
+@cli.command()
+@click.option('--config', required=True, help='Optimization config JSON')
+@click.option('--state', default='iteration_state.json', help='Iteration state file')
+@click.option('--output', default='PROJECT_LOGS/optimization_result.json')
+def run(config, state, output):
+    """Run parameter optimization."""
+    # Load config and state
+    # Validate baseline backtest exists
+    # Run optimization
+    # Save results
+    # Update iteration_state.json
+    pass
+
+@cli.command()
+@click.option('--optimization-id', required=True)
+def status(optimization_id):
+    """Check optimization status."""
+    # Query QC API for status
+    # Display progress
+    pass
+
+@cli.command()
+@click.option('--optimization-id', required=True)
+@click.option('--output', default='PROJECT_LOGS/optimization_result.json')
+def results(optimization_id, output):
+    """Download optimization results."""
+    # Fetch results from QC
+    # Save to JSON
+    # Display summary
+    pass
+```
+
+**2.5.2 Copy & Refactor Validation Wrapper** (2 days)
+
+**From**: `PREVIOUS_WORK/SCRIPTS/qc_walkforward_wrapper.py`
+**To**: `SCRIPTS/qc_validate.py` (CLI-based)
+
+**Current features** (from PREVIOUS_WORK):
+- Monte Carlo walk-forward validation
+- Random train/test period sampling
+- Automated strategy date modification
+- Multi-run optimization orchestration
+- Out-of-sample backtest validation
+- Statistical analysis (mean, std, distribution)
+- Parameter stability assessment
+- Robustness decision framework
+
+**Refactor to CLI**:
+```bash
+# Target commands:
+qc_validate run --config walkforward_config.json --state iteration_state.json
+qc_validate status --validation-id abc123
+qc_validate results --validation-id abc123 --output results.json
+qc_validate analyze --results results.json  # Statistical analysis
+```
+
+**Implementation**:
+```python
+#!/usr/bin/env python3
+"""
+QuantConnect Walk-Forward Validation CLI
+
+Usage:
+    qc_validate run --config walkforward.json --state iteration_state.json
+    qc_validate analyze --results results.json
+"""
+
+import click
+from pathlib import Path
+
+@click.group()
+def cli():
+    """QuantConnect walk-forward validation CLI."""
+    pass
+
+@cli.command()
+@click.option('--config', required=True, help='Walkforward config JSON')
+@click.option('--state', default='iteration_state.json')
+@click.option('--output', default='PROJECT_LOGS/validation_result.json')
+@click.option('--runs', default=10, help='Number of Monte Carlo runs')
+def run(config, state, output, runs):
+    """Run walk-forward validation."""
+    # Load config and state
+    # For each Monte Carlo run:
+    #   - Split data (train/test)
+    #   - Optimize on training period
+    #   - Backtest on test period
+    #   - Record degradation
+    # Statistical analysis
+    # Save results
+    pass
+
+@cli.command()
+@click.option('--results', required=True, help='Validation results JSON')
+def analyze(results):
+    """Analyze validation results."""
+    # Load results
+    # Calculate statistics:
+    #   - Mean/median degradation
+    #   - Standard deviation
+    #   - Distribution percentiles
+    #   - Parameter stability (consensus)
+    # Display summary
+    pass
+```
+
+**2.5.3 Integration with Commands** (1 day)
+
+Update slash commands:
+- `/qc-optimize` → calls `qc_optimize run`
+- `/qc-validate` → calls `qc_validate run`
+
+**2.5.4 Integration with Decision CLI** (1 day)
+
+**Workflow**:
+```bash
+# Phase 3: Backtest
+qc_backtest run --strategy strategy.py --output backtest.json
+decision_cli evaluate-backtest --results backtest.json
+# → Decision: PROCEED_TO_OPTIMIZATION
+
+# Phase 4: Optimization
+qc_optimize run --config params.json --state iteration_state.json
+decision_cli evaluate-optimization --results optimization.json
+# → Decision: PROCEED_TO_VALIDATION (or USE_BASELINE_PARAMS)
+
+# Phase 5: Validation
+qc_validate run --config walkforward.json --state iteration_state.json
+decision_cli evaluate-validation --results validation.json
+# → Decision: DEPLOY or ABANDON
+```
+
+**2.5.5 Testing** (1 day)
+- Test optimization with sample parameter grid
+- Test validation with sample walkforward config
+- Verify integration with decision_cli
+- Ensure PROJECT_LOGS stores all results
+
+#### Success Criteria
+- ✅ `qc_optimize.py` working (run, status, results commands)
+- ✅ `qc_validate.py` working (run, analyze commands)
+- ✅ Integration with `/qc-optimize` and `/qc-validate` commands
+- ✅ Results stored in `PROJECT_LOGS/` (optimization_result.json, validation_result.json)
+- ✅ Decision CLI can evaluate optimization and validation results
+- ✅ Full Phase 1-5 workflow end-to-end tested
+
+#### Risk Mitigation
+- **Risk**: QC optimization API fails
+  - **Mitigation**: Error handling, retry logic, fallback to baseline params
+- **Risk**: Validation takes too long (Monte Carlo runs)
+  - **Mitigation**: Configurable run count (default 10), parallel execution if possible
+- **Risk**: Complex config files
+  - **Mitigation**: Provide templates (optimization_params_template.json, walkforward_template.json)
+
+**Duration**: 7 days (1 week)
+**Enables**: Full autonomous workflow (Phases 1-5 complete)
+**Deliverables**:
+- [ ] `SCRIPTS/qc_optimize.py` working
+- [ ] `SCRIPTS/qc_validate.py` working
+- [ ] Shell aliases: `qc_optimize`, `qc_validate`
+- [ ] Integration with `/qc-optimize`, `/qc-validate` commands
+- [ ] Integration with `decision_cli` (evaluate-optimization, evaluate-validation)
+- [ ] Config templates in `PROJECT_SCHEMAS/`
+- [ ] All results logged to `PROJECT_LOGS/`
+
+**Critical Note**: This phase is REQUIRED before testing hypotheses that need optimization or validation. Without it, we can only test Phase 1-3 (backtest-only hypotheses).
+
+---
+
 ### Phase 3: Strategy Component Library (Week 3-4) **MEDIUM PRIORITY**
 
 **Why Third?**
@@ -436,12 +672,39 @@ STRATEGIES/hypothesis_4_rsi_mean_reversion/
 
 ```python
 # SCRIPTS/strategy_components/sentiment/kalshi_api_wrapper.py
+from pathlib import Path
+import httpx  # Direct HTTP, not SDK (lower dependency footprint)
+import json
+
 class KalshiAPI:
+    """Kalshi API wrapper with search caching (Beyond MCP pattern)."""
+
+    def __init__(self):
+        # Absolute path resolution (works from any directory)
+        self.cache_dir = Path(__file__).resolve().parent / "cache"
+        self.cache_dir.mkdir(exist_ok=True)
+        self.cache_file = self.cache_dir / "kalshi_markets_cache.json"
+
+        # Build cache on first run (~2-5 minutes), then instant search
+        if not self.cache_file.exists():
+            self._build_cache()
+
+    def _build_cache(self):
+        """Build local cache of all markets (Beyond MCP search pattern)."""
+        # Fetch all markets once, store locally
+        # Enables instant pandas-based keyword search
+        pass
+
     def get_recession_probability(self): ...
     def get_inflation_probability(self): ...
     def get_fed_cut_probability(self): ...
     def get_sp500_implied_vol(self): ...
 ```
+
+**Beyond MCP Pattern**:
+- Use `httpx` directly (not Kalshi SDK) to minimize dependencies
+- Build complete local cache once (~2-5 min), then instant search
+- Absolute path resolution (`Path(__file__).resolve()`) works from any directory
 
 **4.3 Create Regime Detector Component** (3 days)
 
@@ -510,7 +773,8 @@ else:
 |-------|----------|--------|------------|----------|--------------|
 | **Phase 1: Timeline CLI** | **HIGHEST** | 90% savings | Low | 5 days | None |
 | **Phase 2: Decision CLI** | **HIGH** | 87.5% savings | Medium | 7 days | Phase 1 |
-| **Phase 3: Component Library** | **MEDIUM** | 85% savings | High | 13 days | Phase 2 |
+| **Phase 2.5: Optimization & Validation Wrappers** | **HIGH** | Enables Phase 4-5 | Medium | 7 days | Phase 2 |
+| **Phase 3: Component Library** | **MEDIUM** | 85% savings | High | 13 days | Phase 2.5 |
 | **Phase 4: Kalshi Integration** | **OPTIONAL** | +40% Sharpe | Medium | 14 days | Phase 3 |
 
 ---
@@ -519,14 +783,15 @@ else:
 
 ### Option A: Sequential (Safe, Thorough) ⭐ **RECOMMENDED**
 
-**Timeline**: 6-8 weeks total
+**Timeline**: 7-9 weeks total
 
 ```
 Week 1: Phase 1 (Timeline CLI)
 Week 2: Phase 2 (Decision CLI)
+Week 2.5: Phase 2.5 (Optimization & Validation Wrappers) - CRITICAL for Phase 4-5
 Week 3-4: Phase 3 (Component Library)
 Week 5-6: Phase 4 (Kalshi Integration) - OPTIONAL
-Week 7-8: Testing, refinement, documentation
+Week 7-9: Testing, refinement, documentation
 ```
 
 **Pros**:
@@ -543,12 +808,13 @@ Week 7-8: Testing, refinement, documentation
 
 ### Option B: Parallel (Fast, Risky)
 
-**Timeline**: 3-4 weeks total
+**Timeline**: 4-5 weeks total
 
 ```
 Week 1: Phase 1 + start Phase 2
-Week 2: Finish Phase 2 + start Phase 3
-Week 3-4: Finish Phase 3 + start Phase 4
+Week 2: Finish Phase 2 + start Phase 2.5
+Week 3: Finish Phase 2.5 + start Phase 3
+Week 4-5: Finish Phase 3 + start Phase 4
 ```
 
 **Pros**:
@@ -566,13 +832,14 @@ Week 3-4: Finish Phase 3 + start Phase 4
 
 ### Option C: Hybrid (Balanced) ⭐ **ALTERNATIVE**
 
-**Timeline**: 4-5 weeks total
+**Timeline**: 5-6 weeks total
 
 ```
 Week 1: Phase 1 (Timeline CLI) - Complete & Test
 Week 2: Phase 2 (Decision CLI) - Complete & Test
+Week 2.5: Phase 2.5 (Optimization & Validation Wrappers) - Complete & Test
 Week 3-4: Phase 3 (Component Library) - Complete & Test
-Week 5: Phase 4 (Kalshi) OR Testing/Refinement
+Week 5-6: Phase 4 (Kalshi) OR Testing/Refinement
 ```
 
 **Pros**:
@@ -715,10 +982,11 @@ Merge Phase 3 → Refactor existing hypotheses to modular
 | Phase 0: Preparation | 2 days | 2 days |
 | Phase 1: Timeline CLI | 5 days | 1 week |
 | Phase 2: Decision CLI | 7 days | 1.5 weeks |
+| Phase 2.5: Optimization & Validation Wrappers | 7 days | 1 week |
 | Phase 3: Component Library | 13 days | 2.5 weeks |
 | Phase 4: Kalshi (optional) | 14 days | 2.5 weeks |
 | Testing & Documentation | 5 days | 1 week |
-| **TOTAL** | **46 days** | **8-10 weeks** |
+| **TOTAL** | **53 days** | **9-11 weeks** |
 
 ### External Dependencies
 
@@ -771,6 +1039,17 @@ git checkout main
 ```
 
 **Impact**: Still have 27% context savings from Phase 1
+
+### If Phase 2.5 Fails
+
+**Revert**:
+```bash
+# Keep Phase 1 + Phase 2 (61% context savings)
+# Revert Phase 2.5 (optimization/validation wrappers)
+# Continue using manual optimization/validation or skip Phases 4-5
+```
+
+**Impact**: Can only test Phase 1-3 hypotheses (backtest-only), but still have 61% context savings
 
 ### If Phase 3 Fails
 
@@ -838,16 +1117,27 @@ git checkout main
 
 ### Decision Point 3: After Phase 2
 
-**Question**: Proceed with Phase 3 (Component Library)?
+**Question**: Proceed with Phase 2.5 (Optimization & Validation Wrappers)?
 
 **Criteria**:
 - Decision CLI working correctly
 - Cumulative context savings (61%)
-- Hypothesis workflow not broken
+- Need full autonomous workflow (Phases 4-5)?
 
 **Go/No-Go**:
 
-### Decision Point 4: After Phase 3
+### Decision Point 4: After Phase 2.5
+
+**Question**: Proceed with Phase 3 (Component Library)?
+
+**Criteria**:
+- Optimization & validation wrappers working
+- Full Phase 1-5 workflow tested end-to-end
+- No major issues discovered
+
+**Go/No-Go**:
+
+### Decision Point 5: After Phase 3
 
 **Question**: Proceed with Phase 4 (Kalshi) OR Ship?
 
@@ -902,14 +1192,15 @@ git checkout main
 
 **Option A: Sequential Implementation** ⭐
 
-**Timeline**: 6-8 weeks
+**Timeline**: 7-9 weeks
 
 **Phases**:
 1. **Week 1**: Phase 1 (Timeline CLI) - 90% context savings on most frequent operation
 2. **Week 2**: Phase 2 (Decision CLI) - 87.5% cumulative savings, core workflow optimized
-3. **Week 3-4**: Phase 3 (Component Library) - 85% cumulative, enables reusability
-4. **Week 5-6**: Phase 4 (Kalshi) OR Testing/Refinement - Optional enhancement
-5. **Week 7-8**: Documentation, polish, migration guide
+3. **Week 2.5**: Phase 2.5 (Optimization & Validation Wrappers) - CRITICAL for full autonomous workflow
+4. **Week 3-4**: Phase 3 (Component Library) - 85% cumulative, enables reusability
+5. **Week 5-6**: Phase 4 (Kalshi) OR Testing/Refinement - Optional enhancement
+6. **Week 7-9**: Documentation, polish, migration guide
 
 **Rationale**:
 - **Highest ROI first** (Timeline CLI = 90% savings, used most)
@@ -923,16 +1214,22 @@ git checkout main
 **Minimum Viable** (Phase 1+2 complete):
 - ✅ 61% context reduction achieved
 - ✅ Timeline and decision operations CLI-based
-- ✅ Hypothesis workflow not broken
+- ✅ Hypothesis workflow not broken (Phase 1-3 backtest-only)
 - ✅ Human usability achieved (trifecta)
 
-**Target** (Phase 1+2+3 complete):
+**Extended** (Phase 1+2+2.5 complete):
+- ✅ 61% context reduction achieved
+- ✅ Full autonomous workflow enabled (Phases 1-5)
+- ✅ Optimization and validation working
+- ✅ Can test hypotheses end-to-end
+
+**Target** (Phase 1+2+2.5+3 complete):
 - ✅ 87% context reduction achieved
 - ✅ Component library enables reusability
 - ✅ Strategy development modular
 - ✅ All workflows CLI-based
 
-**Stretch** (Phase 1+2+3+4 complete):
+**Stretch** (Phase 1+2+2.5+3+4 complete):
 - ✅ Kalshi integration working
 - ✅ +20-40% Sharpe improvement demonstrated
 - ✅ Regime detection component proven
