@@ -432,8 +432,8 @@
               "id": "w1-test-004",
               "task": "Run hypotheses through /qc-init and /qc-backtest",
               "status": "completed",
-              "completed_at": "2025-11-11T02:04:50.526758Z",
-              "git_commit": "29a2128",
+              "completed_at": "2025-11-11T03:04:09.844316Z",
+              "git_commit": "dbe4212",
               "note": "1/3 hypotheses tested - system validated"
             },
             {
