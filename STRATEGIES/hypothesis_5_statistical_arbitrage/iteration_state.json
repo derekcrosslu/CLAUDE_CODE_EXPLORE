@@ -11,65 +11,64 @@
     "status": "abandoned"
   },
   "project": {
-    "project_id": 26140360,
-    "project_name": "StatArb_Pairs_H5",
+    "project_id": 26140717,
+    "project_name": "StatArb_H5_PARTIAL_FIX",
     "strategy_file": "statistical_arbitrage.py",
     "language": "Python",
-    "qc_url": "https://www.quantconnect.com/project/26140360"
+    "qc_url": "https://www.quantconnect.com/project/26140717"
   },
-  "current_phase": "backtest",
-  "phases_completed": ["research", "implementation", "backtest"],
+  "current_phase": "abandoned",
+  "phases_completed": ["research", "implementation", "backtest", "bug_fixes"],
   "backtest_results": {
-    "backtest_id": "1426f29448991d34627e8819ef151ce2",
+    "backtest_id": "e30033fbbddfeb66d5e668569af4bf63",
     "completed": true,
-    "timestamp": "2025-11-11T02:12:05Z",
+    "timestamp": "2025-11-11T02:48:16Z",
     "performance": {
-      "sharpe_ratio": -0.043,
-      "sortino_ratio": -0.054,
-      "max_drawdown": 0.028,
-      "total_return": 0.2451,
-      "annual_return": 0.0625,
-      "win_rate": 0.592,
-      "loss_rate": 0.408,
-      "psr": 0.9603
+      "sharpe_ratio": 0.127,
+      "sortino_ratio": 0.167,
+      "max_drawdown": 0.023,
+      "total_return": 0.2717,
+      "annual_return": 0.0687,
+      "win_rate": 0.6023,
+      "loss_rate": 0.3977,
+      "psr": 0.9834
     },
     "trading": {
-      "total_orders": 348,
-      "total_trades": 174,
-      "winning_trades": 103,
-      "losing_trades": 71,
-      "average_win": 563.09,
-      "average_loss": -459.71,
-      "profit_loss_ratio": 1.22,
-      "largest_win": 2794.44,
-      "largest_loss": -2162.88
+      "total_orders": 352,
+      "total_trades": 176,
+      "winning_trades": 106,
+      "losing_trades": 70,
+      "average_win": 567.13,
+      "average_loss": -458.07,
+      "profit_loss_ratio": 1.24,
+      "largest_win": 2851.38,
+      "largest_loss": -2440.12
     },
     "risk": {
-      "alpha": -0.002,
-      "beta": 0.026,
-      "volatility": 0.025
+      "alpha": 0.0022,
+      "beta": 0.0261,
+      "volatility": 0.0251
     },
     "decision": "ABANDON_HYPOTHESIS",
-    "reason": "Sharpe ratio below minimum viable (-0.043 < 0.5). Strategy profitable (+24.51% return) but poor risk-adjusted performance.",
-    "fix_attempts": 0
+    "reason": "Sharpe ratio below minimum viable threshold (0.127 < 0.5). Despite bug fixes improving performance from -0.043 to 0.127, still below production standards."
   },
   "optimization": {
     "status": "skipped",
     "attempts": 0,
     "best_parameters": null,
-    "limitation": "Performance below minimum viable threshold - risk-adjusted returns too low"
+    "limitation": "Performance below minimum viable - optimization unlikely to achieve 4x improvement needed"
   },
   "validation": {
     "status": "skipped",
     "oos_backtest_id": null,
     "oos_performance": null,
-    "skip_reason": "Cannot validate - hypothesis abandoned due to negative Sharpe"
+    "skip_reason": "Hypothesis abandoned - Sharpe below minimum viable"
   },
   "iteration_count": 1,
   "max_iterations": 3,
   "cost_tracking": {
-    "api_calls": 1,
-    "backtests_run": 1,
+    "api_calls": 5,
+    "backtests_run": 5,
     "optimization_attempts": 0,
     "estimated_cost_usd": 0.0
   },
@@ -83,41 +82,37 @@
       "next_action": "implement_strategy"
     },
     {
-      "timestamp": "2025-11-11T02:12:05Z",
-      "phase": "backtest",
+      "timestamp": "2025-11-11T02:48:16Z",
+      "phase": "backtest_final",
       "decision": "ABANDON_HYPOTHESIS",
-      "reason": "Sharpe ratio below minimum viable (-0.043 < 0.5). Positive returns (+24.51%) but poor risk-adjusted performance (high volatility).",
+      "reason": "Sharpe ratio 0.127 < 0.5 minimum viable threshold. Positive improvement from bug fixes (-0.043 → 0.127) but insufficient for production.",
       "metrics": {
-        "sharpe_ratio": -0.043,
-        "max_drawdown": 0.028,
-        "total_return": 0.2451,
-        "total_orders": 348,
-        "total_trades": 174,
-        "win_rate": 0.592,
-        "psr": 0.9603
+        "sharpe_ratio": 0.127,
+        "max_drawdown": 0.023,
+        "total_return": 0.2717,
+        "total_orders": 352,
+        "total_trades": 176,
+        "win_rate": 0.6023
       },
-      "next_action": "bug_fix_completed_wrapper_parsing"
+      "next_action": "move_to_next_hypothesis"
     }
   ],
-  "next_steps": [
-    "✅ qc_backtest.py parsing bug FIXED!",
-    "Strategy Analysis:",
-    "- Positive returns: +24.51% over 3.6 years",
-    "- Good win rate: 59.2%",
-    "- Low drawdown: 2.8%",
-    "- BUT negative Sharpe: -0.043 (high volatility relative to returns)",
-    "Performance Gap:",
-    "- Expected (CLAUDE0): Sharpe 4.454, Win Rate 77%, DD 7.13%, CAGR 14.73%",
-    "- Actual: Sharpe -0.043, Win Rate 59.2%, DD 2.8%, Annual Return 6.25%",
-    "- Possible causes: different date range, data quality, implementation differences",
-    "Decision Framework Working Correctly:",
-    "- Properly identifies risk-adjusted performance issues",
-    "- Sharpe < 0.5 threshold appropriately filters out high-volatility strategies"
-  ],
+  "bug_fixes_summary": {
+    "bugs_identified": 5,
+    "bugs_fixed": 4,
+    "improvement": "+170 basis points (Sharpe -0.043 → 0.127)",
+    "fixes": [
+      "Stop loss: 4.5 → 5.5 (allow extreme entries)",
+      "Std dev: Added ddof=1 (sample std)",
+      "Position sizing simplified (no truncation)",
+      "Warmup spread history population fixed",
+      "Resolution.Daily → Resolution.DAILY"
+    ]
+  },
   "metadata": {
     "session_id": "hypothesis_5_statistical_arbitrage",
     "created_at": "2025-11-11T02:10:00Z",
-    "updated_at": "2025-11-11T02:20:00Z",
+    "updated_at": "2025-11-11T03:00:00Z",
     "claude_model": "claude-sonnet-4-5",
     "previous_hypothesis": {
       "id": 4,
