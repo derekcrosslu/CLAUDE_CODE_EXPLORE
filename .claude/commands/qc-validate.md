@@ -4,10 +4,17 @@ description: Run out-of-sample validation for the current strategy
 
 Run out-of-sample (OOS) validation to test strategy generalization on unseen data.
 
+**⚠️ CRITICAL RULE: REUSE SAME PROJECT_ID FROM HYPOTHESIS**
+
+**IMPERATIVE**: Use the existing project_id from iteration_state.json
+- Do NOT create a new project for validation
+- Validation runs on the SAME project created during /qc-init
+- Keeps entire hypothesis lifecycle in one project
+
 This command will:
 1. Read current strategy and best parameters
 2. Configure OOS time period (different from in-sample)
-3. Run OOS backtest via QuantConnect API
+3. Run OOS backtest via QuantConnect API (using EXISTING project_id)
 4. Compare OOS vs in-sample performance
 5. Check for degradation
 6. Make final validation decision

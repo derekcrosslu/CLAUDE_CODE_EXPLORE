@@ -4,10 +4,17 @@ description: Run parameter optimization for the current strategy
 
 Run parameter optimization to find the best parameter combinations for the current strategy.
 
+**⚠️ CRITICAL RULE: REUSE SAME PROJECT_ID FROM HYPOTHESIS**
+
+**IMPERATIVE**: Use the existing project_id from iteration_state.json
+- Do NOT create a new project for optimization
+- Optimization runs on the SAME project created during /qc-init
+- Keeps all work (backtests, optimizations) in one place
+
 This command will:
 1. Prompt for parameters to optimize
 2. Generate parameter grid
-3. Run multiple backtests via QuantConnect API
+3. Run multiple backtests via QuantConnect API (using EXISTING project_id)
 4. Analyze results and rank by Sharpe ratio
 5. Check for overfitting (parameter sensitivity)
 6. Update iteration_state.json with best parameters
