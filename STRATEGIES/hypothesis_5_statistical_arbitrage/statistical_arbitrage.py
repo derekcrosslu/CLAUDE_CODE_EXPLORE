@@ -41,7 +41,7 @@ class StatisticalArbitrageStrategy(QCAlgorithm):
         self.z_exit_threshold = 0.5       # |Z| < 0.5 to exit (mean reversion)
         self.lookback_period = 60         # Days for Z-score calculation
         self.max_holding_days = 20        # Timeout exit
-        self.stop_loss_z = 4.5            # Stop loss if |Z| exceeds this
+        self.stop_loss_z = 5.5            # Stop loss if |Z| exceeds this (FIXED: was 4.5, too tight)
         self.position_size_per_pair = 0.25  # 25% per pair
 
         # Default strategy parameters
@@ -144,7 +144,7 @@ class StatisticalArbitrageStrategy(QCAlgorithm):
 
         spreads = np.array(list(spread_history))
         mean = np.mean(spreads)
-        std = np.std(spreads)
+        std = np.std(spreads, ddof=1)  # FIXED: Use sample std (ddof=1) not population
 
         if std == 0:
             return None
@@ -174,13 +174,14 @@ class StatisticalArbitrageStrategy(QCAlgorithm):
             if current_spread is None:
                 continue
 
-            # Update spread history
-            data['spread_history'].append(current_spread)
-
-            # Calculate Z-score
+            # CRITICAL FIX: Calculate Z-score BEFORE appending current spread
+            # This prevents look-ahead bias (current point shouldn't be in its own calculation)
             z_score = self.calculate_z_score(current_spread, data['spread_history'])
             if z_score is None:
                 continue
+
+            # Now append current spread to history for next iteration
+            data['spread_history'].append(current_spread)
 
             # Store mean and std for later use
             spreads = np.array(list(data['spread_history']))
@@ -231,33 +232,21 @@ class StatisticalArbitrageStrategy(QCAlgorithm):
             z_score: Entry Z-score
             spread: Entry spread value
         """
-        # Calculate position sizes for dollar neutrality
-        long_price = self.securities[data['long_symbol']].price
-        short_price = self.securities[data['short_symbol']].price
-
-        # Allocate capital for this pair
-        capital_for_pair = self.portfolio.total_portfolio_value * self.position_size_per_pair
-
-        # Dollar-neutral: equal dollar amounts in each leg
-        dollars_per_leg = capital_for_pair / 2
-
-        long_shares = int(dollars_per_leg / long_price)
-        short_shares = int(dollars_per_leg / short_price)
-
-        if long_shares <= 0 or short_shares <= 0:
-            return
+        # FIXED: Simplified position sizing - use percentage directly
+        # Each leg gets 12.5% (half of 25% pair allocation)
+        leg_percentage = self.position_size_per_pair / 2
 
         # Execute trades based on direction
         if direction == 'long_spread':
             # Long the spread: buy long component, sell short component
-            self.set_holdings(data['long_symbol'], long_shares * long_price / self.portfolio.total_portfolio_value)
-            self.set_holdings(data['short_symbol'], -short_shares * short_price / self.portfolio.total_portfolio_value)
+            self.set_holdings(data['long_symbol'], leg_percentage)
+            self.set_holdings(data['short_symbol'], -leg_percentage)
             signal_type = 'LONG SPREAD'
 
         else:  # short_spread
             # Short the spread: sell long component, buy short component
-            self.set_holdings(data['long_symbol'], -long_shares * long_price / self.portfolio.total_portfolio_value)
-            self.set_holdings(data['short_symbol'], short_shares * short_price / self.portfolio.total_portfolio_value)
+            self.set_holdings(data['long_symbol'], -leg_percentage)
+            self.set_holdings(data['short_symbol'], leg_percentage)
             signal_type = 'SHORT SPREAD'
 
         # Record entry
@@ -268,9 +257,7 @@ class StatisticalArbitrageStrategy(QCAlgorithm):
 
         self.total_trades += 1
 
-        self.debug(f"ENTRY - {pair_name} | {signal_type} | Z={z_score:.2f} | " +
-                  f"{data['long_ticker']}: {long_shares} shares | " +
-                  f"{data['short_ticker']}: {short_shares} shares")
+        self.debug(f"ENTRY - {pair_name} | {signal_type} | Z={z_score:.2f}")
 
     def check_exit_signals(self, pair_name, data, z_score, current_spread):
         """
