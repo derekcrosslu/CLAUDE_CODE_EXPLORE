@@ -157,9 +157,6 @@ class StatisticalArbitrageStrategy(QCAlgorithm):
         Main trading logic - check all pairs for entry/exit signals.
         Called daily after market open.
         """
-        if self.is_warming_up:
-            return
-
         for pair_name, data in self.pair_data.items():
             # Get current prices
             long_price = self.securities[data['long_symbol']].price
@@ -187,6 +184,10 @@ class StatisticalArbitrageStrategy(QCAlgorithm):
             spreads = np.array(list(data['spread_history']))
             data['spread_mean'] = np.mean(spreads)
             data['spread_std'] = np.std(spreads)
+
+            # Skip trading during warmup (but continue populating spread_history)
+            if self.is_warming_up:
+                continue
 
             # Check if we have a position in this pair
             if data['position_open']:
