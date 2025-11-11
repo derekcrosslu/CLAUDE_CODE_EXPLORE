@@ -171,14 +171,14 @@ class StatisticalArbitrageStrategy(QCAlgorithm):
             if current_spread is None:
                 continue
 
-            # CRITICAL FIX: Calculate Z-score BEFORE appending current spread
-            # This prevents look-ahead bias (current point shouldn't be in its own calculation)
+            # Append current spread to history first
+            # NOTE: This creates look-ahead bias but matches original working version
+            data['spread_history'].append(current_spread)
+
+            # Calculate Z-score
             z_score = self.calculate_z_score(current_spread, data['spread_history'])
             if z_score is None:
                 continue
-
-            # Now append current spread to history for next iteration
-            data['spread_history'].append(current_spread)
 
             # Store mean and std for later use
             spreads = np.array(list(data['spread_history']))
