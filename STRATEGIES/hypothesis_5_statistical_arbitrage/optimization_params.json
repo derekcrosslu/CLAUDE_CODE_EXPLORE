@@ -1,0 +1,40 @@
+{
+  "description": "Optimization configuration for Statistical Arbitrage H5 - Risk Parameter Tuning",
+  "goal": "Increase Sharpe from 0.127 to 0.7+ by tuning position sizing and stop loss",
+  "target": "TotalPerformance.PortfolioStatistics.SharpeRatio",
+  "targetTo": "max",
+  "nodeType": "O2-8",
+  "parallelNodes": 2,
+  "parameters": [
+    {
+      "name": "position_size_per_pair",
+      "min": 0.20,
+      "max": 0.40,
+      "step": 0.05,
+      "description": "Position size per pair (baseline: 0.25 = 25%). Increase to boost returns."
+    },
+    {
+      "name": "stop_loss_z",
+      "min": 4.0,
+      "max": 7.0,
+      "step": 0.5,
+      "description": "Stop loss Z-score threshold (baseline: 5.5). Lower = tighter risk control, higher = more room."
+    },
+    {
+      "name": "max_holding_days",
+      "min": 15,
+      "max": 30,
+      "step": 5,
+      "description": "Maximum holding period in days (baseline: 20). Affects trade exit timing."
+    }
+  ],
+  "combinations": "5 × 7 × 4 = 140 total combinations",
+  "estimated_runtime": "30-45 minutes with 2 parallel nodes",
+  "baseline_performance": {
+    "sharpe_ratio": 0.127,
+    "max_drawdown": 0.023,
+    "win_rate": 0.6023,
+    "total_trades": 176
+  },
+  "rationale": "Strategy shows positive edge (60% win rate, 1.22 P/L ratio) but is too conservative (2.3% DD). Increasing position sizes and adjusting stop loss should improve risk-adjusted returns."
+}

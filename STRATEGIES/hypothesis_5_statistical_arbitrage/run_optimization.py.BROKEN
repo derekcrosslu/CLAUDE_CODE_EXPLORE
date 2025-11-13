@@ -1,0 +1,342 @@
+#!/usr/bin/env python3
+"""
+Autonomous Parameter Optimization for Statistical Arbitrage Strategy
+
+This script:
+1. Generates parameter grid (27 combinations)
+2. Runs backtests for each combination using QuantConnect API
+3. Analyzes results and ranks by Sharpe ratio
+4. Checks for overfitting (parameter sensitivity)
+5. Saves results to optimization_results.json
+"""
+
+import json
+import subprocess
+import sys
+import os
+from pathlib import Path
+from datetime import datetime
+import itertools
+import time
+
+# Project configuration
+PROJECT_ID = 26140717  # REUSE same project ID!
+STRATEGY_FILE = "statistical_arbitrage.py"
+STRATEGY_PATH = Path(__file__).parent / STRATEGY_FILE
+BACKTEST_SCRIPT = Path(__file__).parent.parent.parent / "SCRIPTS" / "qc_backtest.py"
+
+# Parameter grid
+PARAM_GRID = {
+    'z_entry_threshold': [1.5, 2.0, 2.5],
+    'lookback_period': [40, 60, 80],
+    'max_holding_days': [15, 20, 30]
+}
+
+# Baseline performance (from iteration_state.json)
+BASELINE_SHARPE = 0.127
+
+def generate_parameter_combinations():
+    """Generate all parameter combinations from grid."""
+    param_names = list(PARAM_GRID.keys())
+    param_values = [PARAM_GRID[name] for name in param_names]
+
+    combinations = []
+    for values in itertools.product(*param_values):
+        combo = dict(zip(param_names, values))
+        combinations.append(combo)
+
+    return combinations
+
+def modify_strategy_file(params, output_path):
+    """Create modified strategy file with new parameters."""
+    with open(STRATEGY_PATH, 'r') as f:
+        content = f.read()
+
+    # Replace parameters
+    for param_name, param_value in params.items():
+        # Find the line with self.param_name = value
+        if param_name == 'z_entry_threshold':
+            content = content.replace(
+                'self.z_entry_threshold = 2.0',
+                f'self.z_entry_threshold = {param_value}'
+            )
+        elif param_name == 'lookback_period':
+            content = content.replace(
+                'self.lookback_period = 60',
+                f'self.lookback_period = {param_value}'
+            )
+        elif param_name == 'max_holding_days':
+            content = content.replace(
+                'self.max_holding_days = 20',
+                f'self.max_holding_days = {param_value}'
+            )
+
+    # Write modified file
+    with open(output_path, 'w') as f:
+        f.write(content)
+
+def run_backtest(params, combo_index, total_combos):
+    """Run backtest for parameter combination."""
+    print(f"\n⏳ [{combo_index}/{total_combos}] Testing:")
+    print(f"   z_entry={params['z_entry_threshold']}, "
+          f"lookback={params['lookback_period']}, "
+          f"max_days={params['max_holding_days']}")
+
+    # Create modified strategy file
+    temp_strategy = STRATEGY_PATH.parent / f"statistical_arbitrage_opt_{combo_index}.py"
+    modify_strategy_file(params, temp_strategy)
+
+    try:
+        # Run backtest using qc_backtest.py with REUSE project_id
+        backtest_name = f"Opt_{combo_index}_z{params['z_entry_threshold']}_lb{params['lookback_period']}_mh{params['max_holding_days']}"
+        output_file = STRATEGY_PATH.parent / f"backtest_opt_{combo_index}.json"
+
+        cmd = [
+            sys.executable,
+            str(BACKTEST_SCRIPT),
+            "--run",
+            "--project-id", str(PROJECT_ID),  # REUSE project ID!
+            "--name", backtest_name,
+            "--file", str(temp_strategy),
+            "--output", str(output_file)
+        ]
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=120  # 2 minute timeout per backtest
+        )
+
+        if result.returncode != 0:
+            print(f"   ❌ Failed: {result.stderr}")
+            return None
+
+        # Parse results
+        if output_file.exists():
+            with open(output_file, 'r') as f:
+                backtest_data = json.load(f)
+
+            # Extract metrics
+            perf = backtest_data.get('performance', {})
+            sharpe = perf.get('sharpe_ratio', 0.0)
+            total_return = perf.get('total_return', 0.0)
+            max_drawdown = perf.get('max_drawdown', 0.0)
+
+            trading = backtest_data.get('trading', {})
+            total_trades = trading.get('total_trades', 0)
+            win_rate = perf.get('win_rate', 0.0)
+
+            print(f"   ✅ Complete - Sharpe: {sharpe:.3f}, "
+                  f"Return: {total_return*100:.1f}%, "
+                  f"Trades: {total_trades}")
+
+            # Clean up temp files
+            temp_strategy.unlink()
+            output_file.unlink()
+
+            return {
+                'parameters': params,
+                'backtest_id': backtest_data.get('backtest_id'),
+                'sharpe_ratio': sharpe,
+                'total_return': total_return,
+                'max_drawdown': max_drawdown,
+                'total_trades': total_trades,
+                'win_rate': win_rate,
+                'timestamp': datetime.utcnow().isoformat() + 'Z'
+            }
+        else:
+            print(f"   ❌ No output file generated")
+            return None
+
+    except subprocess.TimeoutExpired:
+        print(f"   ❌ Timeout")
+        return None
+    except Exception as e:
+        print(f"   ❌ Error: {e}")
+        return None
+    finally:
+        # Cleanup
+        if temp_strategy.exists():
+            temp_strategy.unlink()
+
+def analyze_results(results):
+    """Analyze optimization results."""
+    if not results:
+        return None
+
+    # Sort by Sharpe ratio
+    sorted_results = sorted(results, key=lambda x: x['sharpe_ratio'], reverse=True)
+
+    # Extract Sharpe values
+    sharpe_values = [r['sharpe_ratio'] for r in results]
+
+    # Statistics
+    best_result = sorted_results[0]
+    mean_sharpe = sum(sharpe_values) / len(sharpe_values)
+    max_sharpe = max(sharpe_values)
+    min_sharpe = min(sharpe_values)
+
+    # Improvement over baseline
+    improvement_pct = ((best_result['sharpe_ratio'] - BASELINE_SHARPE) / BASELINE_SHARPE * 100) if BASELINE_SHARPE != 0 else 0
+
+    # Parameter sensitivity (coefficient of variation)
+    std_sharpe = (sum((x - mean_sharpe)**2 for x in sharpe_values) / len(sharpe_values))**0.5
+    param_sensitivity = std_sharpe / mean_sharpe if mean_sharpe != 0 else 0
+
+    # Top quartile analysis
+    top_quartile_size = max(1, len(sorted_results) // 4)
+    top_quartile = sorted_results[:top_quartile_size]
+    top_quartile_median = sorted(r['sharpe_ratio'] for r in top_quartile)[len(top_quartile)//2]
+
+    analysis = {
+        'best_parameters': best_result['parameters'],
+        'best_performance': {
+            'sharpe_ratio': best_result['sharpe_ratio'],
+            'total_return': best_result['total_return'],
+            'max_drawdown': best_result['max_drawdown'],
+            'total_trades': best_result['total_trades'],
+            'win_rate': best_result['win_rate']
+        },
+        'statistics': {
+            'mean_sharpe': mean_sharpe,
+            'max_sharpe': max_sharpe,
+            'min_sharpe': min_sharpe,
+            'std_sharpe': std_sharpe,
+            'improvement_vs_baseline_pct': improvement_pct
+        },
+        'robustness': {
+            'parameter_sensitivity': param_sensitivity,
+            'top_quartile_median': top_quartile_median,
+            'assessment': 'LOW' if param_sensitivity < 0.3 else ('MEDIUM' if param_sensitivity < 0.5 else 'HIGH')
+        },
+        'all_results': sorted_results
+    }
+
+    return analysis
+
+def make_decision(analysis):
+    """Apply decision framework to optimization results."""
+    if not analysis:
+        return 'ERROR', 'Optimization failed - no valid results'
+
+    improvement = analysis['statistics']['improvement_vs_baseline_pct']
+    param_sensitivity = analysis['robustness']['parameter_sensitivity']
+    best_sharpe = analysis['best_performance']['sharpe_ratio']
+
+    # Decision logic
+    if improvement > 30:
+        return 'ESCALATE', f'Suspicious improvement ({improvement:.1f}% > 30%), possible overfitting'
+    elif param_sensitivity > 0.5:
+        return 'USE_ROBUST_PARAMS', f'High parameter sensitivity ({param_sensitivity:.2f} > 0.5), use median of top quartile'
+    elif improvement > 5:
+        return 'PROCEED_TO_VALIDATION', f'Significant improvement ({improvement:.1f}% > 5%), low sensitivity'
+    elif best_sharpe >= 1.0:
+        return 'PROCEED_TO_VALIDATION', f'Strong performance (Sharpe {best_sharpe:.2f} >= 1.0), ready for validation'
+    elif improvement < 5 and best_sharpe >= 0.5:
+        return 'PROCEED_TO_VALIDATION', f'Marginal improvement ({improvement:.1f}%), proceed with optimized params'
+    else:
+        return 'ABANDON_HYPOTHESIS', f'Insufficient improvement ({improvement:.1f}%), Sharpe {best_sharpe:.3f} still below viable'
+
+def main():
+    """Run optimization workflow."""
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print("🔧 STATISTICAL ARBITRAGE OPTIMIZATION")
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print(f"\nProject ID: {PROJECT_ID} (REUSING)")
+    print(f"Baseline Sharpe: {BASELINE_SHARPE}")
+    print(f"\nParameter Grid:")
+    for param, values in PARAM_GRID.items():
+        print(f"  {param}: {values}")
+
+    # Generate combinations
+    combinations = generate_parameter_combinations()
+    print(f"\nTotal Combinations: {len(combinations)}")
+
+    # Run backtests
+    print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print("Running Backtests...")
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+    results = []
+    for i, params in enumerate(combinations, 1):
+        result = run_backtest(params, i, len(combinations))
+        if result:
+            results.append(result)
+
+        # Rate limiting - wait 2 seconds between backtests
+        if i < len(combinations):
+            time.sleep(2)
+
+    # Analyze results
+    print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print("📊 OPTIMIZATION RESULTS")
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+    analysis = analyze_results(results)
+
+    if analysis:
+        # Display results
+        print(f"\n🏆 Best Parameters (by Sharpe):")
+        for param, value in analysis['best_parameters'].items():
+            print(f"   {param}: {value}")
+
+        print(f"\n   Performance:")
+        perf = analysis['best_performance']
+        print(f"   ├─ Sharpe: {perf['sharpe_ratio']:.3f}")
+        print(f"   ├─ Return: {perf['total_return']*100:.1f}%")
+        print(f"   ├─ Drawdown: {perf['max_drawdown']*100:.1f}%")
+        print(f"   ├─ Trades: {perf['total_trades']}")
+        print(f"   └─ Win Rate: {perf['win_rate']*100:.1f}%")
+
+        print(f"\n📈 Statistics:")
+        stats = analysis['statistics']
+        print(f"   ├─ Mean Sharpe: {stats['mean_sharpe']:.3f}")
+        print(f"   ├─ Max Sharpe: {stats['max_sharpe']:.3f}")
+        print(f"   ├─ Min Sharpe: {stats['min_sharpe']:.3f}")
+        print(f"   └─ Improvement: {stats['improvement_vs_baseline_pct']:.1f}% vs baseline")
+
+        print(f"\n🔍 Robustness Check:")
+        rob = analysis['robustness']
+        print(f"   ├─ Parameter Sensitivity: {rob['parameter_sensitivity']:.2f} ({rob['assessment']} {'✅' if rob['assessment'] == 'LOW' else '⚠️'})")
+        print(f"   ├─ Top Quartile Median: {rob['top_quartile_median']:.3f}")
+        print(f"   └─ Successful Backtests: {len(results)}/{len(combinations)}")
+
+        # Decision
+        decision, reason = make_decision(analysis)
+        print(f"\n✅ DECISION: {decision}")
+        print(f"📝 Reason: {reason}")
+
+        # Save results
+        output_data = {
+            'optimization_completed': datetime.utcnow().isoformat() + 'Z',
+            'project_id': PROJECT_ID,
+            'baseline_sharpe': BASELINE_SHARPE,
+            'parameter_grid': PARAM_GRID,
+            'total_combinations': len(combinations),
+            'successful_backtests': len(results),
+            'analysis': analysis,
+            'decision': decision,
+            'decision_reason': reason
+        }
+
+        output_file = STRATEGY_PATH.parent / f"optimization_results_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+        with open(output_file, 'w') as f:
+            json.dump(output_data, f, indent=2)
+
+        print(f"\n💾 Saved: {output_file.name}")
+
+        # Save summary for iteration_state update
+        summary_file = STRATEGY_PATH.parent / "optimization_summary.json"
+        with open(summary_file, 'w') as f:
+            json.dump(output_data, f, indent=2)
+
+        print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+        return 0
+    else:
+        print("❌ Optimization failed - no valid results")
+        return 1
+
+if __name__ == "__main__":
+    sys.exit(main())

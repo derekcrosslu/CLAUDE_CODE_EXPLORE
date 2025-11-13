@@ -1,0 +1,50 @@
+{
+  "method": "rolling_window_validation",
+  "description": "Validate baseline parameters across different time periods without re-optimization",
+  "total_period": {
+    "start": "2022-01-01",
+    "end": "2025-08-31"
+  },
+  "validation_windows": [
+    {
+      "name": "Window_1_2022_Full_Year",
+      "start": "2022-01-01",
+      "end": "2022-12-31"
+    },
+    {
+      "name": "Window_2_2023_Full_Year",
+      "start": "2023-01-01",
+      "end": "2023-12-31"
+    },
+    {
+      "name": "Window_3_2024_Full_Year",
+      "start": "2024-01-01",
+      "end": "2024-12-31"
+    },
+    {
+      "name": "Window_4_2025_YTD",
+      "start": "2025-01-01",
+      "end": "2025-08-31"
+    },
+    {
+      "name": "Window_5_Recent_12mo",
+      "start": "2024-08-01",
+      "end": "2025-08-31"
+    }
+  ],
+  "baseline_parameters": {
+    "position_size_per_pair": 1.0,
+    "max_holding_days": 30,
+    "stop_loss_z": 4.0,
+    "z_entry_threshold": 1.5,
+    "z_exit_threshold": 1.0,
+    "lookback_period": 30
+  },
+  "validation_metric": "sharpe_ratio",
+  "robustness_thresholds": {
+    "min_sharpe": 0.5,
+    "max_drawdown": 0.20,
+    "min_trades": 20,
+    "max_degradation_vs_baseline": 0.50
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "description": "Round 2 Optimization - Focused grid around Round 1 winners + key entry/exit params",
+  "goal": "Test most impactful parameters with manageable grid size",
+  "target": "TotalPerformance.PortfolioStatistics.SharpeRatio",
+  "targetTo": "max",
+  "nodeType": "O2-8",
+  "parallelNodes": 2,
+  "parameters": [
+    {
+      "name": "position_size_per_pair",
+      "min": 0.40,
+      "max": 0.50,
+      "step": 0.05,
+      "description": "Round 1 winner 0.40 - test slightly higher"
+    },
+    {
+      "name": "max_holding_days",
+      "min": 30,
+      "max": 40,
+      "step": 5,
+      "description": "Round 1 winner 30 - test longer"
+    },
+    {
+      "name": "stop_loss_z",
+      "min": 4.0,
+      "max": 5.0,
+      "step": 0.5,
+      "description": "Round 1 winner 4.0 - keep tight range"
+    },
+    {
+      "name": "z_entry_threshold",
+      "min": 1.5,
+      "max": 2.5,
+      "step": 0.5,
+      "description": "Entry threshold - test tighter and looser than baseline 2.0"
+    },
+    {
+      "name": "z_exit_threshold",
+      "min": 0.4,
+      "max": 0.8,
+      "step": 0.2,
+      "description": "Exit threshold - test around baseline 0.5"
+    },
+    {
+      "name": "lookback_period",
+      "min": 50,
+      "max": 70,
+      "step": 10,
+      "description": "Z-score window - test around baseline 60"
+    }
+  ],
+  "combinations": "3 × 3 × 3 × 3 × 3 × 3 = 729 combinations",
+  "note": "Focused grid testing parameters likely to matter most. Still large but manageable vs 52,920.",
+  "baseline_from_round1": {
+    "sharpe": 1.034,
+    "position_size_per_pair": 0.40,
+    "max_holding_days": 30,
+    "stop_loss_z": 4.0
+  },
+  "target_sharpe": 1.25
+}

@@ -1,0 +1,62 @@
+{
+  "parameters": [
+    {
+      "name": "PNC_KBE_weight",
+      "min": 0.4,
+      "max": 1.0,
+      "step": 0.2,
+      "default": 0.4
+    },
+    {
+      "name": "ARCC_AMLP_weight",
+      "min": 0.2,
+      "max": 1.0,
+      "step": 0.2,
+      "default": 0.2
+    },
+    {
+      "name": "RBA_SMFG_weight",
+      "min": 0.2,
+      "max": 1.0,
+      "step": 0.2,
+      "default": 0.2
+    },
+    {
+      "name": "PSEC_KIM_weight",
+      "min": 0.2,
+      "max": 1.0,
+      "step": 0.2,
+      "default": 0.2
+    },
+    {
+      "name": "CAKE_URBN_weight",
+      "min": 0.4,
+      "max": 1.0,
+      "step": 0.2,
+      "default": 0.4
+    },
+    {
+      "name": "QRVO_EWY_weight",
+      "min": 0.2,
+      "max": 1.0,
+      "step": 0.2,
+      "default": 0.2
+    },
+    {
+      "name": "CRON_ITRI_weight",
+      "min": 0.2,
+      "max": 1.0,
+      "step": 0.2,
+      "default": 0.2
+    }
+  ],
+  "target": "TotalPerformance.PortfolioStatistics.SharpeRatio",
+  "targetTo": "max",
+  "constraints": [
+    {
+      "target": "TotalPerformance.PortfolioStatistics.Drawdown",
+      "operator": "<",
+      "targetValue": 0.15
+    }
+  ]
+}

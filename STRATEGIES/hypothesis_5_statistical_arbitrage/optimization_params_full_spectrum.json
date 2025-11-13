@@ -1,0 +1,65 @@
+{
+  "description": "Round 2 Optimization - Full spectrum as originally specified",
+  "goal": "Optimize entry/exit logic (z_entry, z_exit, lookback) + refine Round 1 winners",
+  "strategy": "QuantConnect.Optimizer.Strategies.GridSearchOptimizationStrategy",
+  "target": "TotalPerformance.PortfolioStatistics.SharpeRatio",
+  "targetTo": "max",
+  "nodeType": "O2-8",
+  "parallelNodes": 2,
+  "maximumConcurrentBacktests": 60,
+  "parameters": [
+    {
+      "name": "position_size_per_pair",
+      "min": 0.35,
+      "max": 0.60,
+      "step": 0.05,
+      "description": "Round 1 winner was 0.40 (at boundary). Test higher to 0.60."
+    },
+    {
+      "name": "max_holding_days",
+      "min": 25,
+      "max": 50,
+      "step": 5,
+      "description": "Round 1 winner was 30 (at boundary). Test up to 50."
+    },
+    {
+      "name": "stop_loss_z",
+      "min": 3.5,
+      "max": 5.5,
+      "step": 0.5,
+      "description": "Round 1 showed 4.0-7.0 all similar. Focus on tighter range."
+    },
+    {
+      "name": "z_entry_threshold",
+      "min": 1.5,
+      "max": 3.0,
+      "step": 0.25,
+      "description": "Entry Z-score. Lower=more trades, higher=fewer but higher quality."
+    },
+    {
+      "name": "z_exit_threshold",
+      "min": 0.3,
+      "max": 1.0,
+      "step": 0.1,
+      "description": "Exit Z-score. Lower=quicker exits, higher=wait for full mean reversion."
+    },
+    {
+      "name": "lookback_period",
+      "min": 40,
+      "max": 90,
+      "step": 10,
+      "description": "Z-score calculation window. Shorter=more responsive, longer=more stable."
+    }
+  ],
+  "note": "6×6×5×7×8×6 = 60,480 total combinations with grid search",
+  "baseline_from_round1": {
+    "sharpe": 1.034,
+    "position_size_per_pair": 0.40,
+    "max_holding_days": 30,
+    "stop_loss_z": 4.0,
+    "z_entry_threshold": 2.0,
+    "z_exit_threshold": 0.5,
+    "lookback_period": 60
+  },
+  "target_sharpe": 1.25
+}

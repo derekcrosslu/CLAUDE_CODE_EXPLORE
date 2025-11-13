@@ -1,0 +1,133 @@
+{
+  "total_backtests": 100,
+  "best_sharpe": 1.829,
+  "best_params": {
+    "lookback_period": "30",
+    "z_exit_threshold": "1.0",
+    "z_entry_threshold": "1.5"
+  },
+  "baseline_sharpe": 0.127,
+  "improvement": 1340.1574803149606,
+  "top_10": [
+    {
+      "name": "Jumping Red Antelope(30,1.5,1.0)",
+      "sharpe": 1.829,
+      "net_profit_pct": 97.689,
+      "drawdown": 0.003,
+      "annual_return": 20.727,
+      "params": {
+        "lookback_period": "30",
+        "z_exit_threshold": "1.0",
+        "z_entry_threshold": "1.5"
+      }
+    },
+    {
+      "name": "Geeky Violet Hippopotamus(30,1.5,0.8)",
+      "sharpe": 1.742,
+      "net_profit_pct": 96.958,
+      "drawdown": 0.003,
+      "annual_return": 20.604,
+      "params": {
+        "lookback_period": "30",
+        "z_exit_threshold": "0.8",
+        "z_entry_threshold": "1.5"
+      }
+    },
+    {
+      "name": "Energetic Light Brown Rabbit(50,1.5,1.0)",
+      "sharpe": 1.557,
+      "net_profit_pct": 82.812,
+      "drawdown": 0.003,
+      "annual_return": 18.145,
+      "params": {
+        "lookback_period": "50",
+        "z_exit_threshold": "1.0",
+        "z_entry_threshold": "1.5"
+      }
+    },
+    {
+      "name": "Smooth Violet Duck(30,1.5,0.6)",
+      "sharpe": 1.481,
+      "net_profit_pct": 89.612,
+      "drawdown": 0.004,
+      "annual_return": 19.343,
+      "params": {
+        "lookback_period": "30",
+        "z_exit_threshold": "0.6",
+        "z_entry_threshold": "1.5"
+      }
+    },
+    {
+      "name": "Jumping Blue Rabbit(70,1.5,1.0)",
+      "sharpe": 1.48,
+      "net_profit_pct": 81.929,
+      "drawdown": 0.003,
+      "annual_return": 17.987,
+      "params": {
+        "lookback_period": "70",
+        "z_exit_threshold": "1.0",
+        "z_entry_threshold": "1.5"
+      }
+    },
+    {
+      "name": "Jumping Yellow-Green Eagle(50,1.5,0.6)",
+      "sharpe": 1.477,
+      "net_profit_pct": 85.787,
+      "drawdown": 0.003,
+      "annual_return": 18.673,
+      "params": {
+        "lookback_period": "50",
+        "z_exit_threshold": "0.6",
+        "z_entry_threshold": "1.5"
+      }
+    },
+    {
+      "name": "Calculating Apricot Kangaroo(30,2.0,0.8)",
+      "sharpe": 1.466,
+      "net_profit_pct": 73.569,
+      "drawdown": 0.002,
+      "annual_return": 16.463,
+      "params": {
+        "lookback_period": "30",
+        "z_exit_threshold": "0.8",
+        "z_entry_threshold": "2.0"
+      }
+    },
+    {
+      "name": "Emotional Asparagus Albatross(70,1.5,0.8)",
+      "sharpe": 1.408,
+      "net_profit_pct": 80.976,
+      "drawdown": 0.003,
+      "annual_return": 17.815,
+      "params": {
+        "lookback_period": "70",
+        "z_exit_threshold": "0.8",
+        "z_entry_threshold": "1.5"
+      }
+    },
+    {
+      "name": "Smooth Violet Guanaco(30,1.5,0.2)",
+      "sharpe": 1.404,
+      "net_profit_pct": 94.325,
+      "drawdown": 0.004,
+      "annual_return": 20.156,
+      "params": {
+        "lookback_period": "30",
+        "z_exit_threshold": "0.2",
+        "z_entry_threshold": "1.5"
+      }
+    },
+    {
+      "name": "Swimming Sky Blue Dogfish(30,2.0,1.0)",
+      "sharpe": 1.387,
+      "net_profit_pct": 68.543,
+      "drawdown": 0.002,
+      "annual_return": 15.521,
+      "params": {
+        "lookback_period": "30",
+        "z_exit_threshold": "1.0",
+        "z_entry_threshold": "2.0"
+      }
+    }
+  ]
+}
