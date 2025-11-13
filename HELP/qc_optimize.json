@@ -1,0 +1,145 @@
+{
+  "tool": "qc_optimize",
+  "version": "2.0.0",
+  "description": "QuantConnect parameter optimization for Phase 4 tuning",
+  "sections": [
+    {
+      "id": "project_id_requirement",
+      "title": "CRITICAL: Project ID Requirement",
+      "content": "**YOU MUST USE project_id FROM iteration_state.json**\n\nWhy This Matters:\n1. QC API requires baseline backtest - Cannot optimize empty project\n2. Must optimize correct strategy - Use project from Phase 3\n3. Prevents API errors - Missing baseline causes failures\n4. Maintains audit trail - Same project through all phases\n\nCorrect Workflow:\n```python\n# ✅ CORRECT: Read from iteration_state.json\nwith open('iteration_state.json', 'r') as f:\n    state = json.load(f)\n\nproject_id = state['project']['project_id']  # REQUIRED\nbacktest_id = state['phase_results']['backtest']['backtest_id']\n\n# Validate before optimization\nif not project_id or not backtest_id:\n    raise ValueError(\"Run /qc-backtest first - no baseline found\")\n```\n\n❌ WRONG Examples:\n- Creating new project: `project_id = api.create_project(\"Optimization\")`\n- Hardcoded ID: `project_id = 26135853`\n- Arbitrary ID: `project_id = 12345`",
+      "tags": ["project_id", "requirements", "critical"],
+      "priority": 1,
+      "related_sections": ["workflow", "common_errors"]
+    },
+    {
+      "id": "optimization_strategies",
+      "title": "Optimization Strategy",
+      "content": "**Grid Search (Only Option)**\n\nQuantConnect only supports grid search optimization.\n\nTests ALL parameter combinations exhaustively.\n\n- Strategy: `QuantConnect.Optimizer.Strategies.GridSearchOptimizationStrategy`\n- Behavior: Tests every combination in the grid\n- Pros: Guaranteed to find best combination in grid\n- Cons: Slow and expensive with large grids\n\n**IMPORTANT**: Keep grids small!\n- Recommended: < 50 combinations\n- Maximum practical: ~100 combinations\n- Cost increases linearly with combinations\n\n**Managing Large Parameter Spaces**:\n1. Optimize one parameter at a time\n2. Use coarse step sizes first, then refine\n3. Reduce parameter ranges based on domain knowledge\n4. Consider multi-stage optimization:\n   - Stage 1: Wide ranges, large steps (find region)\n   - Stage 2: Narrow ranges, small steps (fine-tune)\n\n**Example Multi-Stage**:\n```\nStage 1: rsi_period [5, 15, 25] (3 values)\nResult: 15 is best\n\nStage 2: rsi_period [12, 14, 16, 18] (4 values)\nResult: 14 is optimal\n```",
+      "tags": ["strategies", "grid_search", "optimization"],
+      "priority": 1,
+      "related_sections": ["parameter_grids", "cost_estimation"]
+    },
+    {
+      "id": "parameter_grids",
+      "title": "Parameter Grid Setup",
+      "content": "**Grid Definition Format**\n```json\n{\n  \"parameters\": [\n    {\n      \"name\": \"rsi_period\",\n      \"min\": 10,\n      \"max\": 20,\n      \"step\": 5\n    },\n    {\n      \"name\": \"stop_loss\",\n      \"min\": 0.03,\n      \"max\": 0.07,\n      \"step\": 0.02\n    }\n  ],\n  \"target\": \"TotalPerformance.PortfolioStatistics.SharpeRatio\",\n  \"targetTo\": \"max\",\n  \"nodeType\": \"O2-8\",\n  \"parallelNodes\": 2\n}\n```\n\n**Calculating Combinations**\nFor each parameter: `(max - min) / step + 1`\nTotal: Product of all parameter counts\n\nExample:\n- rsi_period: (20-10)/5+1 = 3 values\n- stop_loss: (0.07-0.03)/0.02+1 = 3 values\n- Total: 3 × 3 = 9 combinations\n\n**Best Practices**\n1. Start small (3-6 combinations) to test\n2. Keep combinations < 100 for grid search\n3. Use meaningful step sizes (not too fine)\n4. Test one parameter at a time first\n5. Expand grid based on results",
+      "tags": ["parameters", "grid", "setup"],
+      "priority": 1,
+      "related_sections": ["optimization_strategies", "overfitting_detection"]
+    },
+    {
+      "id": "decision_criteria",
+      "title": "Phase 4 Decision Criteria",
+      "content": "**Improvement Calculation**\n`improvement = (optimized_sharpe - baseline_sharpe) / baseline_sharpe`\n\n**Decision Thresholds**\n\n**USE_BASELINE** (Improvement < 5%)\n- Optimization didn't help significantly\n- Use original baseline parameters\n- May indicate strategy already well-tuned\n- Decision: Skip to validation with baseline\n\n**PROCEED_TO_VALIDATION** (Improvement 5-30%)\n- Good improvement, likely robust\n- Sweet spot for optimization\n- Improvement meaningful but not suspicious\n- Decision: Use optimized parameters for validation\n\n**ESCALATE_TO_HUMAN** (Improvement > 30%)\n- Too large - likely overfitting\n- Parameters curve-fit to noise\n- Won't generalize to new data\n- Decision: Human review required\n\nExamples:\n- Baseline 0.8 → Optimized 0.82 (2.5%): USE_BASELINE\n- Baseline 0.8 → Optimized 0.96 (20%): PROCEED_TO_VALIDATION ✅\n- Baseline 0.8 → Optimized 1.2 (50%): ESCALATE_TO_HUMAN ⚠️",
+      "tags": ["decisions", "thresholds", "phase4"],
+      "priority": 1,
+      "related_sections": ["overfitting_detection"]
+    },
+    {
+      "id": "cost_estimation",
+      "title": "Cost Estimation",
+      "content": "**Node Types and Pricing**\n- O2-8: 2GB RAM, 8 cores (~$0.02/min)\n- O4-12: 4GB RAM, 12 cores (~$0.04/min)\n- O8-16: 8GB RAM, 16 cores (~$0.08/min)\n\n**Estimating Costs**\n```bash\nqc_optimize run --config params.json --estimate-only\n```\n\nThis shows:\n- Total combinations\n- Estimated runtime\n- Estimated cost\n- Node configuration\n\n**Cost Factors**\n1. Number of combinations (biggest factor)\n2. Backtest duration (years of data)\n3. Strategy complexity (indicators, universe size)\n4. Node type (higher = faster but more expensive)\n5. Parallel nodes (2-4 recommended)\n\n**Typical Costs**\n- Small grid (10 combos, 3 years): $1-3\n- Medium grid (50 combos, 5 years): $5-15\n- Large grid (200 combos, 10 years): $20-50\n\n**Cost Optimization**\n1. Test on shorter period first\n2. Use Euler with --max-backtests\n3. Reduce parallel nodes if not urgent\n4. Start with O2-8, upgrade if too slow",
+      "tags": ["cost", "pricing", "estimation"],
+      "priority": 2,
+      "related_sections": ["optimization_strategies"]
+    },
+    {
+      "id": "overfitting_detection",
+      "title": "Overfitting Detection in Optimization",
+      "content": "**Red Flags**\n\n1. **Excessive Improvement (> 30%)**\n   - Baseline Sharpe 0.8 → Optimized 1.3\n   - Improvement: 62.5% - TOO HIGH\n   - Likely: Parameters fit to noise\n\n2. **Parameter at Grid Boundary**\n   - Optimal: rsi_period = 20 (max in grid)\n   - Problem: May need higher value\n   - Solution: Expand grid in that direction\n\n3. **Unrealistic Parameters**\n   - stop_loss = 0.001 (0.1% - too tight)\n   - position_size = 0.99 (99% - too large)\n   - Check if parameters make logical sense\n\n4. **Equity Curve Change**\n   - Baseline: Smooth gradual growth\n   - Optimized: Sharp spikes, then flat\n   - Problem: Fit to specific events\n\n5. **Trade Count Change**\n   - Baseline: 120 trades\n   - Optimized: 15 trades\n   - Problem: Too few trades = unreliable\n\n**Prevention**\n1. Limit parameter ranges to sensible values\n2. Keep grids coarse (large step sizes)\n3. Require minimum 30 trades\n4. Check if improvement makes logical sense\n5. Always validate out-of-sample (Phase 5)",
+      "tags": ["overfitting", "validation", "red_flags"],
+      "priority": 1,
+      "related_sections": ["decision_criteria", "parameter_grids"]
+    },
+    {
+      "id": "workflow",
+      "title": "Complete Workflow",
+      "content": "**Step 1: Verify Prerequisites**\n```bash\n# Check iteration_state.json exists\ncat iteration_state.json | grep project_id\n\n# Verify baseline backtest completed\ncat iteration_state.json | grep backtest_id\n```\n\n**Step 2: Create Parameter Grid**\n```json\n// optimization_params.json\n{\n  \"parameters\": [\n    {\"name\": \"param1\", \"min\": 10, \"max\": 30, \"step\": 10},\n    {\"name\": \"param2\", \"min\": 0.01, \"max\": 0.05, \"step\": 0.02}\n  ],\n  \"target\": \"TotalPerformance.PortfolioStatistics.SharpeRatio\",\n  \"targetTo\": \"max\"\n}\n```\n\n**Step 3: Estimate Cost**\n```bash\npython SCRIPTS/qc_optimize.py run --config optimization_params.json --estimate-only\n```\n\n**Step 4: Run Optimization**\n```bash\npython SCRIPTS/qc_optimize.py run --config optimization_params.json\n```\n\n**Step 5: Check Results**\n- Results saved to PROJECT_LOGS/optimization_result.json\n- iteration_state.json updated with decision\n- Best parameters shown in output\n\n**Step 6: Decision Routing**\n- < 5% improvement: USE_BASELINE\n- 5-30% improvement: PROCEED_TO_VALIDATION\n- > 30% improvement: ESCALATE_TO_HUMAN",
+      "tags": ["workflow", "usage", "steps"],
+      "priority": 1,
+      "related_sections": ["project_id_requirement", "decision_criteria"]
+    },
+    {
+      "id": "common_errors",
+      "title": "Common Errors and Fixes",
+      "content": "**Error: \"No baseline backtest found\"**\nCause: iteration_state.json missing backtest results\nFix: Run `/qc-backtest` first\nVerify: `cat iteration_state.json | grep backtest_id`\n\n**Error: \"Grid too large\" (> 100 combinations)**\nCause: Too many parameter combinations\nFix 1: Reduce parameter ranges or increase step size\nFix 2: Use multi-stage optimization (coarse then fine)\nFix 3: Optimize parameters one at a time\n\n**Error: \"Insufficient funds\"**\nCause: QuantConnect account balance too low\nFix: Add funds or use smaller grid (fewer combinations)\n\n**Error: \"Optimization timeout\"**\nCause: Optimization taking > 30 minutes (default timeout)\nFix: Reduce combinations or increase timeout:\n```python\napi.wait_for_optimization(optimization_id, timeout=3600)  # 1 hour\n```\n\n**Error: \"Parameter not found in strategy\"**\nCause: Parameter name doesn't match strategy code\nFix: Ensure parameter names match exactly (case-sensitive)\nExample: Strategy has `self.rsi_period`, use `\"name\": \"rsi_period\"`\n\n**Error: \"API authentication failed\"**\nCause: Missing or invalid QC credentials\nFix: Check .env file:\n```\nQUANTCONNECT_USER_ID=your_user_id\nQUANTCONNECT_API_TOKEN=your_api_token\n```",
+      "tags": ["errors", "troubleshooting", "fixes"],
+      "priority": 2,
+      "related_sections": ["workflow", "project_id_requirement"]
+    }
+  ],
+  "examples": [
+    {
+      "title": "Small Grid Optimization",
+      "description": "2 parameters, 9 combinations, good starting point",
+      "code": "{\n  \"parameters\": [\n    {\"name\": \"rsi_period\", \"min\": 10, \"max\": 20, \"step\": 5},\n    {\"name\": \"stop_loss\", \"min\": 0.03, \"max\": 0.07, \"step\": 0.02}\n  ],\n  \"target\": \"TotalPerformance.PortfolioStatistics.SharpeRatio\",\n  \"targetTo\": \"max\",\n  \"strategy\": \"grid\"\n}",
+      "output": "3 × 3 = 9 combinations\nEstimated cost: $2-5\nRecommended: Grid search",
+      "tags": ["small", "grid", "example"]
+    },
+    {
+      "title": "Multi-Stage Optimization",
+      "description": "Optimize in stages to manage large parameter spaces",
+      "code": "# Stage 1: Coarse grid\n{\n  \"parameters\": [\n    {\"name\": \"rsi_period\", \"min\": 10, \"max\": 30, \"step\": 10},\n    {\"name\": \"stop_loss\", \"min\": 0.02, \"max\": 0.08, \"step\": 0.03}\n  ]\n}\n# Result: rsi_period=20, stop_loss=0.05 best\n\n# Stage 2: Fine-tune around best\n{\n  \"parameters\": [\n    {\"name\": \"rsi_period\", \"min\": 15, \"max\": 25, \"step\": 5},\n    {\"name\": \"stop_loss\", \"min\": 0.04, \"max\": 0.06, \"step\": 0.01}\n  ]\n}",
+      "output": "Stage 1: 9 combinations (3×3)\nStage 2: 9 combinations (3×3)\nTotal: 18 backtests vs 81 for full fine grid",
+      "tags": ["multi-stage", "optimization", "example"]
+    },
+    {
+      "title": "Good Optimization Result",
+      "description": "20% improvement, proceed to validation",
+      "code": "Baseline Sharpe: 0.85\nOptimized Sharpe: 1.02\nImprovement: 20%\n\nBest Parameters:\n  rsi_period: 15\n  stop_loss: 0.05",
+      "output": "Decision: PROCEED_TO_VALIDATION\nReasoning: 5-30% improvement sweet spot\nNext: Run /qc-validate",
+      "tags": ["good", "result"]
+    },
+    {
+      "title": "Suspicious Result (Overfitting)",
+      "description": "Excessive improvement, human review needed",
+      "code": "Baseline Sharpe: 0.80\nOptimized Sharpe: 1.50\nImprovement: 87.5%\n\nTrades: 120 → 18",
+      "output": "Decision: ESCALATE_TO_HUMAN\nRed flags:\n  - 87% > 30% threshold\n  - Trade count dropped significantly\nLikely: Overfitting to random events",
+      "tags": ["suspicious", "overfitting"]
+    }
+  ],
+  "faqs": [
+    {
+      "question": "Can I optimize without running a backtest first?",
+      "answer": "No. QC API requires a baseline backtest in the project. The optimization compares against this baseline. Always run `/qc-backtest` before `/qc-optimize`.",
+      "tags": ["prerequisites"],
+      "related_sections": ["project_id_requirement", "workflow"]
+    },
+    {
+      "question": "How many parameters should I optimize at once?",
+      "answer": "Start with 1-2 parameters. More parameters = exponential growth in combinations. 2 params with 5 values each = 25 combos. 4 params = 625 combos. For 3+ parameters, use multi-stage optimization or optimize one at a time to keep combinations manageable.",
+      "tags": ["parameters", "best_practices"],
+      "related_sections": ["parameter_grids", "optimization_strategies"]
+    },
+    {
+      "question": "Optimization improved Sharpe from 0.9 to 1.3 (44%) - should I use it?",
+      "answer": "ESCALATE_TO_HUMAN. 44% > 30% threshold indicates likely overfitting. The parameters probably fit to random noise and won't work out-of-sample. Review equity curve and trade count changes.",
+      "tags": ["overfitting", "decisions"],
+      "related_sections": ["decision_criteria", "overfitting_detection"]
+    },
+    {
+      "question": "What if optimal parameter is at grid boundary?",
+      "answer": "Expand grid in that direction and re-optimize. Example: If rsi_period=30 is best and max=30, try grid 20-40. Boundary optima suggest you haven't found the true optimum.",
+      "tags": ["parameters", "boundaries"],
+      "related_sections": ["parameter_grids", "overfitting_detection"]
+    },
+    {
+      "question": "How long does optimization take?",
+      "answer": "Depends on combinations and backtest complexity. Rough estimate: 1-2 minutes per combination. 50 combos ≈ 50-100 minutes. Use --estimate-only to get precise estimate before running.",
+      "tags": ["time", "cost"],
+      "related_sections": ["cost_estimation"]
+    }
+  ],
+  "related_tools": [
+    "qc_backtest",
+    "qc_validate",
+    "decision_framework",
+    "backtesting_analysis"
+  ],
+  "metadata": {
+    "created": "2025-11-13",
+    "updated": "2025-11-13",
+    "authors": ["Claude"],
+    "skill": "quantconnect-optimization"
+  }
+}

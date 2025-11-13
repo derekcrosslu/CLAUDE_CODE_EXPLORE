@@ -6,11 +6,12 @@ Usage:
     qc_optimize run --config optimization_params.json --state iteration_state.json
     qc_optimize status --optimization-id abc123
     qc_optimize results --optimization-id abc123 --output results.json
+    qc_optimize help [--section <id>] [--search <query>]
 
-Progressive Disclosure Pattern (Beyond MCP):
-- Only load optimization logic when needed
-- CLI works for humans, teams, AND agents (trifecta)
-- Use --help, not source code
+Progressive Disclosure Pattern:
+- All reference documentation in HELP/qc_optimize.json
+- Use 'qc_optimize help' for complete reference
+- Use --help for command usage
 """
 
 import click
@@ -19,38 +20,100 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-# Absolute path resolution (Beyond MCP pattern)
+# Absolute path resolution
 SCRIPT_DIR = Path(__file__).resolve().parent
 
-# Import shared QC API module (Progressive Disclosure)
+# Import modules
 try:
     sys.path.insert(0, str(SCRIPT_DIR))
     from qc_api import QuantConnectAPI
-except ImportError:
-    click.echo("❌ Error: qc_api.py not found. Ensure it exists in SCRIPTS/", err=True)
+    from help_loader import load_help, format_help, get_section, search_help
+except ImportError as e:
+    click.echo(f"❌ Error: {e}", err=True)
     sys.exit(1)
 
 
 @click.group()
 def cli():
-    """QuantConnect optimization CLI for parameter tuning.
-
-    Phase 4 of autonomous workflow.
+    """QuantConnect optimization CLI for parameter tuning (Phase 4).
 
     \b
-    REFERENCE DOCUMENTATION (Progressive Disclosure):
-      .claude/skills/quantconnect-optimization/reference/
-        ├── manual_optimization.md - Manual grid search (free tier)
-        ├── qc_api_optimization.md - Native QC API (paid tier)
-        ├── decision_criteria.md - Phase 4 decision logic
-        ├── parameter_grid_setup.md - How to define parameter grids
-        ├── overfitting_detection.md - Detect and prevent overfitting
-        ├── common_errors.md - Error messages and fixes
-        └── cost_estimation.md - Estimate optimization costs
+    COMMANDS:
+      run       Run parameter optimization
+      status    Check optimization status
+      results   Download optimization results
+      help      Show complete reference documentation
 
-    Load reference docs on-demand when needed.
+    \b
+    REFERENCE DOCUMENTATION:
+      Use: qc_optimize help
+      All content loaded from HELP/qc_optimize.json
     """
     pass
+
+
+@cli.command()
+@click.option('--section', help='Show specific section by ID')
+@click.option('--search', help='Search help content')
+@click.option('--list-sections', is_flag=True, help='List all available sections')
+def help(section, search, list_sections):
+    """Show complete reference documentation from HELP/qc_optimize.json."""
+    try:
+        help_data = load_help("qc_optimize")
+    except Exception as e:
+        click.echo(f"❌ Error loading help: {e}", err=True)
+        sys.exit(1)
+
+    if list_sections:
+        click.echo("Available sections:")
+        for sec in help_data.get('sections', []):
+            priority_marker = "★" * sec.get('priority', 3)
+            click.echo(f"  {priority_marker} {sec['id']}: {sec['title']}")
+            if sec.get('tags'):
+                click.echo(f"     Tags: {', '.join(sec['tags'])}")
+        return
+
+    if section:
+        sec = get_section(help_data, section)
+        if sec:
+            click.echo(f"\n{'=' * 80}")
+            click.echo(f"{sec['title'].upper()}")
+            click.echo('=' * 80)
+            click.echo()
+            click.echo(sec['content'])
+            click.echo()
+            if sec.get('tags'):
+                click.echo(f"Tags: {', '.join(sec['tags'])}")
+        else:
+            click.echo(f"❌ Section not found: {section}")
+            click.echo("\nUse --list-sections to see available sections")
+            sys.exit(1)
+        return
+
+    if search:
+        results = search_help(search)
+        results = [r for r in results if r.get('tool') == 'qc_optimize']
+
+        if results:
+            click.echo(f"\n{'=' * 80}")
+            click.echo(f"Search results for '{search}' ({len(results)} found)")
+            click.echo('=' * 80)
+            for result in results:
+                if result.get('section_title'):
+                    click.echo(f"\n### {result['section_title']}")
+                    click.echo(f"Section ID: {result['section_id']}")
+                    click.echo(f"Tags: {', '.join(result.get('tags', []))}")
+                elif result.get('question'):
+                    click.echo(f"\n### FAQ: {result['question']}")
+                    click.echo(f"A: {result['answer']}")
+            click.echo()
+        else:
+            click.echo(f"\n❌ No results found for '{search}'")
+        return
+
+    # No options: show full help
+    formatted = format_help(help_data)
+    click.echo(formatted)
 
 
 @cli.command()
