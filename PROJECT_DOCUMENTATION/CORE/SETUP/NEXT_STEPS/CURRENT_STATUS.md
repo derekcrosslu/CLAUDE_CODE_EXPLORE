@@ -1,7 +1,7 @@
 # Current Status - SINGLE SOURCE OF TRUTH
 
-**Last Updated**: 2025-11-13 (Session end)
-**Location**: Root directory (this is THE authoritative status document)
+**Last Updated**: 2025-11-13 (Script dependencies fixed)
+**Location**: PROJECT_DOCUMENTATION/CORE/SETUP/NEXT_STEPS/ (per Critical Rule #1)
 **Previous versions**: Archived to PROJECT_DOCUMENTATION/PREVIOUS_WORK/
 
 ---
@@ -20,11 +20,11 @@ Build a lean, self-documenting workflow enabling Claude Code to autonomously dev
 
 ## 📊 Current Phase
 
-**Phase**: 1 (Foundation & Cleanup) - 90% Complete
+**Phase**: 1 (Foundation & Cleanup) - **95% Complete**
 
-**Status**: Workflow fixes in progress, progressive disclosure pattern established
+**Status**: Phase independence achieved! All scripts now use shared qc_api.py module
 
-**Next Session Focus**: Fix remaining critical violations (script dependencies)
+**Next Session Focus**: Progressive disclosure for remaining 6 skills
 
 ---
 
@@ -57,9 +57,10 @@ Build a lean, self-documenting workflow enabling Claude Code to autonomously dev
 - ✅ Added CLI `docs` subcommand pattern
 - **Commits**: dc437aa, c9bfe77, 2589bc7
 
-### Workflow Violations Fixed (4 of 8)
+### Workflow Violations Fixed (5 of 8)
 - ✅ Violation #1: Template naming (iteration_state_template.json)
 - ✅ Violation #2: qc-init.md "minimal" references
+- ✅ Violation #4: **Script dependencies (qc_api.py created)** ← NEW
 - ✅ Violation #6: qc-validate.md project creation timing
 - ✅ Root directory progressive disclosure
 
@@ -69,25 +70,24 @@ Build a lean, self-documenting workflow enabling Claude Code to autonomously dev
 - ✅ README.md for NEXT_STEPS/ - Quick reference
 - **Commits**: b1b705d, c922779
 
+### Script Dependencies Fixed (2025-11-13) ← NEW
+- ✅ Created SCRIPTS/qc_api.py shared module (623 lines)
+- ✅ Refactored qc_backtest.py to import from qc_api.py (removed 410 lines of duplication)
+- ✅ qc_optimize.py already using qc_api.py (verified)
+- ✅ qc_validate.py already using qc_api.py (verified)
+- ✅ All imports tested and working
+- **Result**: True phase independence achieved - no cross-dependencies
+- **Commit**: Pending
+
 ---
 
 ## ❌ What Needs to be Done
 
-### Immediate (Next Session - 2 hours)
+### Immediate (Current Session - Complete Now)
 
-**1. Fix Script Dependencies** (45 min) - HIGH PRIORITY
-- Create SCRIPTS/qc_api.py shared module
-- Update qc_backtest.py to import from qc_api.py
-- Update qc_optimize.py to import from qc_api.py
-- Update qc_validate.py to import from qc_api.py
-- Test each script independently
-- **Why**: Achieves true phase independence
-
-**2. Update This Status Document** (15 min)
-- Mark script dependencies as fixed
-- Update next steps
-
-**3. Git Commit & Push** (5 min)
+**1. Git Commit & Push** (5 min) - IN PROGRESS
+- Commit script dependency fix
+- Push to remote
 
 ### Near-Term (2 Sessions - 10-12 hours)
 
@@ -194,8 +194,8 @@ Build a lean, self-documenting workflow enabling Claude Code to autonomously dev
 - [x] Complete PREVIOUS_WORK archive restored ✅
 - [x] Progressive disclosure pattern documented ✅
 - [x] Hypothesis structure standard documented ✅
-- [ ] Script dependencies fixed (qc_api.py created)
-- [ ] This status document current
+- [x] **Script dependencies fixed (qc_api.py created)** ✅ ← NEW
+- [x] **This status document current** ✅ ← NEW
 
 ### Phase 2 Success (Progressive Disclosure)
 - [ ] All 7 skills under 250 lines (primer only)

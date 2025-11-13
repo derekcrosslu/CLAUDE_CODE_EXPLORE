@@ -457,6 +457,165 @@ class QuantConnectAPI:
             print(f"⏳ Progress: {progress*100:.1f}% (elapsed: {int(elapsed)}s)")
             time.sleep(poll_interval)
 
+    def get_optimization_status(self, optimization_id):
+        """
+        Get optimization status (alias for read_optimization)
+
+        Args:
+            optimization_id: Optimization ID
+
+        Returns:
+            dict: Optimization data
+        """
+        return self.read_optimization(optimization_id)
+
+    def get_optimization_results(self, optimization_id):
+        """
+        Get optimization results (alias for read_optimization)
+
+        Args:
+            optimization_id: Optimization ID
+
+        Returns:
+            dict: Optimization data with results
+        """
+        return self.read_optimization(optimization_id)
+
+    def parse_backtest_results(self, backtest_data):
+        """
+        Parse backtest results into structured format for decision-making
+        (Instance method wrapper for module-level function)
+
+        Args:
+            backtest_data: Raw backtest data from read_backtest()
+
+        Returns:
+            dict: Parsed metrics with performance, trading, and risk data
+        """
+        return parse_backtest_results(backtest_data)
+
+    def read_backtest_results(self, project_id, backtest_id):
+        """
+        Read and parse backtest results into standardized format
+
+        Args:
+            project_id: Project ID
+            backtest_id: Backtest ID
+
+        Returns:
+            dict: Parsed results with performance, trading, and risk metrics
+        """
+        # Wait for backtest to complete
+        result = self.wait_for_backtest(project_id, backtest_id, timeout=600)
+
+        if not result.get('success'):
+            return result
+
+        # Parse using module-level function
+        return parse_backtest_results(result)
+
+
+# =============================================================================
+# Helper Functions
+# =============================================================================
+
+def parse_backtest_results(backtest_data):
+    """
+    Parse backtest results into structured format for decision-making
+
+    Args:
+        backtest_data: Raw backtest API response
+
+    Returns:
+        dict: Parsed metrics with key performance indicators
+    """
+    if not backtest_data.get("success"):
+        return {
+            "success": False,
+            "error": backtest_data.get("error", "Unknown error")
+        }
+
+    backtest = backtest_data.get("backtest", {})
+
+    # Get statistics (formatted strings)
+    statistics = backtest.get("statistics", {})
+
+    # Get totalPerformance (numeric values)
+    total_perf = backtest.get("totalPerformance", {})
+    portfolio_stats = total_perf.get("portfolioStatistics", {})
+    trade_stats = total_perf.get("tradeStatistics", {})
+
+    # Extract key metrics using totalPerformance for numeric values
+    metrics = {
+        "success": True,
+        "backtest_id": backtest.get("backtestId"),
+        "project_id": backtest.get("projectId"),
+        "name": backtest.get("name"),
+        "status": backtest.get("status"),
+        "completed": backtest.get("completed"),
+        "created": backtest.get("created"),
+        "performance": {
+            "sharpe_ratio": float(portfolio_stats.get("sharpeRatio", 0)),
+            "sortino_ratio": float(portfolio_stats.get("sortinoRatio", 0)),
+            "max_drawdown": float(portfolio_stats.get("drawdown", 0)),
+            "total_return": float(portfolio_stats.get("totalNetProfit", 0)),
+            "annual_return": float(portfolio_stats.get("compoundingAnnualReturn", 0)),
+            "win_rate": float(portfolio_stats.get("winRate", 0)),
+            "loss_rate": float(portfolio_stats.get("lossRate", 0)),
+            "psr": float(portfolio_stats.get("probabilisticSharpeRatio", 0)),
+        },
+        "trading": {
+            "total_orders": int(statistics.get("Total Orders", "0").replace(",", "")),
+            "total_trades": int(trade_stats.get("totalNumberOfTrades", 0)),
+            "winning_trades": int(trade_stats.get("numberOfWinningTrades", 0)),
+            "losing_trades": int(trade_stats.get("numberOfLosingTrades", 0)),
+            "average_win": float(trade_stats.get("averageProfit", 0)),
+            "average_loss": float(trade_stats.get("averageLoss", 0)),
+            "profit_loss_ratio": float(trade_stats.get("profitLossRatio", 0)),
+            "largest_win": float(trade_stats.get("largestProfit", 0)),
+            "largest_loss": float(trade_stats.get("largestLoss", 0)),
+        },
+        "risk": {
+            "alpha": float(portfolio_stats.get("alpha", 0)),
+            "beta": float(portfolio_stats.get("beta", 0)),
+            "volatility": float(portfolio_stats.get("annualStandardDeviation", 0)),
+        },
+        "raw_statistics": statistics,
+        "raw_portfolio_stats": portfolio_stats,
+        "raw_trade_stats": trade_stats
+    }
+
+    # Add error/runtime info if available
+    if backtest.get("error"):
+        metrics["error"] = backtest.get("error")
+
+    if backtest.get("stacktrace"):
+        metrics["stacktrace"] = backtest.get("stacktrace")
+
+    return metrics
+
+
+def find_project_by_name(api, name):
+    """
+    Find project by name, return project_id if found
+
+    Args:
+        api: QuantConnectAPI instance
+        name: Project name to search for
+
+    Returns:
+        int: Project ID if found, None otherwise
+    """
+    result = api.list_projects()
+    if not result.get("success"):
+        return None
+
+    for project in result.get("projects", []):
+        if project.get("name") == name:
+            return project.get("projectId")
+
+    return None
+
 
 # Convenience function for loading from .env
 def create_api():
