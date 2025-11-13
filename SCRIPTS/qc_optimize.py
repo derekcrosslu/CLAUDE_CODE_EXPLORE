@@ -22,20 +22,33 @@ from datetime import datetime
 # Absolute path resolution (Beyond MCP pattern)
 SCRIPT_DIR = Path(__file__).resolve().parent
 
-# Import QC API (assumed to exist in SCRIPTS/qc_backtest.py)
+# Import shared QC API module (Progressive Disclosure)
 try:
     sys.path.insert(0, str(SCRIPT_DIR))
-    from qc_backtest import QuantConnectAPI
+    from qc_api import QuantConnectAPI
 except ImportError:
-    click.echo("❌ Error: qc_backtest.py not found. Ensure it exists in SCRIPTS/", err=True)
+    click.echo("❌ Error: qc_api.py not found. Ensure it exists in SCRIPTS/", err=True)
     sys.exit(1)
 
 
 @click.group()
 def cli():
     """QuantConnect optimization CLI for parameter tuning.
-    
+
     Phase 4 of autonomous workflow.
+
+    \b
+    REFERENCE DOCUMENTATION (Progressive Disclosure):
+      .claude/skills/quantconnect-optimization/reference/
+        ├── manual_optimization.md - Manual grid search (free tier)
+        ├── qc_api_optimization.md - Native QC API (paid tier)
+        ├── decision_criteria.md - Phase 4 decision logic
+        ├── parameter_grid_setup.md - How to define parameter grids
+        ├── overfitting_detection.md - Detect and prevent overfitting
+        ├── common_errors.md - Error messages and fixes
+        └── cost_estimation.md - Estimate optimization costs
+
+    Load reference docs on-demand when needed.
     """
     pass
 
@@ -45,7 +58,9 @@ def cli():
 @click.option('--state', default='iteration_state.json', help='Iteration state JSON')
 @click.option('--output', default='PROJECT_LOGS/optimization_result.json', help='Output file')
 @click.option('--estimate-only', is_flag=True, help='Only estimate cost, don\'t run')
-def run(config: str, state: str, output: str, estimate_only: bool):
+@click.option('--strategy', default='grid', help='Optimization strategy: grid (exhaustive), euler (random sampling), or custom class name')
+@click.option('--max-backtests', type=int, help='Maximum backtests (for Euler/random strategies)')
+def run(config: str, state: str, output: str, estimate_only: bool, strategy: str, max_backtests: int):
     """Run parameter optimization on QuantConnect.
     
     Requires baseline backtest to be completed first.
@@ -98,6 +113,18 @@ def run(config: str, state: str, output: str, estimate_only: bool):
     target_to = opt_config.get('targetTo', 'max')
     node_type = opt_config.get('nodeType', 'O2-8')
     parallel_nodes = opt_config.get('parallelNodes', 2)
+
+    # Map strategy name to QC class
+    strategy_map = {
+        'grid': 'QuantConnect.Optimizer.Strategies.GridSearchOptimizationStrategy',
+        'euler': 'QuantConnect.Optimizer.Strategies.EulerSearchOptimizationStrategy',
+    }
+
+    opt_strategy = strategy_map.get(strategy, strategy)  # Use custom name if not in map
+
+    # Override with config if specified
+    if 'strategy' in opt_config:
+        opt_strategy = opt_config['strategy']
     
     # Calculate combinations
     total_combinations = 1
@@ -136,13 +163,15 @@ def run(config: str, state: str, output: str, estimate_only: bool):
     # Run optimization
     opt_name = f"Optimization_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     click.echo(f"\n🚀 Creating optimization: {opt_name}...")
-    
+    click.echo(f"   Strategy: {opt_strategy.split('.')[-1]}")
+
     opt_result = api.create_optimization(
         project_id=project_id,
         name=opt_name,
         target=target,
         parameters=parameters,
         target_to=target_to,
+        strategy=opt_strategy,
         node_type=node_type,
         parallel_nodes=parallel_nodes
     )
@@ -272,6 +301,71 @@ def results(optimization_id: str, output: str):
         json.dump(result, f, indent=2)
     
     click.echo(f"✓ Results saved to: {output}")
+
+
+@cli.command()
+@click.argument('topic', required=False)
+def docs(topic: str):
+    """Show reference documentation (progressive disclosure).
+
+    Usage:
+        qc_optimize.py docs                      # List all available docs
+        qc_optimize.py docs manual-optimization  # Show specific doc
+
+    Available topics:
+        manual-optimization    - Manual grid search (free tier)
+        qc-api-optimization    - Native QC API (paid tier)
+        decision-criteria      - Phase 4 decision logic
+        parameter-grid-setup   - How to define parameter grids
+        overfitting-detection  - Detect and prevent overfitting
+        common-errors          - Error messages and fixes
+        cost-estimation        - Estimate optimization costs
+    """
+    import os
+
+    # Reference documentation directory
+    ref_dir = Path(SCRIPT_DIR).parent / '.claude/skills/quantconnect-optimization/reference'
+
+    # Map topics to files
+    docs_map = {
+        'manual-optimization': 'manual_optimization.md',
+        'qc-api-optimization': 'qc_api_optimization.md',
+        'decision-criteria': 'decision_criteria.md',
+        'parameter-grid-setup': 'parameter_grid_setup.md',
+        'overfitting-detection': 'overfitting_detection.md',
+        'common-errors': 'common_errors.md',
+        'cost-estimation': 'cost_estimation.md',
+    }
+
+    if not topic:
+        # List all available docs
+        click.echo("📚 Available Reference Documentation:\n")
+        for topic_name, filename in docs_map.items():
+            doc_path = ref_dir / filename
+            status = "✓" if doc_path.exists() else "✗"
+            click.echo(f"  {status} {topic_name:25} → {filename}")
+
+        click.echo(f"\n📂 Reference directory: {ref_dir}")
+        click.echo("\nUsage: qc_optimize.py docs <topic>")
+        return
+
+    # Show specific doc
+    if topic not in docs_map:
+        click.echo(f"❌ Unknown topic: {topic}", err=True)
+        click.echo(f"\nAvailable topics: {', '.join(docs_map.keys())}", err=True)
+        sys.exit(1)
+
+    doc_path = ref_dir / docs_map[topic]
+
+    if not doc_path.exists():
+        click.echo(f"❌ Documentation not found: {doc_path}", err=True)
+        sys.exit(1)
+
+    # Display the doc
+    with open(doc_path, 'r') as f:
+        content = f.read()
+
+    click.echo(content)
 
 
 if __name__ == '__main__':

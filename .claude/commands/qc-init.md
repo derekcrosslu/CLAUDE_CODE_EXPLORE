@@ -1,86 +1,147 @@
 ---
-description: Initialize a new QuantConnect strategy development session
+description: Initialize a new QuantConnect strategy development session (project)
 ---
 
-Initialize a new autonomous strategy development session with QuantConnect.
+Initialize a new autonomous hypothesis testing session for algorithmic strategy development.
 
-This command will:
-1. Create a new hypothesis entry
-2. Initialize iteration_state.json
-3. Set up project structure
-4. Create decisions_log.md
-5. **Create git branch for hypothesis**
-6. **Commit initial state to git**
+This command implements Phase 1 of the 5-phase autonomous workflow.
 
-**Usage**:
-```
+## What This Command Does
+
+1. Prompts for hypothesis details (name, description, rationale)
+2. Generates unique hypothesis ID (auto-increment based on existing branches)
+3. Creates `iteration_state.json` from template (schema v1.0.0)
+4. Populates workflow metadata (session_id, timestamps)
+5. Sets autonomy mode (default: minimal, requires user approval at each phase)
+6. Loads default thresholds from config or uses defaults
+7. Creates git branch: `hypotheses/hypothesis-{id}-{name-slug}`
+8. Makes initial commit with structured message
+9. Sets next_action to `/qc-backtest`
+
+## Usage
+
+```bash
 /qc-init
 ```
 
 You will be prompted for:
-- Hypothesis name
-- Hypothesis description
-- Strategy file path (optional, if already exists)
-- Project name (optional, will reuse existing if found)
+- **Hypothesis name**: Short descriptive name (e.g., "RSI Mean Reversion")
+- **Hypothesis description**: One-line description of the strategy
+- **Hypothesis rationale**: Why you think this will work (market regime, theory, etc.)
 
-**What happens next**:
-- iteration_state.json is created/updated with new hypothesis
-- decisions_log.md is initialized
-- QuantConnect project is checked (created if needed)
-- Status is set to "research" phase
+## Implementation Steps
 
-**Example**:
-```
-/qc-init
-> Hypothesis name: MACD Momentum Strategy
-> Description: Buy on MACD crossover with volume confirmation
-> Strategy file: momentum_strategy.py
-> Project name: MACD_Momentum_v1
-```
+When this command is executed, perform these steps:
 
-**Output**:
-- ✅ Hypothesis initialized
-- 📊 iteration_state.json created
-- 📝 decisions_log.md ready
-- 🌿 Git branch created: hypotheses/hypothesis-XXX-<name>
-- 💾 Initial commit made
-- 🚀 Ready for implementation phase
+### Step 1: Gather Hypothesis Information
 
----
+**⚠️ AUTONOMOUS MODE: DO NOT ASK USER UNLESS BLOCKER**
 
-## Git Integration (AUTOMATIC)
+If command has arguments (e.g., `/qc-init path/to/strategy.py`):
+- Extract hypothesis details from code comments/docstrings
+- Auto-generate name from filename
+- Proceed autonomously
 
-After creating state files, **automatically execute these git commands**:
+If command has NO arguments:
+- **ONLY THEN** ask user for:
+  1. **Hypothesis Name** (required)
+  2. **Hypothesis Description** (required)
+  3. **Hypothesis Rationale** (required)
+
+### Step 2: Generate Hypothesis ID
 
 ```bash
-# Get hypothesis ID and name from iteration_state.json
-HYPOTHESIS_ID=$(cat iteration_state.json | grep '"id"' | head -1 | sed 's/[^0-9]*//g')
-HYPOTHESIS_NAME=$(cat iteration_state.json | grep '"name"' | head -1 | sed 's/.*: "//;s/",//' | tr ' ' '-' | tr '[:upper:]' '[:lower:]')
+# Find highest existing hypothesis ID from git branches
+HIGHEST_ID=$(git branch -a | grep 'hypotheses/hypothesis-' | sed 's/.*hypothesis-//; s/-.*//' | sort -n | tail -1)
+NEW_ID=$((HIGHEST_ID + 1))
+echo "Generated Hypothesis ID: $NEW_ID"
+```
 
-# Create hypothesis branch
-git checkout -b hypotheses/hypothesis-${HYPOTHESIS_ID}-${HYPOTHESIS_NAME}
+### Step 3: Create iteration_state.json
 
-# Add files
-git add iteration_state.json decisions_log.md
+```bash
+# Copy template (includes all phase structures: backtest, optimization, validation)
+cp PROJECT_SCHEMAS/iteration_state_template.json iteration_state.json
+
+# Populate fields using jq or manual sed/awk
+SESSION_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+HYPOTHESIS_NAME="<user input>"
+HYPOTHESIS_DESC="<user input>"
+HYPOTHESIS_RATIONALE="<user input>"
+
+# Update iteration_state.json with actual values:
+# - workflow.session_id = $SESSION_ID
+# - workflow.created_at = $TIMESTAMP
+# - workflow.updated_at = $TIMESTAMP
+# - hypothesis.id = $NEW_ID
+# - hypothesis.name = $HYPOTHESIS_NAME
+# - hypothesis.description = $HYPOTHESIS_DESC
+# - hypothesis.rationale = $HYPOTHESIS_RATIONALE
+# - hypothesis.created = $TIMESTAMP
+```
+
+### Step 4: Create Git Branch
+
+```bash
+# Create branch name (slugify hypothesis name)
+BRANCH_NAME="hypotheses/hypothesis-${NEW_ID}-$(echo "$HYPOTHESIS_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g')"
+
+# Create and checkout branch
+git checkout -b "$BRANCH_NAME"
+
+# Update git.branch in iteration_state.json
+# git.branch = $BRANCH_NAME
+```
+
+### Step 5: Initial Commit
+
+```bash
+# Stage files
+git add iteration_state.json
 
 # Commit with structured message
-git commit -m "$(cat <<'EOF'
-research: Initialize hypothesis - $(cat iteration_state.json | grep '"name"' | head -1 | sed 's/.*: "//;s/",//')
+git commit -m "research: Initialize hypothesis - ${HYPOTHESIS_NAME}
 
-Hypothesis: $(cat iteration_state.json | grep '"description"' | head -1 | sed 's/.*: "//;s/",//')
+Hypothesis: ${HYPOTHESIS_DESC}
+
+Rationale: ${HYPOTHESIS_RATIONALE}
 
 Status: research → implementation
 Iteration: 1
 Phase: research
 
 🤖 Generated with Claude Code
-Co-Authored-By: Claude <noreply@anthropic.com>
-EOF
-)"
-
-# Confirm
-echo "✅ Git branch created: $(git branch --show-current)"
-echo "✅ Initial commit: $(git log -1 --oneline)"
+Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
-**Important**: This git integration happens **automatically** - you don't need to run these commands manually.
+### Step 6: Confirm Success
+
+Display summary:
+```
+✅ Hypothesis initialized successfully!
+
+Hypothesis ID: {id}
+Name: {name}
+Branch: {branch_name}
+
+iteration_state.json created with schema v1.0.0
+Current phase: research
+Next action: /qc-backtest
+
+Ready to implement strategy!
+```
+
+## Notes
+
+- The schema includes all phase structures (backtest, optimization, validation)
+- Thresholds use defaults unless overridden
+- Autonomy mode defaults to "minimal" (user approval at each phase)
+- Git integration is automatic and mandatory
+- session_id is generated using UUID for uniqueness
+
+## Next Steps
+
+After initialization:
+1. Implement the strategy code (Python algorithm)
+2. Run `/qc-backtest` to test the hypothesis

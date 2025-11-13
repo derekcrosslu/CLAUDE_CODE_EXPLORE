@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Autonomous Strategy Development Iteration State",
+  "description": "Persistent state for autonomous QuantConnect strategy development workflow",
+  "current_hypothesis": {
+    "id": null,
+    "name": "",
+    "description": "",
+    "created": "",
+    "status": "research",
+    "abandon_reason": null
+  },
+  "project": {
+    "project_id": null,
+    "project_name": "",
+    "strategy_file": "",
+    "language": "Python"
+  },
+  "current_phase": "research",
+  "phases_completed": [],
+  "backtest_results": {
+    "backtest_id": null,
+    "completed": false,
+    "performance": {
+      "sharpe_ratio": null,
+      "max_drawdown": null,
+      "total_return": null,
+      "total_trades": null,
+      "win_rate": null,
+      "loss_rate": null,
+      "net_profit": null
+    },
+    "decision": null,
+    "reason": null
+  },
+  "optimization": {
+    "status": "not_started",
+    "attempts": 0,
+    "best_parameters": null,
+    "limitation": null
+  },
+  "validation": {
+    "status": "not_started",
+    "method": null,
+    "monte_carlo_runs": null,
+    "psr": null,
+    "dsr": null,
+    "sharpe_ratio": null,
+    "min_trl": null,
+    "current_trl": null,
+    "permutation_pvalue": null,
+    "bootstrap_sharpe_mean": null,
+    "bootstrap_sharpe_5th": null,
+    "bootstrap_drawdown_99th": null,
+    "decision": null,
+    "reason": null,
+    "timestamp": null
+  },
+  "iteration_count": 1,
+  "max_iterations": 3,
+  "cost_tracking": {
+    "api_calls": 0,
+    "backtests_run": 0,
+    "optimization_attempts": 0,
+    "estimated_cost_usd": 0.0
+  },
+  "decisions_log": [],
+  "next_steps": [],
+  "metadata": {
+    "session_id": "",
+    "created_at": "",
+    "updated_at": "",
+    "claude_model": "claude-sonnet-4-5",
+    "previous_hypothesis": null
+  }
+}

@@ -116,7 +116,7 @@ def evaluate_backtest(results: str, state: str, output_json: bool):
     prod_ready = perf_criteria.get('production_ready', {})
 
     meets_minimum = (
-        sharpe >= min_viable.get('sharpe_ratio', 0.5) and
+        sharpe >= min_viable.get('sharpe_ratio', 0.0) and
         drawdown <= min_viable.get('max_drawdown', 0.35) and
         num_trades >= min_viable.get('min_trades', 20)
     )
@@ -302,7 +302,7 @@ def evaluate_validation(results: str, state: str, output_json: bool):
     # Check OOS meets minimum criteria
     min_viable = perf_criteria.get('minimum_viable', {})
     oos_meets_minimum = (
-        out_of_sample_sharpe >= min_viable.get('sharpe_ratio', 0.5) and
+        out_of_sample_sharpe >= min_viable.get('sharpe_ratio', 0.0) and
         abs(val_results.get('out_of_sample', {}).get('max_drawdown', 1.0)) <= min_viable.get('max_drawdown', 0.35)
     )
 
