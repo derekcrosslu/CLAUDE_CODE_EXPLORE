@@ -1,0 +1,2721 @@
+{
+  "project": "Autonomous Framework Development",
+  "approach": "Research-driven development with validation gates",
+  "duration_weeks": 6,
+  "duration_hours": "90-120",
+  "start_date": "2025-11-11",
+  "current_status": {
+    "week": 1,
+    "phase": "Week 1 Implementation",
+    "progress": "Phase 1-3 MVP Complete",
+    "updated_at": "2025-11-10T16:00:00Z"
+  },
+  "weeks": [
+    {
+      "week": 1,
+      "title": "Phase 1-3 MVP",
+      "priority": 1,
+      "goal": "Build working Phase 1-3 prototype",
+      "duration_hours": "10-12",
+      "sections": [
+        {
+          "id": "w1-api-integration",
+          "name": "API Integration",
+          "note": "reuse from PREVIOUS_WORK",
+          "items": [
+            {
+              "id": "w1-api-001",
+              "task": "Copy PREVIOUS_WORK/SCRIPTS/qc_backtest.py to SCRIPTS/",
+              "status": "completed",
+              "completed_at": "2025-11-10T10:00:00Z",
+              "git_commit": "5e37c3f"
+            },
+            {
+              "id": "w1-api-002",
+              "task": "Update qc_backtest.py to use iteration_state.json v1.0.0 schema",
+              "status": "completed",
+              "completed_at": "2025-11-10T10:00:00Z",
+              "git_commit": "5e37c3f"
+            },
+            {
+              "id": "w1-api-003",
+              "task": "Test HMAC authentication",
+              "status": "completed",
+              "completed_at": "2025-11-10T10:00:00Z",
+              "git_commit": "5e37c3f"
+            },
+            {
+              "id": "w1-api-004",
+              "task": "Test project creation API",
+              "status": "completed",
+              "completed_at": "2025-11-10T10:00:00Z",
+              "git_commit": "5e37c3f"
+            },
+            {
+              "id": "w1-api-005",
+              "task": "Test file upload API",
+              "status": "completed",
+              "completed_at": "2025-11-10T10:00:00Z",
+              "git_commit": "5e37c3f"
+            },
+            {
+              "id": "w1-api-006",
+              "task": "Test backtest execution API",
+              "status": "completed",
+              "completed_at": "2025-11-10T10:00:00Z",
+              "git_commit": "5e37c3f"
+            },
+            {
+              "id": "w1-api-007",
+              "task": "Test result parsing",
+              "status": "completed",
+              "completed_at": "2025-11-10T10:00:00Z",
+              "git_commit": "5e37c3f"
+            },
+            {
+              "id": "w1-api-008",
+              "task": "Verify error handling",
+              "status": "completed",
+              "completed_at": "2025-11-10T10:00:00Z",
+              "git_commit": "5e37c3f"
+            }
+          ]
+        },
+        {
+          "id": "w1-qc-init",
+          "name": "Slash Command: /qc-init (Phase 1)",
+          "items": [
+            {
+              "id": "w1-init-001",
+              "task": "Create .claude/commands/ directory",
+              "status": "completed",
+              "completed_at": "2025-11-10T11:00:00Z",
+              "git_commit": "e9e7dd2"
+            },
+            {
+              "id": "w1-init-002",
+              "task": "Create /qc-init command file",
+              "status": "completed",
+              "completed_at": "2025-11-10T11:00:00Z",
+              "git_commit": "e9e7dd2"
+            },
+            {
+              "id": "w1-init-003",
+              "task": "Implement hypothesis input prompts (ID, name, description, rationale)",
+              "status": "completed",
+              "completed_at": "2025-11-10T11:00:00Z",
+              "git_commit": "e9e7dd2"
+            },
+            {
+              "id": "w1-init-004",
+              "task": "Create iteration_state.json from template_minimal.json",
+              "status": "completed",
+              "completed_at": "2025-11-10T11:00:00Z",
+              "git_commit": "e9e7dd2"
+            },
+            {
+              "id": "w1-init-005",
+              "task": "Populate workflow section (session_id, timestamps)",
+              "status": "completed",
+              "completed_at": "2025-11-10T11:00:00Z",
+              "git_commit": "e9e7dd2"
+            },
+            {
+              "id": "w1-init-006",
+              "task": "Set autonomy_mode (default: minimal)",
+              "status": "completed",
+              "completed_at": "2025-11-10T11:00:00Z",
+              "git_commit": "e9e7dd2"
+            },
+            {
+              "id": "w1-init-007",
+              "task": "Load thresholds from config (or use defaults)",
+              "status": "completed",
+              "completed_at": "2025-11-10T11:00:00Z",
+              "git_commit": "e9e7dd2"
+            },
+            {
+              "id": "w1-init-008",
+              "task": "Create git branch: hypotheses/hypothesis-{id}-{name}",
+              "status": "completed",
+              "completed_at": "2025-11-10T11:00:00Z",
+              "git_commit": "e9e7dd2"
+            },
+            {
+              "id": "w1-init-009",
+              "task": "Initial commit: research: Initialize hypothesis - {name}",
+              "status": "completed",
+              "completed_at": "2025-11-10T11:00:00Z",
+              "git_commit": "e9e7dd2"
+            },
+            {
+              "id": "w1-init-010",
+              "task": "Log decision to decisions_log",
+              "status": "completed",
+              "completed_at": "2025-11-10T11:00:00Z",
+              "git_commit": "e9e7dd2"
+            },
+            {
+              "id": "w1-init-011",
+              "task": "Set next_action to /qc-backtest",
+              "status": "completed",
+              "completed_at": "2025-11-10T11:00:00Z",
+              "git_commit": "e9e7dd2"
+            },
+            {
+              "id": "w1-init-012",
+              "task": "Test command end-to-end",
+              "status": "completed",
+              "completed_at": "2025-11-10T12:00:00Z",
+              "git_commit": "e9e7dd2"
+            }
+          ]
+        },
+        {
+          "id": "w1-qc-backtest",
+          "name": "Slash Command: /qc-backtest (Phase 2 & 3)",
+          "items": [
+            {
+              "id": "w1-backtest-001",
+              "task": "Create /qc-backtest command file",
+              "status": "completed",
+              "completed_at": "2025-11-10T12:00:00Z",
+              "git_commit": "575bbd9"
+            },
+            {
+              "id": "w1-backtest-002",
+              "task": "Read iteration_state.json",
+              "status": "completed",
+              "completed_at": "2025-11-10T12:00:00Z",
+              "git_commit": "575bbd9"
+            },
+            {
+              "id": "w1-backtest-003",
+              "task": "Validate current phase is research/implementation",
+              "status": "completed",
+              "completed_at": "2025-11-10T12:00:00Z",
+              "git_commit": "575bbd9"
+            },
+            {
+              "id": "w1-backtest-004",
+              "task": "Load QuantConnect Skill (if exists)",
+              "status": "completed",
+              "completed_at": "2025-11-10T12:00:00Z",
+              "git_commit": "575bbd9"
+            },
+            {
+              "id": "w1-backtest-005",
+              "task": "Generate strategy code from hypothesis",
+              "status": "completed",
+              "completed_at": "2025-11-10T13:00:00Z",
+              "git_commit": "a0be965"
+            },
+            {
+              "id": "w1-backtest-006",
+              "task": "Validate implementation (syntax, entry, exit, risk management)",
+              "status": "completed",
+              "completed_at": "2025-11-10T13:00:00Z",
+              "git_commit": "a0be965"
+            },
+            {
+              "id": "w1-backtest-007",
+              "task": "Call qc_backtest.py wrapper (create project, upload, run, parse)",
+              "status": "completed",
+              "completed_at": "2025-11-10T13:00:00Z",
+              "git_commit": "a0be965"
+            },
+            {
+              "id": "w1-backtest-008",
+              "task": "Update iteration_state.json with project and results",
+              "status": "completed",
+              "completed_at": "2025-11-10T13:00:00Z",
+              "git_commit": "a0be965"
+            },
+            {
+              "id": "w1-backtest-009",
+              "task": "Evaluate backtest results (Phase 3 decision logic)",
+              "status": "completed",
+              "completed_at": "2025-11-10T13:00:00Z",
+              "git_commit": "a0be965"
+            },
+            {
+              "id": "w1-backtest-010",
+              "task": "Update iteration_state.json with decision",
+              "status": "completed",
+              "completed_at": "2025-11-10T13:00:00Z",
+              "git_commit": "a0be965"
+            },
+            {
+              "id": "w1-backtest-011",
+              "task": "Git commit with metrics and decision",
+              "status": "completed",
+              "completed_at": "2025-11-10T13:00:00Z",
+              "git_commit": "a0be965"
+            },
+            {
+              "id": "w1-backtest-012",
+              "task": "Test command end-to-end",
+              "status": "completed",
+              "completed_at": "2025-11-10T13:00:00Z",
+              "git_commit": "a0be965"
+            }
+          ]
+        },
+        {
+          "id": "w1-decision-logic",
+          "name": "Decision Logic Implementation",
+          "items": [
+            {
+              "id": "w1-decision-001",
+              "task": "Create decision_logic.py module",
+              "status": "completed",
+              "completed_at": "2025-11-10T14:00:00Z",
+              "git_commit": "575bbd9"
+            },
+            {
+              "id": "w1-decision-002",
+              "task": "Implement evaluate_backtest() function with 4-tier framework",
+              "status": "completed",
+              "completed_at": "2025-11-10T14:00:00Z",
+              "git_commit": "575bbd9"
+            },
+            {
+              "id": "w1-decision-003",
+              "task": "Implement evaluate_optimization() function",
+              "status": "completed",
+              "completed_at": "2025-11-10T14:00:00Z",
+              "git_commit": "575bbd9"
+            },
+            {
+              "id": "w1-decision-004",
+              "task": "Implement evaluate_validation() function",
+              "status": "completed",
+              "completed_at": "2025-11-10T14:00:00Z",
+              "git_commit": "575bbd9"
+            },
+            {
+              "id": "w1-decision-005",
+              "task": "Implement route_decision() state machine (routing logic)",
+              "status": "completed",
+              "completed_at": "2025-11-10T16:00:00Z",
+              "git_commit": "9642149"
+            },
+            {
+              "id": "w1-decision-006",
+              "task": "Test with mock data (6 backtest + 8 routing test cases)",
+              "status": "completed",
+              "completed_at": "2025-11-10T16:00:00Z",
+              "git_commit": "9642149"
+            }
+          ]
+        },
+        {
+          "id": "w1-git-integration",
+          "name": "Git Integration",
+          "items": [
+            {
+              "id": "w1-git-001",
+              "task": "Test branch creation",
+              "status": "completed",
+              "completed_at": "2025-11-10T12:00:00Z",
+              "git_commit": "e9e7dd2"
+            },
+            {
+              "id": "w1-git-002",
+              "task": "Test structured commit messages",
+              "status": "completed",
+              "completed_at": "2025-11-10T13:00:00Z",
+              "git_commit": "a0be965"
+            },
+            {
+              "id": "w1-git-003",
+              "task": "Test git status in commands",
+              "status": "completed",
+              "completed_at": "2025-11-10T12:00:00Z",
+              "git_commit": "e9e7dd2"
+            },
+            {
+              "id": "w1-git-004",
+              "task": "Verify branch naming convention",
+              "status": "completed",
+              "completed_at": "2025-11-10T12:00:00Z",
+              "git_commit": "e9e7dd2"
+            }
+          ]
+        },
+        {
+          "id": "w1-quantconnect-skill",
+          "name": "QuantConnect Skills",
+          "items": [
+            {
+              "id": "w1-skill-001",
+              "task": "Copy PREVIOUS_WORK/.claude/skills/quantconnect/ to .claude/skills/",
+              "status": "completed",
+              "completed_at": "2025-11-09T18:00:00Z",
+              "git_commit": "previous"
+            },
+            {
+              "id": "w1-skill-002",
+              "task": "Review and update skill content",
+              "status": "completed",
+              "completed_at": "2025-11-09T18:00:00Z",
+              "git_commit": "previous"
+            },
+            {
+              "id": "w1-skill-003",
+              "task": "Create quantconnect-backtest skill (Phase 3)",
+              "status": "completed",
+              "completed_at": "2025-11-10T16:30:00Z",
+              "git_commit": "5c3c765"
+            },
+            {
+              "id": "w1-skill-004",
+              "task": "Create quantconnect-optimization skill (Phase 4)",
+              "status": "completed",
+              "completed_at": "2025-11-10T16:30:00Z",
+              "git_commit": "5c3c765"
+            },
+            {
+              "id": "w1-skill-005",
+              "task": "Create quantconnect-validation skill (Phase 5)",
+              "status": "completed",
+              "completed_at": "2025-11-10T16:30:00Z",
+              "git_commit": "5c3c765"
+            },
+            {
+              "id": "w1-skill-006",
+              "task": "Create decision-framework skill",
+              "status": "completed",
+              "completed_at": "2025-11-10T15:00:00Z",
+              "git_commit": "e9e7dd2"
+            },
+            {
+              "id": "w1-skill-007",
+              "task": "Create project-timeline skill",
+              "status": "completed",
+              "completed_at": "2025-11-10T15:00:00Z",
+              "git_commit": "575bbd9"
+            },
+            {
+              "id": "w1-skill-008",
+              "task": "Create backtesting-analysis skill",
+              "status": "completed",
+              "completed_at": "2025-11-10T15:45:00Z",
+              "git_commit": "09aab99"
+            }
+          ]
+        },
+        {
+          "id": "w1-testing-validation",
+          "name": "Testing & Validation",
+          "items": [
+            {
+              "id": "w1-test-001",
+              "task": "Create test hypothesis 1: Simple momentum strategy",
+              "status": "completed",
+              "completed_at": "2025-11-10T13:00:00Z",
+              "git_commit": "a0be965"
+            },
+            {
+              "id": "w1-test-002",
+              "task": "Create test hypothesis 2: RSI mean reversion",
+              "status": "completed",
+              "completed_at": "2025-11-11T00:31:43Z",
+              "git_commit": "fd261f2"
+            },
+            {
+              "id": "w1-test-003",
+              "task": "Create test hypothesis 3: Breakout strategy",
+              "status": "pending"
+            },
+            {
+              "id": "w1-test-004",
+              "task": "Run hypotheses through /qc-init and /qc-backtest",
+              "status": "completed",
+              "completed_at": "2025-11-10T13:00:00Z",
+              "git_commit": "a0be965",
+              "note": "1/3 hypotheses tested - system validated"
+            },
+            {
+              "id": "w1-test-005",
+              "task": "Verify iteration_state.json correctness",
+              "status": "completed",
+              "completed_at": "2025-11-10T13:00:00Z",
+              "git_commit": "a0be965"
+            },
+            {
+              "id": "w1-test-006",
+              "task": "Verify git commits are created",
+              "status": "completed",
+              "completed_at": "2025-11-10T13:00:00Z",
+              "git_commit": "a0be965"
+            },
+            {
+              "id": "w1-test-007",
+              "task": "Verify decisions make sense",
+              "status": "completed",
+              "completed_at": "2025-11-10T13:00:00Z",
+              "git_commit": "a0be965"
+            },
+            {
+              "id": "w1-test-008",
+              "task": "Measure time per hypothesis",
+              "status": "completed",
+              "completed_at": "2025-11-10T13:00:00Z",
+              "git_commit": "a0be965",
+              "note": "~9 minutes per hypothesis"
+            }
+          ]
+        }
+      ],
+      "deliverables": [
+        {
+          "id": "w1-deliverable-001",
+          "name": "/qc-init command working",
+          "status": "completed",
+          "completed_at": "2025-11-10T12:00:00Z"
+        },
+        {
+          "id": "w1-deliverable-002",
+          "name": "/qc-backtest command working",
+          "status": "completed",
+          "completed_at": "2025-11-10T13:00:00Z"
+        },
+        {
+          "id": "w1-deliverable-003",
+          "name": "qc_backtest.py wrapper tested",
+          "status": "completed",
+          "completed_at": "2025-11-10T13:00:00Z"
+        },
+        {
+          "id": "w1-deliverable-004",
+          "name": "3 hypotheses tested end-to-end",
+          "status": "partial",
+          "note": "1/3 complete - system validated"
+        },
+        {
+          "id": "w1-deliverable-005",
+          "name": "iteration_state.json schema validated",
+          "status": "completed",
+          "completed_at": "2025-11-10T13:00:00Z"
+        },
+        {
+          "id": "w1-deliverable-006",
+          "name": "Git integration working",
+          "status": "completed",
+          "completed_at": "2025-11-10T13:00:00Z"
+        },
+        {
+          "id": "w1-deliverable-007",
+          "name": "QuantConnect Skills integrated",
+          "status": "completed",
+          "completed_at": "2025-11-10T16:30:00Z"
+        }
+      ]
+    },
+    {
+      "week": 2,
+      "title": "Decision Framework Research",
+      "priority": 1,
+      "goal": "Calibrate decision thresholds with real data",
+      "duration_hours": "14-18",
+      "sections": [
+        {
+          "id": "w2-backtesting-skill",
+          "name": "Backtesting Analysis Skill",
+          "items": [
+            {
+              "id": "w2-skill-001",
+              "task": "Create .claude/skills/backtesting-analysis/ directory",
+              "status": "completed",
+              "completed_at": "2025-11-10T15:45:00Z",
+              "git_commit": "09aab99"
+            },
+            {
+              "id": "w2-skill-002",
+              "task": "Create skill.md with Sharpe ratio interpretation guidelines",
+              "status": "completed",
+              "completed_at": "2025-11-10T15:45:00Z",
+              "git_commit": "09aab99"
+            },
+            {
+              "id": "w2-skill-003",
+              "task": "Add trade frequency analysis",
+              "status": "completed",
+              "completed_at": "2025-11-10T15:45:00Z",
+              "git_commit": "09aab99"
+            },
+            {
+              "id": "w2-skill-004",
+              "task": "Add drawdown interpretation",
+              "status": "completed",
+              "completed_at": "2025-11-10T15:45:00Z",
+              "git_commit": "09aab99"
+            },
+            {
+              "id": "w2-skill-005",
+              "task": "Add overfitting detection patterns",
+              "status": "completed",
+              "completed_at": "2025-11-10T15:45:00Z",
+              "git_commit": "09aab99"
+            },
+            {
+              "id": "w2-skill-006",
+              "task": "Add strategy-type specific thresholds",
+              "status": "completed",
+              "completed_at": "2025-11-10T15:45:00Z",
+              "git_commit": "09aab99"
+            },
+            {
+              "id": "w2-skill-007",
+              "task": "Add examples of good vs bad backtests",
+              "status": "completed",
+              "completed_at": "2025-11-10T15:45:00Z",
+              "git_commit": "09aab99"
+            },
+            {
+              "id": "w2-skill-008",
+              "task": "Test skill in decision-making",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w2-threshold-calibration",
+          "name": "Threshold Calibration Research",
+          "items": [
+            {
+              "id": "w2-calib-001",
+              "task": "Generate 3 momentum strategies",
+              "status": "pending"
+            },
+            {
+              "id": "w2-calib-002",
+              "task": "Generate 3 mean reversion strategies",
+              "status": "pending"
+            },
+            {
+              "id": "w2-calib-003",
+              "task": "Generate 2 trend following strategies",
+              "status": "pending"
+            },
+            {
+              "id": "w2-calib-004",
+              "task": "Generate 2 contrarian strategies",
+              "status": "pending"
+            },
+            {
+              "id": "w2-calib-005",
+              "task": "Run all 10 hypotheses through Phase 3",
+              "status": "pending"
+            },
+            {
+              "id": "w2-calib-006",
+              "task": "Manually classify each result (proceed to optimization? yes/no)",
+              "status": "pending"
+            },
+            {
+              "id": "w2-calib-007",
+              "task": "Document rationale for each decision",
+              "status": "pending"
+            },
+            {
+              "id": "w2-calib-008",
+              "task": "Compare manual vs automatic decisions",
+              "status": "pending"
+            },
+            {
+              "id": "w2-calib-009",
+              "task": "Calculate false positive rate",
+              "status": "pending"
+            },
+            {
+              "id": "w2-calib-010",
+              "task": "Calculate false negative rate",
+              "status": "pending"
+            },
+            {
+              "id": "w2-calib-011",
+              "task": "Refine thresholds to minimize errors",
+              "status": "pending"
+            },
+            {
+              "id": "w2-calib-012",
+              "task": "Update iteration_state.json default thresholds",
+              "status": "pending"
+            },
+            {
+              "id": "w2-calib-013",
+              "task": "Document threshold calibration in report",
+              "status": "pending"
+            }
+          ]
+        }
+      ],
+      "deliverables": [
+        {
+          "id": "w2-deliverable-001",
+          "name": "Backtesting Analysis Skill created",
+          "status": "completed",
+          "completed_at": "2025-11-10T15:45:00Z"
+        },
+        {
+          "id": "w2-deliverable-002",
+          "name": "10 hypotheses tested (total 13 with Week 1)",
+          "status": "pending"
+        },
+        {
+          "id": "w2-deliverable-003",
+          "name": "Decision thresholds calibrated",
+          "status": "pending"
+        },
+        {
+          "id": "w2-deliverable-004",
+          "name": "False positive/negative rates measured",
+          "status": "pending"
+        },
+        {
+          "id": "w2-deliverable-005",
+          "name": "Threshold calibration report created",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "week": 3,
+      "title": "Phase 4 Implementation (Optimization)",
+      "priority": 2,
+      "goal": "Complete Phase 1-4 workflow with optimization",
+      "duration_hours": "18-22",
+      "sections": [
+        {
+          "id": "w3-optimization-research",
+          "name": "Optimization Approach Research",
+          "items": [
+            {
+              "id": "w3-research-001",
+              "task": "Research paid tier requirements (Launch tier $8/month)",
+              "status": "pending"
+            },
+            {
+              "id": "w3-research-002",
+              "task": "Research optimization API cost",
+              "status": "pending"
+            },
+            {
+              "id": "w3-research-003",
+              "task": "Research optimization queue limits",
+              "status": "pending"
+            },
+            {
+              "id": "w3-research-004",
+              "task": "Decision: Paid tier OR manual parameter grid",
+              "status": "pending"
+            },
+            {
+              "id": "w3-research-005",
+              "task": "Document decision in research report",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w3-paid-optimization",
+          "name": "Option A: Paid Tier Optimization",
+          "items": [
+            {
+              "id": "w3-paid-001",
+              "task": "Subscribe to QC Launch tier ($8/month)",
+              "status": "pending"
+            },
+            {
+              "id": "w3-paid-002",
+              "task": "Create SCRIPTS/qc_optimize_wrapper.py",
+              "status": "pending"
+            },
+            {
+              "id": "w3-paid-003",
+              "task": "Load baseline backtest from iteration_state.json",
+              "status": "pending"
+            },
+            {
+              "id": "w3-paid-004",
+              "task": "Load parameter grid from config",
+              "status": "pending"
+            },
+            {
+              "id": "w3-paid-005",
+              "task": "Estimate optimization cost",
+              "status": "pending"
+            },
+            {
+              "id": "w3-paid-006",
+              "task": "Call api.create_optimization()",
+              "status": "pending"
+            },
+            {
+              "id": "w3-paid-007",
+              "task": "Monitor progress and wait for completion",
+              "status": "pending"
+            },
+            {
+              "id": "w3-paid-008",
+              "task": "Parse results (best parameters, best Sharpe, improvement)",
+              "status": "pending"
+            },
+            {
+              "id": "w3-paid-009",
+              "task": "Test wrapper with 2 strategies",
+              "status": "pending"
+            },
+            {
+              "id": "w3-paid-010",
+              "task": "Measure actual cost per optimization",
+              "status": "pending"
+            },
+            {
+              "id": "w3-paid-011",
+              "task": "Measure time to complete",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w3-manual-optimization",
+          "name": "Option B: Manual Parameter Grid",
+          "items": [
+            {
+              "id": "w3-manual-001",
+              "task": "Create SCRIPTS/manual_optimize.py",
+              "status": "pending"
+            },
+            {
+              "id": "w3-manual-002",
+              "task": "Load baseline backtest from iteration_state.json",
+              "status": "pending"
+            },
+            {
+              "id": "w3-manual-003",
+              "task": "Load parameter grid from config",
+              "status": "pending"
+            },
+            {
+              "id": "w3-manual-004",
+              "task": "Generate all parameter combinations",
+              "status": "pending"
+            },
+            {
+              "id": "w3-manual-005",
+              "task": "For each combination: modify strategy, call qc_backtest.py, store results",
+              "status": "pending"
+            },
+            {
+              "id": "w3-manual-006",
+              "task": "Find best performing combination",
+              "status": "pending"
+            },
+            {
+              "id": "w3-manual-007",
+              "task": "Calculate improvement percentage",
+              "status": "pending"
+            },
+            {
+              "id": "w3-manual-008",
+              "task": "Test with small grid (3x3)",
+              "status": "pending"
+            },
+            {
+              "id": "w3-manual-009",
+              "task": "Measure time and API calls",
+              "status": "pending"
+            },
+            {
+              "id": "w3-manual-010",
+              "task": "Estimate cost for larger grids",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w3-qc-optimize",
+          "name": "Slash Command: /qc-optimize (Phase 4)",
+          "items": [
+            {
+              "id": "w3-optimize-001",
+              "task": "Create /qc-optimize command file",
+              "status": "pending"
+            },
+            {
+              "id": "w3-optimize-002",
+              "task": "Read iteration_state.json",
+              "status": "pending"
+            },
+            {
+              "id": "w3-optimize-003",
+              "task": "Validate current phase is backtest (with proceed_to_optimization decision)",
+              "status": "pending"
+            },
+            {
+              "id": "w3-optimize-004",
+              "task": "Load baseline metrics (Sharpe, drawdown, trades)",
+              "status": "pending"
+            },
+            {
+              "id": "w3-optimize-005",
+              "task": "Load parameter grid configuration from config or user",
+              "status": "pending"
+            },
+            {
+              "id": "w3-optimize-006",
+              "task": "Call optimization wrapper (qc_optimize_wrapper.py OR manual_optimize.py)",
+              "status": "pending"
+            },
+            {
+              "id": "w3-optimize-007",
+              "task": "Parse optimization results (best parameters, optimized Sharpe, improvement %)",
+              "status": "pending"
+            },
+            {
+              "id": "w3-optimize-008",
+              "task": "Evaluate optimization results (Phase 4 decision logic)",
+              "status": "pending"
+            },
+            {
+              "id": "w3-optimize-009",
+              "task": "Update iteration_state.json with optimization results and decision",
+              "status": "pending"
+            },
+            {
+              "id": "w3-optimize-010",
+              "task": "Handle overfitting detection (set overfitting_detected = true)",
+              "status": "pending"
+            },
+            {
+              "id": "w3-optimize-011",
+              "task": "Git commit: optimize: Iteration {N} - {DECISION}",
+              "status": "pending"
+            },
+            {
+              "id": "w3-optimize-012",
+              "task": "Test command end-to-end",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w3-optimization-decision",
+          "name": "Optimization Decision Logic",
+          "items": [
+            {
+              "id": "w3-decision-001",
+              "task": "Implement evaluate_optimization() function",
+              "status": "pending"
+            },
+            {
+              "id": "w3-decision-002",
+              "task": "Calculate improvement_pct = (optimized - baseline) / baseline",
+              "status": "pending"
+            },
+            {
+              "id": "w3-decision-003",
+              "task": "If improvement_pct > 30%: ESCALATE_TO_HUMAN (overfitting risk)",
+              "status": "pending"
+            },
+            {
+              "id": "w3-decision-004",
+              "task": "If improvement_pct < 0%: USE_BASELINE_PARAMS (degraded)",
+              "status": "pending"
+            },
+            {
+              "id": "w3-decision-005",
+              "task": "If improvement_pct < 5%: USE_BASELINE_PARAMS (minimal improvement)",
+              "status": "pending"
+            },
+            {
+              "id": "w3-decision-006",
+              "task": "If 5% <= improvement_pct <= 30%: PROCEED_TO_VALIDATION",
+              "status": "pending"
+            },
+            {
+              "id": "w3-decision-007",
+              "task": "Test with mock data",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w3-optimization-skill",
+          "name": "Optimization Skill",
+          "items": [
+            {
+              "id": "w3-skill-001",
+              "task": "Create .claude/skills/optimization/ directory",
+              "status": "pending"
+            },
+            {
+              "id": "w3-skill-002",
+              "task": "Create skill.md with parameter optimization theory",
+              "status": "pending"
+            },
+            {
+              "id": "w3-skill-003",
+              "task": "Add grid search vs Bayesian optimization",
+              "status": "pending"
+            },
+            {
+              "id": "w3-skill-004",
+              "task": "Add overfitting detection",
+              "status": "pending"
+            },
+            {
+              "id": "w3-skill-005",
+              "task": "Add parameter stability importance",
+              "status": "pending"
+            },
+            {
+              "id": "w3-skill-006",
+              "task": "Add walk-forward validation rationale",
+              "status": "pending"
+            },
+            {
+              "id": "w3-skill-007",
+              "task": "Add examples of good vs overfitted parameters",
+              "status": "pending"
+            },
+            {
+              "id": "w3-skill-008",
+              "task": "Test skill loading",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w3-overfitting-research",
+          "name": "Overfitting Detection Research",
+          "items": [
+            {
+              "id": "w3-overfit-001",
+              "task": "Take 5 strategies that passed Phase 3",
+              "status": "pending"
+            },
+            {
+              "id": "w3-overfit-002",
+              "task": "Optimize parameters (Phase 4)",
+              "status": "pending"
+            },
+            {
+              "id": "w3-overfit-003",
+              "task": "Note improvement percentages",
+              "status": "pending"
+            },
+            {
+              "id": "w3-overfit-004",
+              "task": "Run mock validation (will implement real Phase 5 in Week 4)",
+              "status": "pending"
+            },
+            {
+              "id": "w3-overfit-005",
+              "task": "Measure degradation",
+              "status": "pending"
+            },
+            {
+              "id": "w3-overfit-006",
+              "task": "Correlate improvement vs degradation",
+              "status": "pending"
+            },
+            {
+              "id": "w3-overfit-007",
+              "task": "Refine overfitting threshold (currently 30%)",
+              "status": "pending"
+            },
+            {
+              "id": "w3-overfit-008",
+              "task": "Document findings in report",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w3-testing",
+          "name": "Testing & Validation",
+          "items": [
+            {
+              "id": "w3-test-001",
+              "task": "Test /qc-optimize with 5 strategies",
+              "status": "pending"
+            },
+            {
+              "id": "w3-test-002",
+              "task": "Verify optimization completes successfully",
+              "status": "pending"
+            },
+            {
+              "id": "w3-test-003",
+              "task": "Verify decision logic works correctly",
+              "status": "pending"
+            },
+            {
+              "id": "w3-test-004",
+              "task": "Verify overfitting detection works",
+              "status": "pending"
+            },
+            {
+              "id": "w3-test-005",
+              "task": "Verify cost tracking is accurate",
+              "status": "pending"
+            },
+            {
+              "id": "w3-test-006",
+              "task": "Measure time per optimization",
+              "status": "pending"
+            }
+          ]
+        }
+      ],
+      "deliverables": [
+        {
+          "id": "w3-deliverable-001",
+          "name": "/qc-optimize command working",
+          "status": "pending"
+        },
+        {
+          "id": "w3-deliverable-002",
+          "name": "Optimization wrapper tested (paid or manual)",
+          "status": "pending"
+        },
+        {
+          "id": "w3-deliverable-003",
+          "name": "Optimization Skill created",
+          "status": "pending"
+        },
+        {
+          "id": "w3-deliverable-004",
+          "name": "Overfitting detection implemented",
+          "status": "pending"
+        },
+        {
+          "id": "w3-deliverable-005",
+          "name": "5 strategies optimized",
+          "status": "pending"
+        },
+        {
+          "id": "w3-deliverable-006",
+          "name": "Cost analysis complete",
+          "status": "pending"
+        },
+        {
+          "id": "w3-deliverable-007",
+          "name": "Optimization research report created",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "week": 4,
+      "title": "Phase 5 Implementation (Validation)",
+      "priority": 2,
+      "goal": "Complete full Phase 1-5 autonomous workflow",
+      "duration_hours": "20-26",
+      "sections": [
+        {
+          "id": "w4-walkforward-wrapper",
+          "name": "Create Free-Tier Walk-forward Wrapper",
+          "items": [
+            {
+              "id": "w4-wrapper-001",
+              "task": "Create SCRIPTS/qc_walkforward_free_tier.py",
+              "status": "pending"
+            },
+            {
+              "id": "w4-wrapper-002",
+              "task": "Load strategy and optimized parameters",
+              "status": "pending"
+            },
+            {
+              "id": "w4-wrapper-003",
+              "task": "Load walk-forward configuration (n_samples, train_test_split, parameter_grid)",
+              "status": "pending"
+            },
+            {
+              "id": "w4-wrapper-004",
+              "task": "For each Monte Carlo sample: generate random train/test date split",
+              "status": "pending"
+            },
+            {
+              "id": "w4-wrapper-005",
+              "task": "Grid search on training period (for each parameter combination)",
+              "status": "pending"
+            },
+            {
+              "id": "w4-wrapper-006",
+              "task": "Find best parameters from training",
+              "status": "pending"
+            },
+            {
+              "id": "w4-wrapper-007",
+              "task": "Test on out-of-sample period with best parameters",
+              "status": "pending"
+            },
+            {
+              "id": "w4-wrapper-008",
+              "task": "Calculate degradation: (train_sharpe - test_sharpe) / train_sharpe",
+              "status": "pending"
+            },
+            {
+              "id": "w4-wrapper-009",
+              "task": "Analyze results (mean degradation, std dev, % runs with degradation > 30%)",
+              "status": "pending"
+            },
+            {
+              "id": "w4-wrapper-010",
+              "task": "Calculate robustness_score",
+              "status": "pending"
+            },
+            {
+              "id": "w4-wrapper-011",
+              "task": "Return decision: ROBUST_STRATEGY, PROCEED_WITH_CAUTION, HIGH_RISK, ABANDON_STRATEGY",
+              "status": "pending"
+            },
+            {
+              "id": "w4-wrapper-012",
+              "task": "Test with small sample (n=5) first",
+              "status": "pending"
+            },
+            {
+              "id": "w4-wrapper-013",
+              "task": "Test with full sample (n=20)",
+              "status": "pending"
+            },
+            {
+              "id": "w4-wrapper-014",
+              "task": "Measure time and API costs",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w4-configuration",
+          "name": "Parameter Grid and Walk-forward Configuration",
+          "items": [
+            {
+              "id": "w4-config-001",
+              "task": "Create walkforward_param_grid.json template",
+              "status": "pending"
+            },
+            {
+              "id": "w4-config-002",
+              "task": "Define parameter ranges for RSI strategies (period, oversold, overbought)",
+              "status": "pending"
+            },
+            {
+              "id": "w4-config-003",
+              "task": "Define parameter ranges for MA strategies (periods)",
+              "status": "pending"
+            },
+            {
+              "id": "w4-config-004",
+              "task": "Define parameter ranges for breakout strategies (windows)",
+              "status": "pending"
+            },
+            {
+              "id": "w4-config-005",
+              "task": "Define parameter ranges for stop loss percentages",
+              "status": "pending"
+            },
+            {
+              "id": "w4-config-006",
+              "task": "Document grid size recommendations",
+              "status": "pending"
+            },
+            {
+              "id": "w4-config-007",
+              "task": "Test grid sizes: 3x3, 5x5, 10x10",
+              "status": "pending"
+            },
+            {
+              "id": "w4-config-008",
+              "task": "Create walkforward_config.json template",
+              "status": "pending"
+            },
+            {
+              "id": "w4-config-009",
+              "task": "Document configuration options",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w4-qc-validate",
+          "name": "Slash Command: /qc-validate (Phase 5)",
+          "items": [
+            {
+              "id": "w4-validate-001",
+              "task": "Create /qc-validate command file",
+              "status": "pending"
+            },
+            {
+              "id": "w4-validate-002",
+              "task": "Read iteration_state.json",
+              "status": "pending"
+            },
+            {
+              "id": "w4-validate-003",
+              "task": "Validate current phase is optimization (with proceed_to_validation decision)",
+              "status": "pending"
+            },
+            {
+              "id": "w4-validate-004",
+              "task": "Load optimized parameters from phase_results.optimization",
+              "status": "pending"
+            },
+            {
+              "id": "w4-validate-005",
+              "task": "Load walk-forward configuration",
+              "status": "pending"
+            },
+            {
+              "id": "w4-validate-006",
+              "task": "Call qc_walkforward_free_tier.py wrapper",
+              "status": "pending"
+            },
+            {
+              "id": "w4-validate-007",
+              "task": "Parse validation results (mean degradation, distribution, robustness_score)",
+              "status": "pending"
+            },
+            {
+              "id": "w4-validate-008",
+              "task": "Evaluate validation results (Phase 5 decision logic)",
+              "status": "pending"
+            },
+            {
+              "id": "w4-validate-009",
+              "task": "Update iteration_state.json with validation results and decision",
+              "status": "pending"
+            },
+            {
+              "id": "w4-validate-010",
+              "task": "Git commit: validate: Complete validation - {DECISION}",
+              "status": "pending"
+            },
+            {
+              "id": "w4-validate-011",
+              "task": "If DEPLOY_STRATEGY: Create git tag validated-{hypothesis_id}",
+              "status": "pending"
+            },
+            {
+              "id": "w4-validate-012",
+              "task": "Test command end-to-end",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w4-validation-decision",
+          "name": "Validation Decision Logic",
+          "items": [
+            {
+              "id": "w4-decision-001",
+              "task": "Implement evaluate_validation() function",
+              "status": "pending"
+            },
+            {
+              "id": "w4-decision-002",
+              "task": "Load robustness thresholds from config",
+              "status": "pending"
+            },
+            {
+              "id": "w4-decision-003",
+              "task": "Calculate robustness_score from degradation metrics",
+              "status": "pending"
+            },
+            {
+              "id": "w4-decision-004",
+              "task": "If degradation < 15% AND variance < 10%: DEPLOY_STRATEGY",
+              "status": "pending"
+            },
+            {
+              "id": "w4-decision-005",
+              "task": "If degradation 15-40%: PROCEED_WITH_CAUTION",
+              "status": "pending"
+            },
+            {
+              "id": "w4-decision-006",
+              "task": "If degradation > 40%: ABANDON_HYPOTHESIS",
+              "status": "pending"
+            },
+            {
+              "id": "w4-decision-007",
+              "task": "If >50% runs show >30% degradation: ABANDON_HYPOTHESIS",
+              "status": "pending"
+            },
+            {
+              "id": "w4-decision-008",
+              "task": "Test with mock data",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w4-validation-skill",
+          "name": "Validation Skill",
+          "items": [
+            {
+              "id": "w4-skill-001",
+              "task": "Create .claude/skills/validation/ directory",
+              "status": "pending"
+            },
+            {
+              "id": "w4-skill-002",
+              "task": "Create skill.md with walk-forward validation theory",
+              "status": "pending"
+            },
+            {
+              "id": "w4-skill-003",
+              "task": "Add Monte Carlo sampling rationale",
+              "status": "pending"
+            },
+            {
+              "id": "w4-skill-004",
+              "task": "Add degradation interpretation",
+              "status": "pending"
+            },
+            {
+              "id": "w4-skill-005",
+              "task": "Add robustness scoring methodology",
+              "status": "pending"
+            },
+            {
+              "id": "w4-skill-006",
+              "task": "Add parameter stability importance",
+              "status": "pending"
+            },
+            {
+              "id": "w4-skill-007",
+              "task": "Add when to deploy vs abandon",
+              "status": "pending"
+            },
+            {
+              "id": "w4-skill-008",
+              "task": "Add examples of robust vs unstable strategies",
+              "status": "pending"
+            },
+            {
+              "id": "w4-skill-009",
+              "task": "Test skill loading",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w4-reliability-research",
+          "name": "Validation Reliability Research",
+          "items": [
+            {
+              "id": "w4-research-001",
+              "task": "Run 10 strategies through complete Phase 1-5",
+              "status": "pending"
+            },
+            {
+              "id": "w4-research-002",
+              "task": "For strategies marked DEPLOY: run backtest on most recent 3 months (unseen data)",
+              "status": "pending"
+            },
+            {
+              "id": "w4-research-003",
+              "task": "Compare to validation predictions",
+              "status": "pending"
+            },
+            {
+              "id": "w4-research-004",
+              "task": "Measure prediction accuracy",
+              "status": "pending"
+            },
+            {
+              "id": "w4-research-005",
+              "task": "For strategies marked ABANDON: verify they would have failed",
+              "status": "pending"
+            },
+            {
+              "id": "w4-research-006",
+              "task": "Calculate true positive rate (correctly deployed)",
+              "status": "pending"
+            },
+            {
+              "id": "w4-research-007",
+              "task": "Calculate false positive rate (deployed but failed)",
+              "status": "pending"
+            },
+            {
+              "id": "w4-research-008",
+              "task": "Calculate true negative rate (correctly abandoned)",
+              "status": "pending"
+            },
+            {
+              "id": "w4-research-009",
+              "task": "Calculate false negative rate (abandoned but would succeed)",
+              "status": "pending"
+            },
+            {
+              "id": "w4-research-010",
+              "task": "Document validation reliability metrics",
+              "status": "pending"
+            },
+            {
+              "id": "w4-research-011",
+              "task": "Refine thresholds if needed",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w4-testing",
+          "name": "Testing & Validation",
+          "items": [
+            {
+              "id": "w4-test-001",
+              "task": "Test /qc-validate with 10 strategies",
+              "status": "pending"
+            },
+            {
+              "id": "w4-test-002",
+              "task": "Verify walk-forward validation completes",
+              "status": "pending"
+            },
+            {
+              "id": "w4-test-003",
+              "task": "Verify decision logic works correctly",
+              "status": "pending"
+            },
+            {
+              "id": "w4-test-004",
+              "task": "Verify robustness scoring is sensible",
+              "status": "pending"
+            },
+            {
+              "id": "w4-test-005",
+              "task": "Measure time per validation",
+              "status": "pending"
+            },
+            {
+              "id": "w4-test-006",
+              "task": "Measure cost per validation",
+              "status": "pending"
+            },
+            {
+              "id": "w4-test-007",
+              "task": "Test with different parameter grid sizes",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w4-master-control",
+          "name": "Master Control Loop (Optional)",
+          "items": [
+            {
+              "id": "w4-master-001",
+              "task": "Create /qc-auto-iterate command",
+              "status": "pending"
+            },
+            {
+              "id": "w4-master-002",
+              "task": "Read iteration_state.json and determine current phase",
+              "status": "pending"
+            },
+            {
+              "id": "w4-master-003",
+              "task": "Call appropriate next command automatically",
+              "status": "pending"
+            },
+            {
+              "id": "w4-master-004",
+              "task": "Handle errors and escalations",
+              "status": "pending"
+            },
+            {
+              "id": "w4-master-005",
+              "task": "Respect autonomy_mode settings",
+              "status": "pending"
+            },
+            {
+              "id": "w4-master-006",
+              "task": "Test with 3 strategies end-to-end",
+              "status": "pending"
+            }
+          ]
+        }
+      ],
+      "deliverables": [
+        {
+          "id": "w4-deliverable-001",
+          "name": "/qc-validate command working",
+          "status": "pending"
+        },
+        {
+          "id": "w4-deliverable-002",
+          "name": "qc_walkforward_free_tier.py wrapper tested",
+          "status": "pending"
+        },
+        {
+          "id": "w4-deliverable-003",
+          "name": "Validation Skill created",
+          "status": "pending"
+        },
+        {
+          "id": "w4-deliverable-004",
+          "name": "Walk-forward validation working on free tier",
+          "status": "pending"
+        },
+        {
+          "id": "w4-deliverable-005",
+          "name": "10 strategies tested end-to-end (Phase 1-5)",
+          "status": "pending"
+        },
+        {
+          "id": "w4-deliverable-006",
+          "name": "Validation reliability measured",
+          "status": "pending"
+        },
+        {
+          "id": "w4-deliverable-007",
+          "name": "Validation research report created",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "week": 5,
+      "title": "Integration & Error Handling",
+      "priority": 3,
+      "goal": "Production-ready error handling and additional commands",
+      "duration_hours": "20-25",
+      "sections": [
+        {
+          "id": "w5-error-handling",
+          "name": "Error Handling & Recovery",
+          "items": [
+            {
+              "id": "w5-error-001",
+              "task": "Implement retry logic with exponential backoff",
+              "status": "pending"
+            },
+            {
+              "id": "w5-error-002",
+              "task": "Handle rate limit errors",
+              "status": "pending"
+            },
+            {
+              "id": "w5-error-003",
+              "task": "Handle authentication errors",
+              "status": "pending"
+            },
+            {
+              "id": "w5-error-004",
+              "task": "Handle timeout errors",
+              "status": "pending"
+            },
+            {
+              "id": "w5-error-005",
+              "task": "Handle invalid response errors",
+              "status": "pending"
+            },
+            {
+              "id": "w5-error-006",
+              "task": "Detect corrupted iteration_state.json",
+              "status": "pending"
+            },
+            {
+              "id": "w5-error-007",
+              "task": "Validate schema on read",
+              "status": "pending"
+            },
+            {
+              "id": "w5-error-008",
+              "task": "Auto-repair common issues",
+              "status": "pending"
+            },
+            {
+              "id": "w5-error-009",
+              "task": "Implement rollback capability",
+              "status": "pending"
+            },
+            {
+              "id": "w5-error-010",
+              "task": "Detect incomplete operations",
+              "status": "pending"
+            },
+            {
+              "id": "w5-error-011",
+              "task": "Resume from last checkpoint",
+              "status": "pending"
+            },
+            {
+              "id": "w5-error-012",
+              "task": "Avoid duplicate API calls",
+              "status": "pending"
+            },
+            {
+              "id": "w5-error-013",
+              "task": "Log all errors to errors.log",
+              "status": "pending"
+            },
+            {
+              "id": "w5-error-014",
+              "task": "Include timestamp, phase, error details in logs",
+              "status": "pending"
+            },
+            {
+              "id": "w5-error-015",
+              "task": "Include recovery action taken in logs",
+              "status": "pending"
+            },
+            {
+              "id": "w5-error-016",
+              "task": "Test error scenarios: simulate API failures",
+              "status": "pending"
+            },
+            {
+              "id": "w5-error-017",
+              "task": "Test error scenarios: simulate network timeouts",
+              "status": "pending"
+            },
+            {
+              "id": "w5-error-018",
+              "task": "Test recovery mechanisms",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w5-qc-status",
+          "name": "/qc-status Command",
+          "items": [
+            {
+              "id": "w5-status-001",
+              "task": "Create /qc-status command file",
+              "status": "pending"
+            },
+            {
+              "id": "w5-status-002",
+              "task": "Read iteration_state.json",
+              "status": "pending"
+            },
+            {
+              "id": "w5-status-003",
+              "task": "Display current hypothesis name and ID",
+              "status": "pending"
+            },
+            {
+              "id": "w5-status-004",
+              "task": "Display current phase and iteration",
+              "status": "pending"
+            },
+            {
+              "id": "w5-status-005",
+              "task": "Display phases completed",
+              "status": "pending"
+            },
+            {
+              "id": "w5-status-006",
+              "task": "Display latest decision and rationale",
+              "status": "pending"
+            },
+            {
+              "id": "w5-status-007",
+              "task": "Display next action",
+              "status": "pending"
+            },
+            {
+              "id": "w5-status-008",
+              "task": "Display cost summary",
+              "status": "pending"
+            },
+            {
+              "id": "w5-status-009",
+              "task": "Display time estimate to completion",
+              "status": "pending"
+            },
+            {
+              "id": "w5-status-010",
+              "task": "Include progress bar or percentage",
+              "status": "pending"
+            },
+            {
+              "id": "w5-status-011",
+              "task": "Test command",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w5-qc-report",
+          "name": "/qc-report Command",
+          "items": [
+            {
+              "id": "w5-report-001",
+              "task": "Create /qc-report command file",
+              "status": "pending"
+            },
+            {
+              "id": "w5-report-002",
+              "task": "Read iteration_state.json",
+              "status": "pending"
+            },
+            {
+              "id": "w5-report-003",
+              "task": "Generate comprehensive report: hypothesis details",
+              "status": "pending"
+            },
+            {
+              "id": "w5-report-004",
+              "task": "Include all phase results with metrics",
+              "status": "pending"
+            },
+            {
+              "id": "w5-report-005",
+              "task": "Include complete decision log",
+              "status": "pending"
+            },
+            {
+              "id": "w5-report-006",
+              "task": "Include git commit history",
+              "status": "pending"
+            },
+            {
+              "id": "w5-report-007",
+              "task": "Include cost breakdown",
+              "status": "pending"
+            },
+            {
+              "id": "w5-report-008",
+              "task": "Include time spent per phase",
+              "status": "pending"
+            },
+            {
+              "id": "w5-report-009",
+              "task": "Include final recommendation",
+              "status": "pending"
+            },
+            {
+              "id": "w5-report-010",
+              "task": "Format as markdown",
+              "status": "pending"
+            },
+            {
+              "id": "w5-report-011",
+              "task": "Save to REPORTS/{hypothesis_id}_report.md",
+              "status": "pending"
+            },
+            {
+              "id": "w5-report-012",
+              "task": "Optionally generate charts (if possible)",
+              "status": "pending"
+            },
+            {
+              "id": "w5-report-013",
+              "task": "Test command",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w5-qc-rollback",
+          "name": "/qc-rollback Command (Optional)",
+          "items": [
+            {
+              "id": "w5-rollback-001",
+              "task": "Create /qc-rollback command file",
+              "status": "pending"
+            },
+            {
+              "id": "w5-rollback-002",
+              "task": "Read iteration_state.json",
+              "status": "pending"
+            },
+            {
+              "id": "w5-rollback-003",
+              "task": "Display current phase",
+              "status": "pending"
+            },
+            {
+              "id": "w5-rollback-004",
+              "task": "Ask which phase to rollback to",
+              "status": "pending"
+            },
+            {
+              "id": "w5-rollback-005",
+              "task": "Restore iteration_state.json to that phase",
+              "status": "pending"
+            },
+            {
+              "id": "w5-rollback-006",
+              "task": "Preserve rollback history for audit",
+              "status": "pending"
+            },
+            {
+              "id": "w5-rollback-007",
+              "task": "Create git commit: rollback: Reset to {phase}",
+              "status": "pending"
+            },
+            {
+              "id": "w5-rollback-008",
+              "task": "Test command",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w5-logging",
+          "name": "Logging & Debugging Infrastructure",
+          "items": [
+            {
+              "id": "w5-logging-001",
+              "task": "Create centralized logging module",
+              "status": "pending"
+            },
+            {
+              "id": "w5-logging-002",
+              "task": "Implement log levels: DEBUG, INFO, WARN, ERROR",
+              "status": "pending"
+            },
+            {
+              "id": "w5-logging-003",
+              "task": "Create separate log files per command",
+              "status": "pending"
+            },
+            {
+              "id": "w5-logging-004",
+              "task": "Timestamp all entries",
+              "status": "pending"
+            },
+            {
+              "id": "w5-logging-005",
+              "task": "Include context (hypothesis_id, phase, iteration)",
+              "status": "pending"
+            },
+            {
+              "id": "w5-logging-006",
+              "task": "Add --debug flag to all commands",
+              "status": "pending"
+            },
+            {
+              "id": "w5-logging-007",
+              "task": "Enable verbose logging in debug mode",
+              "status": "pending"
+            },
+            {
+              "id": "w5-logging-008",
+              "task": "Show API requests/responses in debug mode",
+              "status": "pending"
+            },
+            {
+              "id": "w5-logging-009",
+              "task": "Show decision logic reasoning in debug mode",
+              "status": "pending"
+            },
+            {
+              "id": "w5-logging-010",
+              "task": "Show intermediate calculations in debug mode",
+              "status": "pending"
+            },
+            {
+              "id": "w5-logging-011",
+              "task": "Track time per phase",
+              "status": "pending"
+            },
+            {
+              "id": "w5-logging-012",
+              "task": "Track API call counts",
+              "status": "pending"
+            },
+            {
+              "id": "w5-logging-013",
+              "task": "Track cost",
+              "status": "pending"
+            },
+            {
+              "id": "w5-logging-014",
+              "task": "Save performance metrics to metrics.json",
+              "status": "pending"
+            },
+            {
+              "id": "w5-logging-015",
+              "task": "Test logging in all commands",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w5-configuration",
+          "name": "Configuration System",
+          "items": [
+            {
+              "id": "w5-config-001",
+              "task": "Create config.json file with default thresholds (4 tiers)",
+              "status": "pending"
+            },
+            {
+              "id": "w5-config-002",
+              "task": "Add default limits to config.json",
+              "status": "pending"
+            },
+            {
+              "id": "w5-config-003",
+              "task": "Add default autonomy_mode to config.json",
+              "status": "pending"
+            },
+            {
+              "id": "w5-config-004",
+              "task": "Add API credentials path to config.json",
+              "status": "pending"
+            },
+            {
+              "id": "w5-config-005",
+              "task": "Add cost budgets to config.json",
+              "status": "pending"
+            },
+            {
+              "id": "w5-config-006",
+              "task": "Add strategy-specific overrides to config.json",
+              "status": "pending"
+            },
+            {
+              "id": "w5-config-007",
+              "task": "Implement config loading in all commands",
+              "status": "pending"
+            },
+            {
+              "id": "w5-config-008",
+              "task": "Override config with iteration_state.json values",
+              "status": "pending"
+            },
+            {
+              "id": "w5-config-009",
+              "task": "Allow command-line overrides",
+              "status": "pending"
+            },
+            {
+              "id": "w5-config-010",
+              "task": "Create config validation: check required fields",
+              "status": "pending"
+            },
+            {
+              "id": "w5-config-011",
+              "task": "Validate threshold values",
+              "status": "pending"
+            },
+            {
+              "id": "w5-config-012",
+              "task": "Warn about suspicious values",
+              "status": "pending"
+            },
+            {
+              "id": "w5-config-013",
+              "task": "Document all config options",
+              "status": "pending"
+            },
+            {
+              "id": "w5-config-014",
+              "task": "Test with different configurations",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w5-skills-refinement",
+          "name": "Skills Refinement",
+          "items": [
+            {
+              "id": "w5-skills-001",
+              "task": "Review QuantConnect Skill: add examples from actual errors encountered",
+              "status": "pending"
+            },
+            {
+              "id": "w5-skills-002",
+              "task": "Add common bug patterns (NoneType, off-by-one)",
+              "status": "pending"
+            },
+            {
+              "id": "w5-skills-003",
+              "task": "Update best practices based on testing",
+              "status": "pending"
+            },
+            {
+              "id": "w5-skills-004",
+              "task": "Test QuantConnect skill effectiveness",
+              "status": "pending"
+            },
+            {
+              "id": "w5-skills-005",
+              "task": "Review Backtesting Analysis Skill: add examples from actual backtests",
+              "status": "pending"
+            },
+            {
+              "id": "w5-skills-006",
+              "task": "Refine threshold guidance",
+              "status": "pending"
+            },
+            {
+              "id": "w5-skills-007",
+              "task": "Add strategy-type specific patterns",
+              "status": "pending"
+            },
+            {
+              "id": "w5-skills-008",
+              "task": "Review Optimization Skill: add overfitting examples from testing",
+              "status": "pending"
+            },
+            {
+              "id": "w5-skills-009",
+              "task": "Add parameter stability guidance",
+              "status": "pending"
+            },
+            {
+              "id": "w5-skills-010",
+              "task": "Review Validation Skill: add robustness examples from testing",
+              "status": "pending"
+            },
+            {
+              "id": "w5-skills-011",
+              "task": "Add degradation interpretation guidance",
+              "status": "pending"
+            }
+          ]
+        }
+      ],
+      "deliverables": [
+        {
+          "id": "w5-deliverable-001",
+          "name": "Error handling implemented in all commands",
+          "status": "pending"
+        },
+        {
+          "id": "w5-deliverable-002",
+          "name": "/qc-status command working",
+          "status": "pending"
+        },
+        {
+          "id": "w5-deliverable-003",
+          "name": "/qc-report command working",
+          "status": "pending"
+        },
+        {
+          "id": "w5-deliverable-004",
+          "name": "Logging infrastructure complete",
+          "status": "pending"
+        },
+        {
+          "id": "w5-deliverable-005",
+          "name": "Configuration system working",
+          "status": "pending"
+        },
+        {
+          "id": "w5-deliverable-006",
+          "name": "All skills refined with real examples",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "week": 6,
+      "title": "Testing & Documentation",
+      "priority": 3,
+      "goal": "Complete testing, documentation, and framework validation",
+      "duration_hours": "20-25",
+      "sections": [
+        {
+          "id": "w6-end-to-end-testing",
+          "name": "End-to-End Testing",
+          "items": [
+            {
+              "id": "w6-testing-001",
+              "task": "Create 5 momentum strategies",
+              "status": "pending"
+            },
+            {
+              "id": "w6-testing-002",
+              "task": "Create 5 mean reversion strategies",
+              "status": "pending"
+            },
+            {
+              "id": "w6-testing-003",
+              "task": "Create 4 trend following strategies",
+              "status": "pending"
+            },
+            {
+              "id": "w6-testing-004",
+              "task": "Create 3 contrarian strategies",
+              "status": "pending"
+            },
+            {
+              "id": "w6-testing-005",
+              "task": "Create 3 hybrid strategies",
+              "status": "pending"
+            },
+            {
+              "id": "w6-testing-006",
+              "task": "Run all 20 through complete Phase 1-5",
+              "status": "pending"
+            },
+            {
+              "id": "w6-testing-007",
+              "task": "For each hypothesis, measure total time from start to finish",
+              "status": "pending"
+            },
+            {
+              "id": "w6-testing-008",
+              "task": "Measure time per phase",
+              "status": "pending"
+            },
+            {
+              "id": "w6-testing-009",
+              "task": "Measure total cost (API calls)",
+              "status": "pending"
+            },
+            {
+              "id": "w6-testing-010",
+              "task": "Manually review decision quality",
+              "status": "pending"
+            },
+            {
+              "id": "w6-testing-011",
+              "task": "Track errors encountered",
+              "status": "pending"
+            },
+            {
+              "id": "w6-testing-012",
+              "task": "Track manual interventions needed",
+              "status": "pending"
+            },
+            {
+              "id": "w6-testing-013",
+              "task": "Calculate average time per hypothesis",
+              "status": "pending"
+            },
+            {
+              "id": "w6-testing-014",
+              "task": "Calculate average cost per hypothesis",
+              "status": "pending"
+            },
+            {
+              "id": "w6-testing-015",
+              "task": "Calculate error rate (% with errors)",
+              "status": "pending"
+            },
+            {
+              "id": "w6-testing-016",
+              "task": "Calculate manual intervention rate",
+              "status": "pending"
+            },
+            {
+              "id": "w6-testing-017",
+              "task": "Calculate false positive/negative rates",
+              "status": "pending"
+            },
+            {
+              "id": "w6-testing-018",
+              "task": "Document all results in testing report",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w6-performance-optimization",
+          "name": "Performance Optimization",
+          "items": [
+            {
+              "id": "w6-perf-001",
+              "task": "Profile commands to find bottlenecks: time spent in API calls",
+              "status": "pending"
+            },
+            {
+              "id": "w6-perf-002",
+              "task": "Profile time spent in decision logic",
+              "status": "pending"
+            },
+            {
+              "id": "w6-perf-003",
+              "task": "Profile time spent in file I/O",
+              "status": "pending"
+            },
+            {
+              "id": "w6-perf-004",
+              "task": "Optimize slow operations: batch API calls where possible",
+              "status": "pending"
+            },
+            {
+              "id": "w6-perf-005",
+              "task": "Cache frequently accessed data",
+              "status": "pending"
+            },
+            {
+              "id": "w6-perf-006",
+              "task": "Parallelize independent operations",
+              "status": "pending"
+            },
+            {
+              "id": "w6-perf-007",
+              "task": "Review all API call patterns",
+              "status": "pending"
+            },
+            {
+              "id": "w6-perf-008",
+              "task": "Eliminate redundant API calls",
+              "status": "pending"
+            },
+            {
+              "id": "w6-perf-009",
+              "task": "Use cached results when valid",
+              "status": "pending"
+            },
+            {
+              "id": "w6-perf-010",
+              "task": "Measure performance improvements",
+              "status": "pending"
+            },
+            {
+              "id": "w6-perf-011",
+              "task": "Document optimizations",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w6-user-guide",
+          "name": "User Guide Documentation",
+          "items": [
+            {
+              "id": "w6-docs-001",
+              "task": "Create USER_GUIDE.md: introduction and overview",
+              "status": "pending"
+            },
+            {
+              "id": "w6-docs-002",
+              "task": "Add installation and setup",
+              "status": "pending"
+            },
+            {
+              "id": "w6-docs-003",
+              "task": "Add quick start tutorial",
+              "status": "pending"
+            },
+            {
+              "id": "w6-docs-004",
+              "task": "Add command reference: /qc-init",
+              "status": "pending"
+            },
+            {
+              "id": "w6-docs-005",
+              "task": "Add command reference: /qc-backtest",
+              "status": "pending"
+            },
+            {
+              "id": "w6-docs-006",
+              "task": "Add command reference: /qc-optimize",
+              "status": "pending"
+            },
+            {
+              "id": "w6-docs-007",
+              "task": "Add command reference: /qc-validate",
+              "status": "pending"
+            },
+            {
+              "id": "w6-docs-008",
+              "task": "Add command reference: /qc-status",
+              "status": "pending"
+            },
+            {
+              "id": "w6-docs-009",
+              "task": "Add command reference: /qc-report",
+              "status": "pending"
+            },
+            {
+              "id": "w6-docs-010",
+              "task": "Add command reference: /qc-auto-iterate",
+              "status": "pending"
+            },
+            {
+              "id": "w6-docs-011",
+              "task": "Add configuration guide",
+              "status": "pending"
+            },
+            {
+              "id": "w6-docs-012",
+              "task": "Add interpreting results section",
+              "status": "pending"
+            },
+            {
+              "id": "w6-docs-013",
+              "task": "Add best practices",
+              "status": "pending"
+            },
+            {
+              "id": "w6-docs-014",
+              "task": "Add common workflows",
+              "status": "pending"
+            },
+            {
+              "id": "w6-docs-015",
+              "task": "Add examples with screenshots",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w6-architecture-docs",
+          "name": "Architecture Documentation",
+          "items": [
+            {
+              "id": "w6-arch-001",
+              "task": "Create ARCHITECTURE.md: system overview diagram",
+              "status": "pending"
+            },
+            {
+              "id": "w6-arch-002",
+              "task": "Add component descriptions",
+              "status": "pending"
+            },
+            {
+              "id": "w6-arch-003",
+              "task": "Add data flow diagrams",
+              "status": "pending"
+            },
+            {
+              "id": "w6-arch-004",
+              "task": "Add state machine diagram (iteration_state.json)",
+              "status": "pending"
+            },
+            {
+              "id": "w6-arch-005",
+              "task": "Add API integration details",
+              "status": "pending"
+            },
+            {
+              "id": "w6-arch-006",
+              "task": "Add git integration details",
+              "status": "pending"
+            },
+            {
+              "id": "w6-arch-007",
+              "task": "Add skills integration",
+              "status": "pending"
+            },
+            {
+              "id": "w6-arch-008",
+              "task": "Add extension points",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w6-decision-docs",
+          "name": "Decision Framework Documentation",
+          "items": [
+            {
+              "id": "w6-decision-001",
+              "task": "Create DECISION_FRAMEWORK.md: decision philosophy",
+              "status": "pending"
+            },
+            {
+              "id": "w6-decision-002",
+              "task": "Document all decision functions (Phases 1-5)",
+              "status": "pending"
+            },
+            {
+              "id": "w6-decision-003",
+              "task": "Add threshold explanations and rationale",
+              "status": "pending"
+            },
+            {
+              "id": "w6-decision-004",
+              "task": "Document autonomy modes",
+              "status": "pending"
+            },
+            {
+              "id": "w6-decision-005",
+              "task": "Document special case handling",
+              "status": "pending"
+            },
+            {
+              "id": "w6-decision-006",
+              "task": "Document decision log format",
+              "status": "pending"
+            },
+            {
+              "id": "w6-decision-007",
+              "task": "Add how to calibrate thresholds",
+              "status": "pending"
+            },
+            {
+              "id": "w6-decision-008",
+              "task": "Add examples of decisions with reasoning",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w6-troubleshooting-docs",
+          "name": "Troubleshooting Guide",
+          "items": [
+            {
+              "id": "w6-trouble-001",
+              "task": "Create TROUBLESHOOTING.md: common errors and solutions",
+              "status": "pending"
+            },
+            {
+              "id": "w6-trouble-002",
+              "task": "Add API authentication issues",
+              "status": "pending"
+            },
+            {
+              "id": "w6-trouble-003",
+              "task": "Add state file corruption recovery",
+              "status": "pending"
+            },
+            {
+              "id": "w6-trouble-004",
+              "task": "Add git integration issues",
+              "status": "pending"
+            },
+            {
+              "id": "w6-trouble-005",
+              "task": "Add performance problems",
+              "status": "pending"
+            },
+            {
+              "id": "w6-trouble-006",
+              "task": "Add cost optimization tips",
+              "status": "pending"
+            },
+            {
+              "id": "w6-trouble-007",
+              "task": "Add how to use debug mode",
+              "status": "pending"
+            },
+            {
+              "id": "w6-trouble-008",
+              "task": "Add how to report issues",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w6-schema-docs",
+          "name": "Schema Reference Enhancement",
+          "items": [
+            {
+              "id": "w6-schema-001",
+              "task": "Enhance iteration_state_schema.md: add examples for every field",
+              "status": "pending"
+            },
+            {
+              "id": "w6-schema-002",
+              "task": "Add validation rules",
+              "status": "pending"
+            },
+            {
+              "id": "w6-schema-003",
+              "task": "Add common patterns",
+              "status": "pending"
+            },
+            {
+              "id": "w6-schema-004",
+              "task": "Add migration guides",
+              "status": "pending"
+            },
+            {
+              "id": "w6-schema-005",
+              "task": "Add troubleshooting tips",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w6-api-docs",
+          "name": "API Reference",
+          "items": [
+            {
+              "id": "w6-api-001",
+              "task": "Create API_REFERENCE.md: qc_backtest.py API",
+              "status": "pending"
+            },
+            {
+              "id": "w6-api-002",
+              "task": "Add qc_optimize_wrapper.py API (or manual_optimize.py)",
+              "status": "pending"
+            },
+            {
+              "id": "w6-api-003",
+              "task": "Add qc_walkforward_free_tier.py API",
+              "status": "pending"
+            },
+            {
+              "id": "w6-api-004",
+              "task": "Add configuration file formats",
+              "status": "pending"
+            },
+            {
+              "id": "w6-api-005",
+              "task": "Add error codes and meanings",
+              "status": "pending"
+            },
+            {
+              "id": "w6-api-006",
+              "task": "Add return value formats",
+              "status": "pending"
+            }
+          ]
+        },
+        {
+          "id": "w6-framework-validation",
+          "name": "Framework Validation",
+          "items": [
+            {
+              "id": "w6-validation-001",
+              "task": "Calculate total time invested in framework (90-120h)",
+              "status": "pending"
+            },
+            {
+              "id": "w6-validation-002",
+              "task": "Calculate time saved per hypothesis",
+              "status": "pending"
+            },
+            {
+              "id": "w6-validation-003",
+              "task": "Calculate break-even point",
+              "status": "pending"
+            },
+            {
+              "id": "w6-validation-004",
+              "task": "Calculate projected ROI over 1 year",
+              "status": "pending"
+            },
+            {
+              "id": "w6-validation-005",
+              "task": "Measure false positive rate (target <20%)",
+              "status": "pending"
+            },
+            {
+              "id": "w6-validation-006",
+              "task": "Measure false negative rate (target <30%)",
+              "status": "pending"
+            },
+            {
+              "id": "w6-validation-007",
+              "task": "Measure overall accuracy",
+              "status": "pending"
+            },
+            {
+              "id": "w6-validation-008",
+              "task": "Compare to manual decisions",
+              "status": "pending"
+            },
+            {
+              "id": "w6-validation-009",
+              "task": "Calculate average cost per hypothesis",
+              "status": "pending"
+            },
+            {
+              "id": "w6-validation-010",
+              "task": "Calculate cost breakdown by phase",
+              "status": "pending"
+            },
+            {
+              "id": "w6-validation-011",
+              "task": "Compare free tier vs paid tier costs",
+              "status": "pending"
+            },
+            {
+              "id": "w6-validation-012",
+              "task": "Identify cost optimization opportunities",
+              "status": "pending"
+            },
+            {
+              "id": "w6-validation-013",
+              "task": "Document what works well",
+              "status": "pending"
+            },
+            {
+              "id": "w6-validation-014",
+              "task": "Document what needs improvement",
+              "status": "pending"
+            },
+            {
+              "id": "w6-validation-015",
+              "task": "Document feature requests",
+              "status": "pending"
+            },
+            {
+              "id": "w6-validation-016",
+              "task": "Document known limitations",
+              "status": "pending"
+            },
+            {
+              "id": "w6-validation-017",
+              "task": "Create FRAMEWORK_VALIDATION_REPORT.md",
+              "status": "pending"
+            }
+          ]
+        }
+      ],
+      "deliverables": [
+        {
+          "id": "w6-deliverable-001",
+          "name": "20 additional hypotheses tested (total 48)",
+          "status": "pending"
+        },
+        {
+          "id": "w6-deliverable-002",
+          "name": "Performance benchmarks documented",
+          "status": "pending"
+        },
+        {
+          "id": "w6-deliverable-003",
+          "name": "USER_GUIDE.md complete",
+          "status": "pending"
+        },
+        {
+          "id": "w6-deliverable-004",
+          "name": "ARCHITECTURE.md complete",
+          "status": "pending"
+        },
+        {
+          "id": "w6-deliverable-005",
+          "name": "DECISION_FRAMEWORK.md complete",
+          "status": "pending"
+        },
+        {
+          "id": "w6-deliverable-006",
+          "name": "TROUBLESHOOTING.md complete",
+          "status": "pending"
+        },
+        {
+          "id": "w6-deliverable-007",
+          "name": "Enhanced iteration_state_schema.md complete",
+          "status": "pending"
+        },
+        {
+          "id": "w6-deliverable-008",
+          "name": "API_REFERENCE.md complete",
+          "status": "pending"
+        },
+        {
+          "id": "w6-deliverable-009",
+          "name": "FRAMEWORK_VALIDATION_REPORT.md complete",
+          "status": "pending"
+        },
+        {
+          "id": "w6-deliverable-010",
+          "name": "ROI calculated and validated",
+          "status": "pending"
+        },
+        {
+          "id": "w6-deliverable-011",
+          "name": "Framework ready for production use",
+          "status": "pending"
+        }
+      ]
+    }
+  ]
+}

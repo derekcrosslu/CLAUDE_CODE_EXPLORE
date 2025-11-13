@@ -1,0 +1,187 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Project Timeline Schema",
+  "description": "Schema for autonomous framework development timeline tracking",
+  "type": "object",
+  "required": ["project", "current_status", "weeks"],
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Project name"
+    },
+    "approach": {
+      "type": "string",
+      "description": "Development approach description"
+    },
+    "duration_weeks": {
+      "type": "integer",
+      "description": "Total project duration in weeks"
+    },
+    "duration_hours": {
+      "type": "string",
+      "description": "Total project duration in hours (range)"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Project start date (YYYY-MM-DD)"
+    },
+    "current_status": {
+      "type": "object",
+      "required": ["week", "phase", "progress", "updated_at"],
+      "properties": {
+        "week": {
+          "type": "integer",
+          "description": "Current week number"
+        },
+        "phase": {
+          "type": "string",
+          "description": "Current phase description"
+        },
+        "progress": {
+          "type": "string",
+          "description": "Progress summary"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp (ISO 8601)"
+        }
+      }
+    },
+    "weeks": {
+      "type": "array",
+      "description": "List of weeks with tasks",
+      "items": {
+        "type": "object",
+        "required": ["week", "title", "sections"],
+        "properties": {
+          "week": {
+            "type": "integer",
+            "description": "Week number"
+          },
+          "title": {
+            "type": "string",
+            "description": "Week title/theme"
+          },
+          "priority": {
+            "type": "integer",
+            "description": "Priority level (1=highest)"
+          },
+          "goal": {
+            "type": "string",
+            "description": "Week objective"
+          },
+          "duration_hours": {
+            "type": "string",
+            "description": "Estimated hours for this week"
+          },
+          "sections": {
+            "type": "array",
+            "description": "Sections within the week",
+            "items": {
+              "type": "object",
+              "required": ["id", "name", "items"],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^w[0-9]+-[a-z-]+$",
+                  "description": "Section ID (e.g., w1-api-integration)"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Section name"
+                },
+                "note": {
+                  "type": "string",
+                  "description": "Optional note about the section"
+                },
+                "items": {
+                  "type": "array",
+                  "description": "Tasks in this section",
+                  "items": {
+                    "type": "object",
+                    "required": ["id", "task", "status"],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^w[0-9]+-[a-z]+-[0-9]+$",
+                        "description": "Unique task ID (e.g., w1-api-001)"
+                      },
+                      "task": {
+                        "type": "string",
+                        "description": "Task description"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": ["pending", "in_progress", "completed", "blocked", "partial"],
+                        "description": "Task status"
+                      },
+                      "completed_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Completion timestamp (ISO 8601)"
+                      },
+                      "git_commit": {
+                        "type": "string",
+                        "description": "Git commit hash where this was completed"
+                      },
+                      "duration_minutes": {
+                        "type": "integer",
+                        "description": "Actual duration in minutes"
+                      },
+                      "dependencies": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "description": "Task IDs this task depends on"
+                        }
+                      },
+                      "note": {
+                        "type": "string",
+                        "description": "Additional notes about the task"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "deliverables": {
+            "type": "array",
+            "description": "Week deliverables checklist",
+            "items": {
+              "type": "object",
+              "required": ["id", "name", "status"],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^w[0-9]+-deliverable-[0-9]+$",
+                  "description": "Deliverable ID"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Deliverable name"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": ["pending", "completed", "partial"],
+                  "description": "Deliverable status"
+                },
+                "completed_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Completion timestamp"
+                },
+                "note": {
+                  "type": "string",
+                  "description": "Additional notes"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

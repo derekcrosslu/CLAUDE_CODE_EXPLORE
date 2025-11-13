@@ -1,0 +1,30 @@
+{
+  "success": true,
+  "backtest_id": "49b2a5329d91745462d60107a9216942",
+  "project_id": 26120839,
+  "name": "Backtest_20251109_174528",
+  "status": "Completed.",
+  "completed": true,
+  "created": "2025-11-09 22:45:27",
+  "performance": {
+    "sharpe_ratio": 0.0,
+    "sortino_ratio": 0.0,
+    "max_drawdown": 0.0,
+    "total_return": 0.0,
+    "annual_return": 0.0,
+    "win_rate": 0.0,
+    "loss_rate": 0.0
+  },
+  "trading": {
+    "total_trades": 0,
+    "average_win": 0.0,
+    "average_loss": 0.0,
+    "profit_loss_ratio": 0.0
+  },
+  "risk": {
+    "alpha": 0.0,
+    "beta": 0.0,
+    "volatility": 0.0
+  },
+  "raw_statistics": {}
+}

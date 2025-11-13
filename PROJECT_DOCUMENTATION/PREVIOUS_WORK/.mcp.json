@@ -1,0 +1,73 @@
+{
+  "mcpServers": {
+    "quantconnect": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "QUANTCONNECT_USER_ID",
+        "-e",
+        "QUANTCONNECT_API_TOKEN",
+        "-e",
+        "AGENT_NAME",
+        "--platform",
+        "linux/arm64",
+        "quantconnect/mcp-server"
+      ],
+      "env": {
+        "QUANTCONNECT_USER_ID": "389294",
+        "QUANTCONNECT_API_TOKEN": "4b043b48bb8113bb23476ab05ebcffaad4a8225387a3a17d1dbdda16d325a405",
+        "AGENT_NAME": "Implementation Worker"
+      }
+    },
+    "memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ]
+    },
+     "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
+    },
+    "qdrant": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-qdrant"
+      ],
+      "env": {
+        "QDRANT_URL": "http://localhost:6333",
+        "COLLECTION_NAME": "forward-factor-memories"
+      }
+    },
+    "beads": {
+      "command": "beads-mcp",
+      "args": [],
+      "env": {
+        "BEADS_DB": "/Users/donaldcross/ALGOS/Experimentos/Project/.beads/ff.db"
+      }
+    },
+    "aider": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/tmp/aider-mcp-server",
+        "run",
+        "aider-mcp-server",
+        "--editor-model",
+        "claude-3-5-sonnet-20241022",
+        "--current-working-dir",
+        "/Users/donaldcross/ALGOS/Experimentos/Sanboxes/STAT_ARB"
+      ],
+      "env": {
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}"
+      }
+    }
+  }
+}

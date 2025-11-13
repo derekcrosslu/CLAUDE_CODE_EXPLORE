@@ -1,0 +1,50 @@
+{
+  "backtest": {
+    "note": null,
+    "name": "Backtest_20251109_190550",
+    "organizationId": "448dcbbedde5bc24ecd302c120681ee8",
+    "projectId": 26120873,
+    "completed": false,
+    "optimizationId": null,
+    "backtestId": "64191b54fa5eccd68dd15534ab089f89",
+    "tradeableDates": 0,
+    "researchGuide": {
+      "minutes": 4,
+      "backtestCount": 29,
+      "parameters": 0
+    },
+    "backtestStart": "2025-11-10 00:05:49",
+    "backtestEnd": "2025-11-10 00:05:49",
+    "created": "2025-11-10 00:05:49",
+    "snapshotId": 26121902,
+    "status": "In Queue...",
+    "error": null,
+    "stacktrace": null,
+    "progress": 0,
+    "hasInitializeError": false,
+    "charts": {
+      "Strategy Equity": {
+        "name": "Strategy Equity"
+      },
+      "Benchmark": {
+        "name": "Benchmark"
+      },
+      "Portfolio Margin": {
+        "name": "Portfolio Margin"
+      },
+      "Assets Sales Volume": {
+        "name": "Assets Sales Volume"
+      }
+    },
+    "parameterSet": [],
+    "rollingWindow": null,
+    "runtimeStatistics": {},
+    "statistics": {},
+    "totalPerformance": null,
+    "nodeName": "B2-8 node fdd8eeeb",
+    "outOfSampleMaxEndDate": "2025-08-12T00:00:00Z",
+    "outOfSampleDays": 90
+  },
+  "debugging": false,
+  "success": true
+}

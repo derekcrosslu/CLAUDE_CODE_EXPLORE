@@ -1,0 +1,41 @@
+# QuantConnect LEAN Algorithm Framework
+# These dependencies are typically pre-installed in QuantConnect cloud environment
+# For local development, install QuantConnect LEAN Engine
+
+# Core QuantConnect packages (if running locally)
+# quantconnect-lean>=1.0.0
+
+# Common Python packages used in trading algorithms
+numpy>=1.21.0
+pandas>=1.3.0
+scipy>=1.7.0
+
+# Technical analysis
+# TA-Lib is optional - QuantConnect has built-in indicators
+# ta-lib>=0.4.24
+
+# Data visualization (for local analysis)
+matplotlib>=3.4.0
+plotly>=5.0.0
+
+# Statistics and machine learning (optional)
+scikit-learn>=1.0.0
+statsmodels>=0.13.0
+
+# Jupyter notebooks (for research)
+jupyter>=1.0.0
+jupyterlab>=3.0.0
+
+# Development tools
+pytest>=7.0.0
+black>=22.0.0
+flake8>=4.0.0
+
+# API clients (if needed)
+requests>=2.26.0
+
+# Environment management
+python-dotenv>=0.19.0
+
+# Note: When uploading to QuantConnect cloud platform, only test_strategy.py is needed.
+# The platform provides all necessary dependencies automatically.
