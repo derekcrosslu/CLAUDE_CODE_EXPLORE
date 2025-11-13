@@ -219,19 +219,20 @@ Build a lean, self-documenting workflow enabling Claude Code to autonomously dev
 
 ## 🔑 Critical Rules (NEVER VIOLATE)
 
-1. **Project ID**: ALWAYS read from iteration_state.json, NEVER as CLI arg
-2. **Phase Independence**: Scripts self-contained, use shared qc_api.py
-3. **Progressive Disclosure**: Root ≤10 files, details in subdirectories
-4. **Git Workflow**: Every phase transition = git commit
-5. **Hypothesis Isolation**: Complete state in hypothesis directory
-6. **Single Source of Truth**: This document is THE status reference
+1. **Root Directory**: ONLY README.md + requirements.txt + .env + .gitignore + directories allowed. NO status/docs files at root.
+2. **Project ID**: ALWAYS read from iteration_state.json, NEVER as CLI arg
+3. **Phase Independence**: Scripts self-contained, use shared qc_api.py
+4. **Progressive Disclosure**: Root minimal, ALL documentation in PROJECT_DOCUMENTATION/
+5. **Git Workflow**: Every phase transition = git commit
+6. **Hypothesis Isolation**: Complete state in hypothesis directory
+7. **Single Source of Truth**: This document is THE status reference
 
 ---
 
 ## 📍 Where to Start (Next Session)
 
-1. **Read this file first** (CURRENT_STATUS.md at root)
-2. **Then read**: PROJECT_DOCUMENTATION/CORE/SETUP/NEXT_STEPS/README.md
+1. **Read this file first** (PROJECT_DOCUMENTATION/CORE/SETUP/NEXT_STEPS/CURRENT_STATUS.md)
+2. **Then read**: README.md in this directory
 3. **Then read**: PROJECT_DOCUMENTATION/CORE/SETUP/NEXT_STEPS/COMPREHENSIVE_NEXT_STEPS.md
 4. **Choose action**: Option A (fix scripts), B (update status), or C (progressive disclosure)
 5. **Execute and update this file when done**
