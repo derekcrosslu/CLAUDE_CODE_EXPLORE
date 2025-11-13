@@ -24,6 +24,11 @@ from typing import Optional, List, Dict
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
+HELP_DIR = PROJECT_ROOT / "HELP"
+
+# Import help_loader for JSON help access
+sys.path.insert(0, str(SCRIPT_DIR))
+from help_loader import search_help as search_json_help, load_help
 
 
 def search_project_docs(query: str) -> List[Dict[str, str]]:
@@ -91,6 +96,33 @@ def search_skills(query: str) -> List[Dict[str, str]]:
     return results
 
 
+def search_json_help_files(query: str) -> List[Dict[str, str]]:
+    """Search JSON help files in HELP/ directory."""
+    results = []
+
+    if not HELP_DIR.exists():
+        return results
+
+    try:
+        # Use help_loader's search function
+        json_results = search_json_help(query)
+
+        for result in json_results:
+            results.append({
+                "source": "json_help",
+                "tool": result['tool'],
+                "section": result.get('section_title', result.get('question', 'N/A')),
+                "content": result.get('content', result.get('answer', '')),
+                "tags": result.get('tags', []),
+                "relevance": "high"
+            })
+
+    except Exception as e:
+        print(f"Warning: Error searching JSON help: {e}")
+
+    return results
+
+
 def search_cli_tools(context: Optional[str] = None) -> List[str]:
     """Find relevant CLI tools based on context."""
     tools = []
@@ -114,6 +146,7 @@ def search_cli_tools(context: Optional[str] = None) -> List[str]:
 
 
 def generate_research_prompt(query: str, context: Optional[str],
+                            json_help_results: List[Dict],
                             project_results: List[Dict],
                             skill_results: List[Dict],
                             cli_tools: List[str]) -> str:
@@ -124,9 +157,20 @@ def generate_research_prompt(query: str, context: Optional[str],
 CONTEXT:
 {'- Tool context: ' + context if context else '- No specific tool context'}
 
-SEARCH RESULTS FROM PROJECT:
+SEARCH RESULTS:
 
 """
+
+    # JSON Help Results (HIGHEST PRIORITY - structured, curated)
+    if json_help_results:
+        prompt += "## JSON HELP FILES (Primary Source):\n\n"
+        for result in json_help_results[:3]:  # Top 3
+            prompt += f"### {result['tool']} - {result['section']}\n"
+            prompt += f"Tags: {', '.join(result['tags'])}\n"
+            prompt += f"```\n{result['content'][:500]}...\n```\n\n"
+        prompt += "✅ **ANSWER FOUND IN CURATED HELP**: Use this as primary source\n\n"
+    else:
+        prompt += "## No matches in JSON HELP files\n\n"
 
     if project_results:
         prompt += "## PROJECT_DOCUMENTATION Matches:\n\n"
@@ -148,7 +192,11 @@ SEARCH RESULTS FROM PROJECT:
     prompt += """
 RESEARCH INSTRUCTIONS:
 
-1. Analyze the search results above
+1. **JSON Help Results (HIGHEST PRIORITY)**:
+   - If found in JSON help, use as primary answer source
+   - These are curated, structured, reviewed content
+   - Suggest: python SCRIPTS/<tool>.py --section <section_id>
+
 2. If found in project docs/skills:
    - Provide direct answer with file references
    - Suggest relevant --help commands to run
@@ -156,7 +204,7 @@ RESEARCH INSTRUCTIONS:
 3. If NOT found in project:
    - Use WebSearch to find authoritative sources
    - Summarize findings
-   - Suggest how to integrate into project
+   - Suggest adding to HELP/<tool>.json
 
 4. Always provide:
    - Direct answer to query
@@ -338,7 +386,11 @@ if not found_in_help:
     print("=" * 60)
     print()
 
-    # Search project resources
+    # Search project resources (prioritize JSON help)
+    print("📖 Searching JSON HELP files...")
+    json_help_results = search_json_help_files(args.query)
+    print(f"   Found {len(json_help_results)} relevant help sections")
+
     print("📚 Searching PROJECT_DOCUMENTATION...")
     project_results = search_project_docs(args.query)
     print(f"   Found {len(project_results)} relevant documents")
@@ -356,6 +408,7 @@ if not found_in_help:
     research_prompt = generate_research_prompt(
         args.query,
         args.context,
+        json_help_results,
         project_results,
         skill_results,
         cli_tools
@@ -366,6 +419,7 @@ if not found_in_help:
         result = {
             "query": args.query,
             "context": args.context,
+            "json_help": json_help_results,
             "project_docs": project_results,
             "skills": skill_results,
             "cli_tools": cli_tools,

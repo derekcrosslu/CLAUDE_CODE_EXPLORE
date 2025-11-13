@@ -1,6 +1,7 @@
 # Progressive Disclosure Rules - IRON CLAD
 
 **Date Created**: 2025-11-13
+**Date Updated**: 2025-11-13 (Added JSON Help System)
 **Status**: MANDATORY - NEVER VIOLATE
 **Purpose**: Ensure consistent reference documentation access pattern
 
@@ -10,7 +11,34 @@
 
 **ALL reference documentation MUST be accessible ONLY via `--help`.**
 
+**Help content MUST be stored in JSON files in HELP/ directory.**
+
 **Period. No exceptions. No alternatives.**
+
+---
+
+## JSON Help System (NEW - Required)
+
+### Structure
+
+All help content MUST be stored in structured JSON files:
+
+```
+HELP/
+├── schema.json                  # JSON schema for validation
+├── backtesting_analysis.json    # Help content for backtesting_analysis
+├── qc_optimize.json             # Help content for qc_optimize
+└── ...                          # One JSON per tool
+```
+
+### Why JSON?
+
+1. **Easy Retrieval**: Programmatic access to specific sections
+2. **Searchable**: Full-text search across all help
+3. **Updateable**: research_help.py can update dynamically
+4. **Structured**: Consistent format with sections, examples, FAQs
+5. **Version Control**: Clean diffs when content changes
+6. **Future Ready**: Vector database integration possible
 
 ---
 
@@ -18,13 +46,16 @@
 
 ### ✅ CORRECT Pattern
 
-Every skill has a corresponding CLI tool:
+Every skill has a corresponding CLI tool that loads JSON:
 
 ```bash
-python SCRIPTS/<tool>.py --help
+python SCRIPTS/<tool>.py --help              # Full help (from JSON)
+python SCRIPTS/<tool>.py --section <id>      # Specific section
+python SCRIPTS/<tool>.py --search <query>    # Search within tool
+python SCRIPTS/<tool>.py --list-sections     # List all sections
 ```
 
-**That's it. That's the only way to access detailed documentation.**
+**Help content loaded from**: `HELP/<tool>.json` via `help_loader.py`
 
 ### ❌ FORBIDDEN Patterns
 
@@ -32,9 +63,10 @@ python SCRIPTS/<tool>.py --help
 - NO markdown files to read
 - NO "Read .claude/skills/<skill>/reference/<file>.md"
 - NO "Access detailed docs at..."
+- NO hardcoded epilogs in Python files (use JSON instead)
 - NO alternative access methods
 
-**ONLY `--help`**
+**ONLY `--help` loading from JSON**
 
 ---
 
@@ -46,7 +78,7 @@ Each skill in `.claude/skills/<skill-name>/` MUST have:
 - Corresponding CLI tool: `SCRIPTS/<tool_name>.py`
 - Tool name matches skill (e.g., `backtesting-analysis` → `backtesting_analysis.py`)
 
-### 2. CLI Tool Structure
+### 2. CLI Tool Structure (JSON-Based)
 
 ```python
 #!/usr/bin/env python3
@@ -54,43 +86,82 @@ Each skill in `.claude/skills/<skill-name>/` MUST have:
 <Tool Name>
 
 Usage: python SCRIPTS/<tool>.py --help
+
+Note: All help content loaded from HELP/<tool>.json
 """
 
 import argparse
+import sys
+from pathlib import Path
+
+# Add SCRIPTS to path
+SCRIPT_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(SCRIPT_DIR))
+
+from help_loader import load_help, format_help, get_section
 
 def main():
+    # Load help from JSON
+    try:
+        help_data = load_help("<tool_name>")
+        epilog = format_help(help_data)
+    except Exception as e:
+        epilog = f"Error loading help: {e}"
+
     parser = argparse.ArgumentParser(
         description="<Tool description>",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-REFERENCE DOCUMENTATION
-=======================
-
-[ALL detailed reference content goes here in --help output]
-
-Section 1: <Topic>
-------------------
-<Full detailed content>
-
-Section 2: <Topic>
-------------------
-<Full detailed content>
-
-... (all reference content)
-"""
+        epilog=epilog  # Loaded from JSON, not hardcoded
     )
 
-    # Add any functional commands if needed
     parser.add_argument('--version', action='version', version='1.0.0')
+    parser.add_argument('--section', help='Show specific section by ID')
+    parser.add_argument('--search', help='Search help content')
+    parser.add_argument('--list-sections', action='store_true',
+                       help='List all available sections')
 
     args = parser.parse_args()
 
-    # If tool has functional commands, implement them
-    # Otherwise, --help is the only purpose
+    # Handle section-specific display
+    if args.section:
+        section = get_section(help_data, args.section)
+        if section:
+            print(f"{section['title']}\n{section['content']}")
+        else:
+            print(f"Section not found: {args.section}")
+        sys.exit(0)
+
+    # ... handle other arguments
 
 if __name__ == "__main__":
     main()
 ```
+
+### 3. JSON Help File Structure
+
+Each `HELP/<tool>.json` must follow schema:
+
+```json
+{
+  "tool": "tool_name",
+  "version": "2.0.0",
+  "description": "Brief description",
+  "sections": [
+    {
+      "id": "section_id",
+      "title": "Section Title",
+      "content": "Full content (markdown supported)",
+      "tags": ["tag1", "tag2"],
+      "priority": 1
+    }
+  ],
+  "examples": [...],
+  "faqs": [...],
+  "related_tools": [...]
+}
+```
+
+Validate with: `python SCRIPTS/help_loader.py --validate <tool_name>`
 
 ### 3. Skill Reference Pattern
 

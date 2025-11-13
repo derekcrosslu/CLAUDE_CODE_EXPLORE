@@ -1,0 +1,129 @@
+{
+  "tool": "backtesting_analysis",
+  "version": "2.0.0",
+  "description": "Interpret backtest results, understand performance metrics, and detect overfitting",
+  "sections": [
+    {
+      "id": "sharpe_ratio",
+      "title": "Sharpe Ratio Deep Dive",
+      "content": "**Formula**: (Return - Risk-Free Rate) / Volatility\n\n**Quality Thresholds**:\n- < 0.5: Poor (abandon)\n- 0.5-0.7: Marginal (consider optimization)\n- 0.7-1.0: Acceptable (optimize)\n- 1.0-1.5: Good (production-ready)\n- 1.5-2.0: Very Good (validate thoroughly)\n- > 3.0: SUSPICIOUS (likely overfitting)\n\n**Key Insight**: QuantConnect reports annual Sharpe. Sharpe > 1.0 is production-ready for most strategies.\n\n**Why It Matters**: Sharpe is the PRIMARY metric for risk-adjusted returns. High returns mean nothing if volatility is also high. A strategy with 50% returns and 60% volatility (Sharpe 0.83) is WORSE than one with 20% returns and 15% volatility (Sharpe 1.33).",
+      "tags": ["sharpe", "metrics", "risk-adjusted"],
+      "priority": 1,
+      "related_sections": ["overfitting_detection", "risk_metrics"]
+    },
+    {
+      "id": "maximum_drawdown",
+      "title": "Maximum Drawdown Analysis",
+      "content": "**Formula**: (Trough - Peak) / Peak\n\n**Quality Thresholds**:\n- < 20%: Excellent (low risk)\n- 20-30%: Good (acceptable for live trading)\n- 30-40%: Concerning (needs strong Sharpe to justify)\n- > 40%: Too High (unacceptable for most traders)\n\n**Key Insight**: Drawdowns > 30% are hard to tolerate psychologically. Consider: \"Could I stomach this loss in real money?\"\n\n**Psychology Factor**: A 40% drawdown requires a 67% gain to recover. Most traders abandon strategies before recovery. Even if your strategy is mathematically sound, if the drawdown is psychologically intolerable, it's not tradeable.",
+      "tags": ["drawdown", "risk", "psychology"],
+      "priority": 1,
+      "related_sections": ["sharpe_ratio"]
+    },
+    {
+      "id": "trade_count",
+      "title": "Statistical Significance - Trade Count",
+      "content": "**Reliability Thresholds**:\n- < 20: Unreliable (abandon or escalate)\n- 20-30: Low (minimum viable)\n- 30-50: Moderate (acceptable)\n- 50-100: Good (strong confidence)\n- 100+: Excellent (highly reliable)\n\n**Key Insight**: Need 30+ trades for basic significance, 100+ for high confidence. Few trades = unreliable metrics.\n\n**Why**: With < 20 trades, metrics can be heavily influenced by a few lucky/unlucky trades. A single outlier trade can swing your Sharpe from 0.5 to 1.5. Statistical significance requires sufficient sample size.",
+      "tags": ["trades", "statistics", "reliability"],
+      "priority": 1,
+      "related_sections": ["overfitting_detection"]
+    },
+    {
+      "id": "win_rate",
+      "title": "Win Rate Analysis",
+      "content": "**Quality Thresholds**:\n- < 40%: Low (needs large winners - trend following)\n- 40-55%: Average (typical for most strategies)\n- 55-65%: Good (strong edge)\n- > 75%: SUSPICIOUS (likely overfitting)\n\n**Key Insight**: Win rate alone is misleading. Must consider profit factor and average win/loss ratio.\n\n**Common Mistake**: \"My strategy wins 80% of the time!\" - But if wins average $100 and losses average $500, you're losing money. A 35% win rate with avg win $1000 and avg loss $200 is much better.",
+      "tags": ["win_rate", "metrics"],
+      "priority": 2,
+      "related_sections": ["profit_factor"]
+    },
+    {
+      "id": "profit_factor",
+      "title": "Profit Factor Analysis",
+      "content": "**Formula**: Gross Profit / Gross Loss\n\n**Quality Thresholds**:\n- < 1.3: Marginal (transaction costs may kill it)\n- 1.3-1.5: Acceptable (decent after costs)\n- 1.5-2.0: Good (strong profitability)\n- > 3.0: Exceptional (outstanding - verify no overfitting)\n\n**Key Insight**: Minimum 1.5 for live trading to cover slippage and commissions.\n\n**Why 1.5 Minimum**: Transaction costs (commissions, slippage, spreads) can eat 10-20% of gross profits. A 1.3 profit factor might look good in backtest but become unprofitable live. 1.5+ provides safety margin.",
+      "tags": ["profit_factor", "metrics", "profitability"],
+      "priority": 2,
+      "related_sections": ["win_rate"]
+    },
+    {
+      "id": "overfitting_detection",
+      "title": "Overfitting Detection - Red Flags",
+      "content": "**Red Flags** (immediate escalation):\n1. Too Perfect Sharpe (> 3.0) → ESCALATE_TO_HUMAN\n2. Too High Win Rate (> 75%) → Check for look-ahead bias\n3. Too Few Trades (< 20) → Unreliable metrics\n4. Excessive Optimization Improvement (> 30%) → Lucky parameters\n5. Severe Out-of-Sample Degradation (> 40%) → ABANDON_HYPOTHESIS\n6. Equity Curve Too Smooth → Check unrealistic assumptions\n7. Works Only in One Market Regime → Not robust\n\n**Remember**: If it looks too good to be true, it probably is.\n\n**What is Overfitting**: Curve-fitting to random noise instead of finding real patterns. Like memorizing test answers instead of learning concepts - works on training data, fails on new data.",
+      "tags": ["overfitting", "validation", "red_flags"],
+      "priority": 1,
+      "related_sections": ["sharpe_ratio", "trade_count"]
+    },
+    {
+      "id": "strategy_expectations",
+      "title": "Strategy-Type Expected Performance",
+      "content": "**Momentum**:\n- Sharpe: 0.8-1.5 | Drawdown: 20-35% | Win Rate: 40-55%\n\n**Mean Reversion**:\n- Sharpe: 0.7-1.3 | Drawdown: 15-30% | Win Rate: 55-70%\n\n**Trend Following**:\n- Sharpe: 0.5-1.0 | Drawdown: 25-40% | Win Rate: 30-50%\n\n**Breakout**:\n- Sharpe: 0.6-1.2 | Drawdown: 20-35% | Win Rate: 40-55%\n\n**Use these to calibrate expectations** - different strategies have different profiles. Don't expect mean reversion win rates from trend following.",
+      "tags": ["strategy_types", "expectations"],
+      "priority": 2
+    }
+  ],
+  "examples": [
+    {
+      "title": "GOOD - Optimization Worthy",
+      "description": "Decent baseline performance, worth optimizing",
+      "code": "Sharpe: 0.85, Drawdown: 22%, Trades: 67, Win Rate: 42%, PF: 1.8",
+      "output": "→ PROCEED_TO_OPTIMIZATION (decent baseline, worth improving)",
+      "tags": ["good", "baseline"]
+    },
+    {
+      "title": "EXCELLENT - Production Ready",
+      "description": "Strong performance, ready for validation",
+      "code": "Sharpe: 1.35, Drawdown: 18%, Trades: 142, Win Rate: 53%, PF: 2.1",
+      "output": "→ PROCEED_TO_VALIDATION (already strong, skip optimization)",
+      "tags": ["excellent", "production"]
+    },
+    {
+      "title": "SUSPICIOUS - Overfitting",
+      "description": "Too perfect, likely overfitting",
+      "code": "Sharpe: 4.2, Drawdown: 5%, Trades: 25, Win Rate: 88%, PF: 5.8",
+      "output": "→ ESCALATE_TO_HUMAN (too perfect, likely look-ahead bias or bug)",
+      "tags": ["suspicious", "overfitting"]
+    },
+    {
+      "title": "POOR - Abandon",
+      "description": "Weak risk-adjusted returns",
+      "code": "Sharpe: 0.3, Drawdown: 38%, Trades: 89, Win Rate: 35%, PF: 1.1",
+      "output": "→ ABANDON_HYPOTHESIS (poor risk-adjusted returns)",
+      "tags": ["poor", "abandon"]
+    }
+  ],
+  "faqs": [
+    {
+      "question": "Strategy made 200% returns, but Sharpe is only 0.6 - is this good?",
+      "answer": "No. We prioritize **risk-adjusted returns** (Sharpe), not raw returns. High returns with high volatility = bad Sharpe = risky. A 30% return with Sharpe 1.5 is better than 200% return with Sharpe 0.6.",
+      "tags": ["sharpe", "returns"],
+      "related_sections": ["sharpe_ratio"]
+    },
+    {
+      "question": "Sharpe 2.5 with 15 trades - should I proceed?",
+      "answer": "ESCALATE_TO_HUMAN. Too few trades (<20) for statistical significance. High Sharpe with few trades = luck, not skill. Need minimum 30 trades for reliability.",
+      "tags": ["trades", "significance"],
+      "related_sections": ["trade_count"]
+    },
+    {
+      "question": "Optimization improved Sharpe from 0.8 to 1.5 (87% improvement) - is this good?",
+      "answer": "ESCALATE_TO_HUMAN. 87% > 30% threshold = likely overfitting to in-sample period. Such large improvements usually don't hold out-of-sample.",
+      "tags": ["optimization", "overfitting"],
+      "related_sections": ["overfitting_detection"]
+    },
+    {
+      "question": "Win rate is 78%, Sharpe is 1.2 - why is this flagged?",
+      "answer": "Win rate > 75% is an overfitting signal. Real strategies rarely achieve such high win rates. Check for look-ahead bias, data snooping, or unrealistic assumptions.",
+      "tags": ["win_rate", "overfitting"],
+      "related_sections": ["win_rate", "overfitting_detection"]
+    }
+  ],
+  "related_tools": [
+    "qc_backtest",
+    "decision_framework",
+    "qc_optimize"
+  ],
+  "metadata": {
+    "created": "2025-11-13",
+    "updated": "2025-11-13",
+    "authors": ["Claude"],
+    "skill": "backtesting-analysis"
+  }
+}
