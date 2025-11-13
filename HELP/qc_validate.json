@@ -1,0 +1,197 @@
+{
+  "tool": "qc_validate",
+  "version": "2.0.0",
+  "description": "QuantConnect walk-forward validation and Monte Carlo robustness testing for Phase 5",
+  "sections": [
+    {
+      "id": "qc_platform_access",
+      "title": "QuantConnect Platform Access for Validation",
+      "content": "**Authentication** (same as optimization):\n\n1. Set credentials in `.env`:\n```\nQUANTCONNECT_USER_ID=your_user_id\nQUANTCONNECT_API_TOKEN=your_api_token\n```\n\n2. Initialize API:\n```python\nfrom qc_api import QuantConnectAPI\napi = QuantConnectAPI()\n```\n\n**Project Access**:\n```python\n# Load project_id from iteration_state\nimport json\nwith open('iteration_state.json') as f:\n    state = json.load(f)\nproject_id = state['project']['project_id']\n```\n\n**Read Strategy Code**:\n```python\n# Read current strategy from QC project\nfiles = api.read_files(project_id, \"main.py\")\nstrategy_code = files['files'][0]['content']\nprint(strategy_code[:200])  # Preview\n```\n\n**Upload Modified Strategy**:\n```python\n# Modify strategy for time splits\nmodified_code = modify_for_validation(strategy_code, split_ratio=0.80)\n\n# Upload back to QC\nresult = api.upload_file(project_id, \"main.py\", modified_code)\nif result['success']:\n    print(\"Validation strategy uploaded\")\n```",
+      "tags": ["authentication", "platform", "validation"],
+      "priority": 1,
+      "related_sections": ["executing_validation", "workflow"]
+    },
+    {
+      "id": "executing_validation",
+      "title": "Executing Validation Backtests",
+      "content": "**Walk-Forward Validation Execution**\n\n**Step 1: Modify Strategy for Time Splits**\n```python\n# Read original strategy\nfiles = api.read_files(project_id, \"main.py\")\noriginal_code = files['files'][0]['content']\n\n# Add time split logic (80/20)\nmodified_code = f'''\nfrom datetime import datetime\n\n# Original strategy code\n{original_code}\n\nclass ValidationAlgorithm(QCAlgorithm):\n    def Initialize(self):\n        # Split at 80% mark\n        self.SetStartDate(2019, 1, 1)\n        self.SetEndDate(2022, 12, 31)  # In-sample\n        # ... rest of initialization\n'''\n```\n\n**Step 2: Run In-Sample Backtest**\n```python\n# Upload IS version\napi.upload_file(project_id, \"main.py\", is_code)\n\n# Submit backtest\nresult = api.create_backtest(project_id, name=\"Validation_IS_2019-2022\")\nbacktest_id_is = result['backtests']['backtestId']\n\n# Wait for completion\nfinal_is = api.wait_for_backtest(project_id, backtest_id_is, timeout=600)\nprint(f\"IS Sharpe: {final_is['backtest']['statistics']['sharpe']}\")\n```\n\n**Step 3: Run Out-of-Sample Backtest**\n```python\n# Modify for OOS period\nos_code = modify_dates(original_code, \n                       start_date=(2023, 1, 1),\n                       end_date=(2023, 12, 31))\n\n# Upload OOS version  \napi.upload_file(project_id, \"main.py\", oos_code)\n\n# Submit OOS backtest\nresult = api.create_backtest(project_id, name=\"Validation_OOS_2023\")\nbacktest_id_oos = result['backtests']['backtestId']\n\n# Wait and compare\nfinal_oos = api.wait_for_backtest(project_id, backtest_id_oos, timeout=600)\noos_sharpe = final_oos['backtest']['statistics']['sharpe']\nis_sharpe = final_is['backtest']['statistics']['sharpe']\n\ndegradation = (is_sharpe - oos_sharpe) / is_sharpe\nprint(f\"OOS Sharpe: {oos_sharpe:.3f}\")\nprint(f\"Degradation: {degradation*100:.1f}%\")\n```\n\n**Via CLI** (recommended - handles all steps):\n```bash\nvenv/bin/python SCRIPTS/qc_validate.py run --strategy strategy.py --split 0.80\n```\n\nThis automatically:\n1. Modifies strategy for time splits\n2. Uploads IS and OOS versions\n3. Runs both backtests\n4. Calculates degradation metrics\n5. Saves results to PROJECT_LOGS/validation_result.json",
+      "tags": ["execution", "validation", "backtesting"],
+      "priority": 1,
+      "related_sections": ["qc_platform_access", "walk_forward_basics"]
+    },
+    {
+      "id": "monte_carlo_execution",
+      "title": "Monte Carlo Validation Execution",
+      "content": "**Monte Carlo via Research Notebook**\n\nMC validation typically runs in Research notebooks for flexibility.\n\n**Step 1: Create Research Notebook**\n```python\n# Create MC validation notebook\nmc_notebook = create_mc_notebook_template()\n\n# Upload to QC\napi.upload_file(project_id, \"mc_validation.ipynb\", mc_notebook)\n```\n\n**Step 2: Notebook Structure**\n```python\n# Cell 1: Import and setup\nfrom QuantConnect import *\nfrom QuantConnect.Data import *\nimport pandas as pd\nimport numpy as np\n\nqb = QuantBook()\n\n# Cell 2: Load backtest results\nproject_id = 12345\nbacktest_id = \"abc123\"\nresults = qb.ReadBacktest(project_id, backtest_id)\ntrades = results['trades']\n\n# Cell 3: Trade Sequence Randomization\nnp.random.seed(42)\nmc_results = []\n\nfor i in range(1000):\n    # Shuffle trade sequence\n    shuffled_trades = trades.sample(frac=1)\n    \n    # Calculate metrics\n    returns = shuffled_trades['profit_loss'].cumsum()\n    sharpe = calculate_sharpe(shuffled_trades)\n    \n    mc_results.append({\n        'run': i,\n        'sharpe': sharpe,\n        'max_dd': returns.min()\n    })\n\n# Cell 4: Analysis\nmc_df = pd.DataFrame(mc_results)\nprint(f\"Median Sharpe: {mc_df['sharpe'].median():.3f}\")\nprint(f\"10th Percentile: {mc_df['sharpe'].quantile(0.10):.3f}\")\nprint(f\"95th Percentile DD: {mc_df['max_dd'].quantile(0.95):.0f}\")\n\n# Cell 5: PSR Calculation\nfrom scipy import stats\npsr = calculate_psr(mc_df['sharpe'].values, benchmark=0.0)\nprint(f\"PSR: {psr:.3f}\")\n```\n\n**Step 3: Run Notebook**\n1. Visit QC Terminal: https://www.quantconnect.com/terminal\n2. Open project\n3. Open mc_validation.ipynb\n4. Run all cells\n5. Export results\n\n**Alternative: Batch MC via API**\n```python\n# For automated MC validation\nfor run in range(1000):\n    # Generate variation\n    varied_strategy = apply_parameter_jitter(base_strategy, run)\n    \n    # Upload\n    api.upload_file(project_id, \"main.py\", varied_strategy)\n    \n    # Run backtest\n    result = api.create_backtest(project_id, name=f\"MC_Run_{run}\")\n    # ... collect results\n```\n\n**Note**: Batch approach expensive. Research notebook preferred for MC.",
+      "tags": ["monte_carlo", "research", "validation"],
+      "priority": 2,
+      "related_sections": ["research_notebook_usage", "monte_carlo_validation"]
+    },
+    {
+      "id": "walk_forward_basics",
+      "title": "Walk-Forward Validation Overview",
+      "content": "**Purpose**: Detect overfitting and ensure strategy generalizes to unseen data.\n\n**Approach**:\n1. **Training (In-Sample)**: Develop/optimize on 80% of data\n2. **Testing (Out-of-Sample)**: Validate on remaining 20%\n3. **Compare**: Measure performance degradation\n\n**Example** (5-year backtest 2019-2023):\n- In-sample: 2019-2022 (4 years) - Training period\n- Out-of-sample: 2023 (1 year) - Testing period\n\n**Critical Rule**: NEVER adjust strategy based on OOS results. OOS is for testing only. If you adjust based on OOS, it becomes in-sample and validation is invalid.\n\n**Standard Split**: 70-80% in-sample, 20-30% out-of-sample\n**Minimum OOS Period**: 6 months (1 year preferred)",
+      "tags": ["walk-forward", "basics", "validation"],
+      "priority": 1,
+      "related_sections": ["performance_degradation", "decision_criteria"]
+    },
+    {
+      "id": "performance_degradation",
+      "title": "Performance Degradation Analysis",
+      "content": "**Degradation Formula**: `(IS Sharpe - OOS Sharpe) / IS Sharpe`\n\n**Thresholds**:\n\n< 15% Degradation: **Excellent** - Deploy with confidence\n- Strategy generalizes well\n- Low overfitting risk\n- Example: IS 1.0 → OOS 0.90 (10%)\n\n15-30% Degradation: **Acceptable** - Deploy but monitor\n- Normal performance drop\n- Acceptable for live trading\n- Example: IS 1.0 → OOS 0.75 (25%)\n\n30-40% Degradation: **Concerning** - Escalate to human\n- Borderline overfitting\n- Requires careful review\n- Example: IS 1.0 → OOS 0.65 (35%)\n\n> 40% Degradation: **Severe** - Abandon\n- Clear overfitting\n- Will not work live\n- Example: IS 1.0 → OOS 0.50 (50%)\n\n**Research Finding**: Expected Sharpe degradation of 33-50% is NORMAL across strategies. IS performance explains only 1-2% of OOS performance (R² < 0.025).",
+      "tags": ["degradation", "overfitting", "thresholds"],
+      "priority": 1,
+      "related_sections": ["walk_forward_basics", "decision_criteria"]
+    },
+    {
+      "id": "robustness_score",
+      "title": "Robustness Score (OOS/IS Ratio)",
+      "content": "**Formula**: `OOS Sharpe / IS Sharpe`\n\n**Thresholds**:\n\n> 0.75: **High Robustness**\n- Strategy robust across periods\n- Minimal degradation\n- Strong candidate for deployment\n\n0.60-0.75: **Moderate Robustness**\n- Acceptable performance\n- Monitor closely\n- Deploy with caution\n\n< 0.60: **Low Robustness**\n- Strategy unstable\n- High overfitting risk\n- Redesign or abandon\n\n**Interpretation**:\n- Robustness > 0.75 means OOS maintains 75%+ of IS performance\n- Accounts for normal market variation\n- More intuitive than degradation percentage",
+      "tags": ["robustness", "metrics", "ratio"],
+      "priority": 1,
+      "related_sections": ["performance_degradation"]
+    },
+    {
+      "id": "monte_carlo_validation",
+      "title": "Monte Carlo Validation Methods",
+      "content": "**Why Monte Carlo?**\nSingle-path backtests dramatically underestimate risk. MC analysis reveals drawdowns 2-3x larger than historical tests.\n\n**Key Methods**:\n\n**1. Trade Sequence Randomization**\n- Shuffle trade order 1,000+ times\n- Preserves trade characteristics\n- Tests path dependency\n- If strategy fails when reordered: path-dependent overfitting\n\n**2. Block Bootstrapping (MACHR)**\n- Divide trades into blocks of 5-50 trades\n- Classify by market regime (bull/bear/sideways)\n- Randomly sample blocks with replacement\n- Test performance across different regime sequences\n\n**3. Noise Testing**\n- Add ±5-15% random noise to prices\n- Run 500+ simulations\n- Robust strategies remain profitable in 70%+ simulations\n\n**4. Parameter Jitter**\n- Apply ±5-10% random perturbations to parameters\n- Test hundreds of variations\n- Fragile strategies collapse with small changes\n\n**Recommended Runs**: 1,000+ for standard validation, 5,000-10,000 for tail risk analysis",
+      "tags": ["monte_carlo", "validation", "randomization"],
+      "priority": 1,
+      "related_sections": ["probabilistic_sharpe_ratio", "overfitting_detection"]
+    },
+    {
+      "id": "probabilistic_sharpe_ratio",
+      "title": "Probabilistic Sharpe Ratio (PSR)",
+      "content": "**Most Important Metric**: PSR calculates probability that true Sharpe exceeds a benchmark, accounting for non-normality and track record length.\n\n**Formula** (simplified):\n`PSR(SR*) = Φ[(ŜR - SR*)·√(T-1) / √(1 + (ŜR²/2) - γ₃·ŜR + ((γ₄-3)/4)·ŜR²)]`\n\nWhere:\n- ŜR = estimated Sharpe ratio\n- SR* = benchmark (typically 0 or 1.0)\n- T = number of observations\n- γ₃ = skewness\n- γ₄ = kurtosis\n\n**Thresholds**:\n\nPSR ≥ 0.95: **Statistically Significant**\n- 95% confidence true Sharpe > benchmark\n- Industry standard threshold\n- Deploy with confidence\n\nPSR 0.90-0.95: **Marginal**\n- Additional validation required\n- Borderline significance\n- Proceed with caution\n\nPSR < 0.90: **Insufficient Evidence**\n- No statistical significance\n- Abandon or collect more data\n\n**Key Insight**: Calculate PSR across Monte Carlo simulations. Use 10th percentile PSR (worst case in 90% scenarios) for parameter selection.\n\n**Warning**: Negative skewness and high kurtosis dramatically reduce PSR even with high Sharpe ratios.",
+      "tags": ["psr", "statistics", "significance"],
+      "priority": 1,
+      "related_sections": ["monte_carlo_validation", "deflated_sharpe_ratio"]
+    },
+    {
+      "id": "deflated_sharpe_ratio",
+      "title": "Deflated Sharpe Ratio (DSR)",
+      "content": "**Purpose**: Correct for multiple testing bias when testing many strategies/parameters.\n\n**Problem**: Testing 100 strategies, each passing PSR ≥ 0.95 individually, still produces false discoveries.\n\n**Solution**: DSR adjusts significance threshold based on number of independent trials.\n\n**Threshold**: DSR ≥ 0.95 indicates significance after accounting for multiple testing\n\n**When to Use**:\n- Tested multiple strategies\n- Tested multiple parameter sets\n- Extensive optimization\n- Want family-wise error control\n\n**Alternative**: Bonferroni correction\n- α_corrected = α_desired / n_tests\n- Example: 50 tests at 95% confidence requires p < 0.001 (0.05/50)\n- Simpler but more conservative than DSR\n\n**Key Insight**: DSR prevents declaring lucky results as genuine edge. Critical for avoiding false discoveries in systematic strategy development.",
+      "tags": ["dsr", "multiple_testing", "statistics"],
+      "priority": 2,
+      "related_sections": ["probabilistic_sharpe_ratio", "overfitting_detection"]
+    },
+    {
+      "id": "minimum_track_record",
+      "title": "Minimum Track Record Length (MinTRL)",
+      "content": "**Purpose**: Calculate time period required to reject null hypothesis with confidence.\n\n**Formula** (simplified):\n`MinTRL = 1 + [1 - γ₃×SR + (γ₄-1)/4 × SR²] × (Z_α/(SR-SR*))²`\n\n**Typical Requirements**:\n- High Sharpe (SR=2): 2-3 years daily data\n- Medium Sharpe (SR=1): 5-7 years\n- Low Sharpe (SR=0.5): 15-20 years\n\n**If Track Record Too Short**:\nStrategy lacks statistical power to distinguish edge from luck.\n\n**Solution**: Multi-instrument testing\n- Apply strategy to 5+ related instruments\n- Combine trade counts\n- Reduces standard error dramatically\n- Tests robustness across instruments\n\n**Example**:\n- Single instrument: 42 trades over 8 years (insufficient)\n- 5 instruments: 218 combined trades (sufficient)\n\n**Market Cycle Coverage**:\nMinimum 4-7 years to span one complete cycle (bull, bear, sideways)",
+      "tags": ["mintrl", "sample_size", "statistics"],
+      "priority": 2,
+      "related_sections": ["trade_count_requirements"]
+    },
+    {
+      "id": "trade_count_requirements",
+      "title": "Trade Count and Sample Size",
+      "content": "**Minimum Requirements**:\n\nIn-Sample:\n- Absolute minimum: 30 trades\n- Basic significance: 50 trades\n- Production ready: 100+ trades\n- High confidence: 1,000+ trades\n\nOut-of-Sample:\n- Minimum viable: 10 trades\n- Acceptable: 20+ trades\n- Good: 50+ trades\n\n**By Strategy Type**:\n\nHigh-Frequency: 1,000+ trades (achievable in days/weeks)\n\nDay Trading: 200-500 minimum, 1,000+ recommended (6-12 months)\n\nSwing Trading: 100-200 minimum, 300+ recommended (2-5 years)\n\nPosition Trading: 50-100 minimum, 200+ recommended (5-10+ years)\n\n**Statistical Power**:\nStandard error = σ / √n\n\n- 30 trades: SE very large, weak power\n- 100 trades: SE acceptable\n- 1,000 trades: SE small, strong power\n\n**Confidence Interval Test**:\n95% CI = μ ± 1.96 × SE\n\nStrategy is likely profitable if lower bound > 0.\n\n**Serial Correlation Adjustment**:\nEffective sample = n_actual × (1 - ρ)\n- 200 trades with ρ=0.25 → 150 effective trades\n- Strategies with ρ > 0.3 need adjustment",
+      "tags": ["trades", "sample_size", "statistics"],
+      "priority": 1,
+      "related_sections": ["minimum_track_record", "walk_forward_basics"]
+    },
+    {
+      "id": "overfitting_detection",
+      "title": "Overfitting Detection Red Flags",
+      "content": "**Red Flags** (immediate investigation required):\n\n1. **Excessive Degradation**: OOS < 50% of IS performance\n2. **Too Perfect**: Sharpe > 3.0 without extraordinary evidence\n3. **Parameter Sensitivity**: ±1 parameter change breaks strategy\n4. **Unrealistic Consistency**: Zero losing months/years\n5. **MC Reshuffle Failure**: Unprofitable when trade order changed\n6. **Low Trade Count**: < 20 trades (statistically unreliable)\n7. **Regime Dependency**: Works only in one market type\n8. **Specific Parameters**: 63.7-period MA or $217.34 stop (curve-fitting)\n9. **MC Drawdown Explosion**: MC drawdowns > 2.5x backtest\n10. **Failed Noise Test**: < 70% profitable with ±10% price noise\n\n**Overfitting Detection Protocol**:\n\n**Step 1**: In-Sample vs Out-of-Sample\n- Calculate degradation ratio (OOS/IS)\n- Threshold: Ratio < 0.50 signals overfitting\n\n**Step 2**: Permutation Testing\n- Run 1,000-10,000 permutations\n- p-value < 0.05 required (1-year), < 0.01 (2+ years)\n\n**Step 3**: Monte Carlo Drawdown Distribution\n- Compare actual drawdown to MC 5th percentile\n- MC drawdowns typically 2-3x larger than backtest\n- Ratio > 2.5x indicates high path-dependent risk\n\n**Step 4**: Parameter Stability\n- Plateau width ratio > 0.20\n- Neighborhood correlation > 0.70\n- ±10% parameter change maintains ≥90% performance",
+      "tags": ["overfitting", "red_flags", "detection"],
+      "priority": 1,
+      "related_sections": ["performance_degradation", "monte_carlo_validation"]
+    },
+    {
+      "id": "decision_criteria",
+      "title": "Phase 5 Decision Criteria",
+      "content": "**DEPLOY_STRATEGY** (Deploy with confidence):\nRequirements (ALL must be met):\n- Degradation < 15%\n- Robustness > 0.75\n- OOS Sharpe > 0.7\n- PSR (10th percentile) ≥ 0.95\n- OOS trades ≥ 20\n- MC profitable in ≥ 85% simulations\n\n**PROCEED_WITH_CAUTION** (Deploy but monitor closely):\nRequirements:\n- Degradation < 30%\n- Robustness > 0.60\n- OOS Sharpe > 0.5\n- PSR (10th percentile) ≥ 0.90\n- OOS trades ≥ 10\n- MC profitable in ≥ 70% simulations\n\n**ESCALATE_TO_HUMAN** (Borderline - human review):\nConditions:\n- Degradation 30-40%\n- Robustness 0.50-0.60\n- PSR 0.85-0.90\n- Results don't clearly fit above criteria\n\n**ABANDON_HYPOTHESIS** (Too unstable/overfit):\nAny of:\n- Degradation > 40%\n- Robustness < 0.50\n- OOS Sharpe < 0\n- PSR < 0.85\n- OOS trades < 10\n- MC profitable in < 70% simulations\n- Failed permutation test (p > 0.05)\n\n**Example Decision**:\n```\nIn-Sample: Sharpe 0.97, DD 18%, Trades 142\nOut-of-Sample: Sharpe 0.89, DD 22%, Trades 38\nDegradation: 8.2% (< 15%)\nRobustness: 0.92 (> 0.75)\nPSR (p10): 0.96 (≥ 0.95)\n→ DEPLOY_STRATEGY (minimal degradation, high robustness)\n```",
+      "tags": ["decisions", "criteria", "phase5"],
+      "priority": 1,
+      "related_sections": ["performance_degradation", "robustness_score"]
+    },
+    {
+      "id": "workflow",
+      "title": "Complete Validation Workflow",
+      "content": "**Phase 1: Basic Walk-Forward (Required)**\n\n1. Define split (typically 80/20)\n2. Modify strategy for time-based splits\n3. Run in-sample backtest (training)\n4. Run out-of-sample backtest (testing)\n5. Calculate degradation and robustness\n6. Check OOS trade count (≥ 10 minimum)\n\n**Phase 2: Monte Carlo Validation (If Phase 1 passes)**\n\n1. Trade sequence randomization (1,000 runs)\n2. Parameter jitter testing (±5-10%)\n3. Noise testing (±10% price variations, 500 runs)\n4. Block bootstrapping (MACHR, 500 runs)\n5. Calculate PSR distribution (use p10)\n\n**Phase 3: Statistical Metrics**\n\n1. Calculate PSR (benchmark SR=0)\n2. Calculate DSR (if multiple strategies tested)\n3. Assess MinTRL (verify sufficient data)\n4. Check confidence intervals\n5. Permutation testing (1,000+ permutations)\n\n**Phase 4: Overfitting Detection**\n\n1. Check all red flags\n2. Parameter sensitivity analysis\n3. Regime-specific performance\n4. Stress test (2008, 2020 crises)\n\n**Phase 5: Final Decision**\n\n1. Evaluate against decision criteria\n2. Generate validation report\n3. Update iteration_state.json\n4. If DEPLOY: Establish MC equity bands for monitoring\n\n**Usage**:\n```bash\n# Run validation\nvenv/bin/python SCRIPTS/qc_validate.py run --strategy strategy.py\n\n# Custom split\nvenv/bin/python SCRIPTS/qc_validate.py run --strategy strategy.py --split 0.70\n\n# Analyze results\nvenv/bin/python SCRIPTS/qc_validate.py analyze --results PROJECT_LOGS/validation_result.json\n```",
+      "tags": ["workflow", "usage", "process"],
+      "priority": 1,
+      "related_sections": ["walk_forward_basics", "monte_carlo_validation", "decision_criteria"]
+    }
+  ],
+  "examples": [
+    {
+      "title": "Excellent Validation Result",
+      "description": "Minimal degradation, high robustness - ready for deployment",
+      "code": "In-Sample (2019-2022, 4 years):\n  Sharpe: 0.97\n  Drawdown: 18%\n  Trades: 142\n  Win Rate: 52%\n\nOut-of-Sample (2023, 1 year):\n  Sharpe: 0.89\n  Drawdown: 22%\n  Trades: 38\n  Win Rate: 50%\n\nMetrics:\n  Degradation: 8.2% (< 15%)\n  Robustness: 0.92 (> 0.75)\n  PSR (p10): 0.96 (≥ 0.95)\n  MC Profitable: 91% of 1,000 runs",
+      "output": "Decision: DEPLOY_STRATEGY\nReasoning: Minimal degradation, high robustness, strong PSR\nNext: Set up live monitoring with MC equity bands",
+      "tags": ["excellent", "deploy"]
+    },
+    {
+      "title": "Acceptable but Cautious",
+      "description": "Moderate degradation - deploy with close monitoring",
+      "code": "In-Sample:\n  Sharpe: 1.15\n  Trades: 98\n\nOut-of-Sample:\n  Sharpe: 0.82\n  Trades: 24\n\nMetrics:\n  Degradation: 28.7% (< 30%)\n  Robustness: 0.71 (> 0.60)\n  PSR (p10): 0.91 (≥ 0.90)",
+      "output": "Decision: PROCEED_WITH_CAUTION\nReasoning: Within acceptable thresholds but closer to limits\nAction: Deploy with reduced position size, monitor closely",
+      "tags": ["acceptable", "caution"]
+    },
+    {
+      "title": "Severe Overfitting",
+      "description": "Excessive degradation - strategy failed validation",
+      "code": "In-Sample:\n  Sharpe: 1.50\n  Trades: 120\n\nOut-of-Sample:\n  Sharpe: 0.55\n  Trades: 18\n\nMetrics:\n  Degradation: 63.3% (> 40%)\n  Robustness: 0.37 (< 0.50)\n  PSR (p10): 0.72 (< 0.85)\n  MC Profitable: 58% of 1,000 runs",
+      "output": "Decision: ABANDON_HYPOTHESIS\nReasoning: Severe degradation, low robustness, failed PSR\nCause: Strategy overfit to in-sample noise\nAction: Return to hypothesis development (Phase 1)",
+      "tags": ["overfitting", "abandon"]
+    },
+    {
+      "title": "Monte Carlo Exposes Risk",
+      "description": "Good Sharpe but MC reveals hidden drawdown risk",
+      "code": "Backtest:\n  Max Drawdown: $1,664\n\nMonte Carlo (1,000 runs):\n  Median Drawdown: $2,847\n  95th Percentile: $5,195\n  Worst Case: $7,320\n\nRatio: 3.1x (> 2.5x threshold)",
+      "output": "Decision: ESCALATE_TO_HUMAN\nReasoning: MC reveals 3x larger drawdowns than backtest\nIssue: High path-dependent risk\nAction: Reduce position sizing or redesign for lower volatility",
+      "tags": ["monte_carlo", "risk"]
+    }
+  ],
+  "faqs": [
+    {
+      "question": "My strategy has excellent IS Sharpe (1.5) but OOS is only 0.6 - is 60% degradation acceptable?",
+      "answer": "No. 60% degradation exceeds the 40% threshold, indicating severe overfitting. The strategy captured historical noise rather than genuine patterns. ABANDON and return to hypothesis development. Normal degradation is 33-50%, but deployable strategies should show < 30%.",
+      "tags": ["degradation", "overfitting"],
+      "related_sections": ["performance_degradation", "decision_criteria"]
+    },
+    {
+      "question": "PSR is 0.93 - marginal but close to 0.95. Can I deploy?",
+      "answer": "Not recommended. PSR 0.93 falls in the marginal zone (0.90-0.95). Collect more data, test on additional instruments to increase sample size, or improve the strategy. The 0.95 threshold exists for statistical rigor - borderline results suggest insufficient evidence of genuine edge.",
+      "tags": ["psr", "significance"],
+      "related_sections": ["probabilistic_sharpe_ratio"]
+    },
+    {
+      "question": "OOS has only 12 trades over 1 year - is this sufficient?",
+      "answer": "Barely minimum. 12 trades meets the absolute minimum (≥ 10) but is statistically weak. Prefer 20+ trades for acceptable confidence, 50+ for good confidence. Consider: (1) Extending OOS period to 18 months, (2) Testing on multiple instruments to increase sample, (3) Accepting higher uncertainty if Sharpe is strong and other metrics pass.",
+      "tags": ["trades", "sample_size"],
+      "related_sections": ["trade_count_requirements", "minimum_track_record"]
+    },
+    {
+      "question": "Monte Carlo shows 91% profitable simulations - is this good enough?",
+      "answer": "Excellent. 91% > 85% threshold for deployment. This indicates the strategy is robust across different path orderings. Compare to median and 10th percentile metrics in MC distribution - these should also meet thresholds. The 10th percentile represents worst-case in 90% of scenarios and is the most important metric.",
+      "tags": ["monte_carlo", "validation"],
+      "related_sections": ["monte_carlo_validation", "decision_criteria"]
+    },
+    {
+      "question": "Backtest drawdown is 15% but MC 95th percentile is 38% - what does this mean?",
+      "answer": "Monte Carlo exposed hidden risk. MC/Backtest ratio = 2.5x, right at the warning threshold. This is normal - MC typically reveals 2-3x larger drawdowns. Action: (1) Use MC 95th percentile (38%) for position sizing, NOT backtest (15%), (2) Reduce position size to tolerate 38% drawdown, (3) Consider if 38% is psychologically acceptable - if not, redesign strategy for lower volatility.",
+      "tags": ["monte_carlo", "drawdown", "risk"],
+      "related_sections": ["monte_carlo_validation", "overfitting_detection"]
+    }
+  ],
+  "related_tools": [
+    "qc_backtest",
+    "qc_optimize",
+    "decision_framework",
+    "backtesting_analysis"
+  ],
+  "metadata": {
+    "created": "2025-11-13",
+    "updated": "2025-11-13",
+    "authors": ["Claude"],
+    "skill": "quantconnect-validation",
+    "references": [
+      "PROJECT_DOCUMENTATION/VALIDATION/MONTECARLO_VALIDATION/CLAUDE_MC_VALIDATION_GUIDE.md",
+      "PROJECT_DOCUMENTATION/VALIDATION/MONTE_CARLO_ENHANCEMENTS/MC_ENHANCEMENT_PLAN.md"
+    ]
+  }
+}
