@@ -5,425 +5,253 @@ description: QuantConnect walk-forward validation and Phase 5 robustness testing
 
 # QuantConnect Validation Skill (Phase 5)
 
-This skill provides focused knowledge for **walk-forward validation** and Phase 5 robustness testing.
+**Purpose**: Walk-forward validation for Phase 5 robustness testing before deployment.
+
+**Progressive Disclosure**: This primer contains essentials only. Full details available via `qc_validate.py docs` command.
+
+---
 
 ## When to Use This Skill
 
-Load this skill when:
+Load when:
 - Running `/qc-validate` command
-- Implementing walk-forward validation
 - Testing out-of-sample performance
 - Evaluating strategy robustness
 - Making deployment decisions
 
-**Important**: Always store validation results and logs in `PROJECT_LOGS/` folder. See `PROJECT_LOGS/README.md` for naming conventions.
+**Tool**: Use `python SCRIPTS/qc_validate.py` for walk-forward validation
 
 ---
 
-## Walk-Forward Validation Approach
-
-Walk-forward validation tests strategy robustness by:
-1. Training on in-sample period
-2. Testing on out-of-sample period
-3. Comparing performance degradation
+## Walk-Forward Validation Overview
 
 **Purpose**: Detect overfitting and ensure strategy generalizes to new data.
 
-### Time Period Split
+**Approach**:
+1. **Training (in-sample)**: Develop/optimize on 80% of data
+2. **Testing (out-of-sample)**: Validate on remaining 20%
+3. **Compare**: Measure performance degradation
 
-For a 5-year backtest (2019-2023):
-- **In-sample (training)**: 2019-2022 (80%)
-- **Out-of-sample (testing)**: 2023 (20%)
-
-```python
-# In-sample backtest
-self.SetStartDate(2019, 1, 1)
-self.SetEndDate(2022, 12, 31)
-
-# Out-of-sample backtest
-self.SetStartDate(2023, 1, 1)
-self.SetEndDate(2023, 12, 31)
-```
-
-### Validation Metrics
-
-1. **Performance Degradation**
-   - Measures: (In-sample Sharpe - OOS Sharpe) / In-sample Sharpe
-   - < 15%: Excellent robustness
-   - 15-30%: Acceptable degradation
-   - 30-40%: Concerning degradation
-   - > 40%: Severe degradation (likely overfit)
-
-2. **Robustness Score**
-   - Measures: OOS Sharpe / In-sample Sharpe
-   - > 0.75: High robustness
-   - 0.60-0.75: Moderate robustness
-   - < 0.60: Low robustness
+**Example** (5-year backtest 2019-2023):
+- In-sample: 2019-2022 (4 years) - Training period
+- Out-of-sample: 2023 (1 year) - Testing period
 
 ---
 
-## Implementation: Walk-Forward Validation
+## Key Metrics
 
-```python
-import sys
-sys.path.insert(0, 'SCRIPTS')
-from qc_backtest import QuantConnectAPI
-import json
+### 1. Performance Degradation
 
-def walk_forward_validation(project_id, strategy_code, use_optimized_params=True):
-    """
-    Run walk-forward validation on strategy.
+**Formula**: `(IS Sharpe - OOS Sharpe) / IS Sharpe`
 
-    Args:
-        project_id: QC project ID
-        strategy_code: Strategy code (with parameters)
-        use_optimized_params: Use optimized or baseline parameters
+| Degradation | Quality | Decision |
+|-------------|---------|----------|
+| < 15% | Excellent | Deploy with confidence |
+| 15-30% | Acceptable | Deploy but monitor |
+| 30-40% | Concerning | Escalate to human |
+| > 40% | Severe | Abandon (overfit) |
 
-    Returns:
-        in_sample_performance: Performance on training period
-        out_of_sample_performance: Performance on testing period
-        degradation_pct: Performance degradation percentage
-        robustness_score: OOS/In-sample Sharpe ratio
-    """
-    api = QuantConnectAPI()
-
-    # Step 1: Run in-sample backtest (2019-2022)
-    strategy_in_sample = strategy_code.replace(
-        "self.SetStartDate(2019, 1, 1)",
-        "self.SetStartDate(2019, 1, 1)"
-    ).replace(
-        "self.SetEndDate(2023, 12, 31)",
-        "self.SetEndDate(2022, 12, 31)"
-    )
-
-    api.upload_file(project_id, strategy_in_sample, "Main.py")
-    backtest_is = api.create_backtest(project_id, "InSample_Validation")
-    result_is = api.wait_for_backtest(project_id, backtest_is['backtestId'], timeout=600)
-    perf_is = api.parse_backtest_results(result_is)
-
-    # Step 2: Run out-of-sample backtest (2023)
-    strategy_oos = strategy_code.replace(
-        "self.SetStartDate(2019, 1, 1)",
-        "self.SetStartDate(2023, 1, 1)"
-    ).replace(
-        "self.SetEndDate(2023, 12, 31)",
-        "self.SetEndDate(2023, 12, 31)"
-    )
-
-    api.upload_file(project_id, strategy_oos, "Main.py")
-    backtest_oos = api.create_backtest(project_id, "OutOfSample_Validation")
-    result_oos = api.wait_for_backtest(project_id, backtest_oos['backtestId'], timeout=600)
-    perf_oos = api.parse_backtest_results(result_oos)
-
-    # Step 3: Calculate metrics
-    sharpe_is = perf_is['sharpe_ratio']
-    sharpe_oos = perf_oos['sharpe_ratio']
-
-    degradation_pct = (sharpe_is - sharpe_oos) / sharpe_is if sharpe_is != 0 else 1.0
-    robustness_score = sharpe_oos / sharpe_is if sharpe_is != 0 else 0.0
-
-    return {
-        'in_sample': perf_is,
-        'out_of_sample': perf_oos,
-        'degradation_pct': degradation_pct,
-        'robustness_score': robustness_score
-    }
-```
+**Key Insight**: < 15% degradation indicates robust strategy that generalizes well.
 
 ---
 
-## Phase 5 Decision Integration
+### 2. Robustness Score
 
-After validation completes, evaluate robustness:
+**Formula**: `OOS Sharpe / IS Sharpe`
 
-```python
-import sys
-sys.path.insert(0, 'SCRIPTS')
-from decision_logic import evaluate_validation, route_decision
+| Score | Quality | Interpretation |
+|-------|---------|----------------|
+| > 0.75 | High | Strategy robust across periods |
+| 0.60-0.75 | Moderate | Acceptable but monitor |
+| < 0.60 | Low | Strategy unstable |
 
-# Load validation results
-with open('PROJECT_LOGS/validation_result.json') as f:
-    validation = json.load(f)
-
-# Evaluate
-decision, reason, details = evaluate_validation(
-    in_sample_sharpe=validation['in_sample']['sharpe_ratio'],
-    out_of_sample_sharpe=validation['out_of_sample']['sharpe_ratio'],
-    degradation_pct=validation['degradation_pct'],
-    robustness_score=validation['robustness_score'],
-    thresholds=state['thresholds']
-)
-
-print(f"Decision: {decision}")
-print(f"Reason: {reason}")
-
-# Route to next phase
-routing = route_decision(
-    current_phase="validation",
-    decision=decision,
-    iteration=state['workflow']['iteration']
-)
-
-print(f"Next Action: {routing['next_action']}")
-```
-
-**Possible decisions**:
-- `ABANDON_HYPOTHESIS` → Severe degradation (> 40%), start new hypothesis
-- `DEPLOY_STRATEGY` → Minimal degradation (< 15%), deploy with confidence
-- `PROCEED_WITH_CAUTION` → Moderate degradation (15-30%), deploy but monitor
-- `ESCALATE_TO_HUMAN` → Borderline results, needs human judgment
-
-**Decision thresholds** (from iteration_state.json):
-- Degradation > 40%: ABANDON (collapses out-of-sample)
-- Robustness < 0.5: ABANDON (too unstable)
-- Degradation < 15% AND Robustness > 0.75: DEPLOY (excellent)
-- Degradation < 30% AND Robustness > 0.60: PROCEED_WITH_CAUTION (acceptable)
-- Otherwise: ESCALATE_TO_HUMAN (borderline)
+**Key Insight**: > 0.75 indicates strategy maintains performance out-of-sample.
 
 ---
 
-## Best Practices for Validation
+## Quick Usage
 
-### 1. Use Realistic Time Splits
+### Run Walk-Forward Validation
 
-- **80/20 split**: Standard (4 years training, 1 year testing)
-- **70/30 split**: Conservative (more out-of-sample testing)
-- **60/40 split**: Very conservative (extensive testing)
+```bash
+# From hypothesis directory with iteration_state.json
+python SCRIPTS/qc_validate.py run --strategy strategy.py
 
-```python
-# 5-year backtest (2019-2023)
-# 80/20 split:
-in_sample = (2019, 1, 1) to (2022, 12, 31)  # 4 years
-out_of_sample = (2023, 1, 1) to (2023, 12, 31)  # 1 year
+# Custom split ratio (default 80/20)
+python SCRIPTS/qc_validate.py run --strategy strategy.py --split 0.70
 ```
 
-### 2. Ensure Sufficient Out-of-Sample Data
-
-- **Minimum**: 6 months
-- **Good**: 1 year
-- **Excellent**: 2+ years
-
-Too short out-of-sample periods give unreliable results.
-
-### 3. Don't Peek at Out-of-Sample
-
-**Critical**: Never optimize or adjust strategy based on out-of-sample results.
-- Out-of-sample is for **testing only**
-- If you adjust based on OOS, it becomes in-sample
-- This defeats the purpose of validation
-
-### 4. Check Trade Count in Both Periods
-
-```python
-trades_is = validation['in_sample']['total_trades']
-trades_oos = validation['out_of_sample']['total_trades']
-
-# Both should have sufficient trades
-if trades_is < 30 or trades_oos < 10:
-    print("WARNING: Insufficient trades for validation")
-```
-
-### 5. Compare Multiple Metrics
-
-Don't just look at Sharpe ratio:
-```python
-# Compare multiple metrics
-metrics_to_compare = [
-    'sharpe_ratio',
-    'max_drawdown',
-    'win_rate',
-    'profit_factor',
-    'total_trades'
-]
-
-for metric in metrics_to_compare:
-    is_val = validation['in_sample'][metric]
-    oos_val = validation['out_of_sample'][metric]
-    degradation = (is_val - oos_val) / is_val if is_val != 0 else 0
-    print(f"{metric}: {is_val:.2f} → {oos_val:.2f} ({degradation:.1%} degradation)")
-```
+**What it does**:
+1. Reads project_id from `iteration_state.json`
+2. Splits date range (80/20 default)
+3. Runs in-sample backtest
+4. Runs out-of-sample backtest
+5. Calculates degradation and robustness
+6. Saves results to `PROJECT_LOGS/validation_result.json`
 
 ---
 
-## Common Validation Issues
+### Analyze Results
 
-### 1. Severe Degradation (> 40%)
+```bash
+python SCRIPTS/qc_validate.py analyze --results PROJECT_LOGS/validation_result.json
+```
 
-**Problem**: Strategy overfit to in-sample period
+**Output**:
+- Performance comparison table
+- Degradation percentage
+- Robustness assessment
+- Deployment recommendation
+
+---
+
+## Decision Integration
+
+After validation, the decision framework evaluates:
+
+**DEPLOY_STRATEGY** (Deploy with confidence):
+- Degradation < 15% AND
+- Robustness > 0.75 AND
+- OOS Sharpe > 0.7
+
+**PROCEED_WITH_CAUTION** (Deploy but monitor):
+- Degradation < 30% AND
+- Robustness > 0.60 AND
+- OOS Sharpe > 0.5
+
+**ABANDON_HYPOTHESIS** (Too unstable):
+- Degradation > 40% OR
+- Robustness < 0.5 OR
+- OOS Sharpe < 0
+
+**ESCALATE_TO_HUMAN** (Borderline):
+- Results don't clearly fit above criteria
+
+---
+
+## Best Practices
+
+### 1. Time Splits
+
+- **Standard**: 80/20 (4 years training, 1 year testing)
+- **Conservative**: 70/30 (more OOS testing)
+- **Very Conservative**: 60/40 (extensive testing)
+
+**Minimum OOS period**: 6 months (1 year preferred)
+
+---
+
+### 2. Never Peek at Out-of-Sample
+
+**CRITICAL RULE**: Never adjust strategy based on OOS results.
+- OOS is for **testing only**
+- Adjusting based on OOS defeats validation purpose
+- If you adjust, OOS becomes in-sample
+
+---
+
+### 3. Check Trade Count
+
+Both periods need sufficient trades:
+- **In-sample**: Minimum 30 trades (50+ preferred)
+- **Out-of-sample**: Minimum 10 trades (20+ preferred)
+
+Too few trades = unreliable validation.
+
+---
+
+### 4. Compare Multiple Metrics
+
+Don't just look at Sharpe:
+- Sharpe Ratio degradation
+- Max Drawdown increase
+- Win Rate change
+- Profit Factor degradation
+- Trade Count consistency
+
+All metrics should degrade similarly for robust strategy.
+
+---
+
+## Common Issues
+
+### Severe Degradation (> 40%)
+
+**Cause**: Strategy overfit to in-sample period
 
 **Example**:
-- In-sample Sharpe: 1.5
-- Out-of-sample Sharpe: 0.6
+- IS Sharpe: 1.5 → OOS Sharpe: 0.6
 - Degradation: 60%
 
 **Decision**: ABANDON_HYPOTHESIS
 
-**Fix for next hypothesis**:
-- Simplify strategy (fewer parameters)
-- Use longer training period
-- Avoid curve-fitting
-
-### 2. Different Market Regimes
-
-**Problem**: In-sample was bull market, out-of-sample was bear market
-
-**Example**:
-- 2019-2022: Bull market → Sharpe 1.2
-- 2023: Bear market → Sharpe -0.3
-
-**Decision**: Not necessarily overfit, but strategy not robust across regimes
-
-**Fix**:
-- Test across multiple regimes
-- Add regime detection
-- Use defensive strategies
-
-### 3. Low Trade Count in Out-of-Sample
-
-**Problem**: Strategy stops trading in OOS period
-
-**Example**:
-- In-sample: 120 trades
-- Out-of-sample: 3 trades
-
-**Decision**: ESCALATE_TO_HUMAN
-
-**Reason**: Insufficient OOS data for reliable validation
-
-### 4. Opposite Results
-
-**Problem**: OOS Sharpe is negative while in-sample was positive
-
-**Example**:
-- In-sample Sharpe: 0.8
-- Out-of-sample Sharpe: -0.5
-
-**Decision**: ABANDON_HYPOTHESIS
-
-**Reason**: Strategy completely fails out-of-sample
+**Fix for next hypothesis**: Simplify (fewer parameters), longer training period
 
 ---
 
-## Integration with /qc-validate Command
+### Different Market Regimes
 
-The `/qc-validate` command should:
+**Cause**: IS was bull market, OOS was bear market
 
-1. **Read iteration_state.json**
-   - Get project_id (from backtest/optimization)
-   - Get parameters (baseline or optimized)
-   - Validate current_phase is "optimization" or "backtest"
+**Example**:
+- 2019-2022 (bull): Sharpe 1.2
+- 2023 (bear): Sharpe -0.3
 
-2. **Load QuantConnect-Validation Skill** (this skill!)
-   - Get walk-forward validation approach
-   - Get time period splits
-   - Get decision integration logic
+**Decision**: Not necessarily overfit, but not robust across regimes
 
-3. **Modify strategy for time splits**
-   - Extract current date range
-   - Calculate 80/20 split
-   - Generate in-sample and OOS versions
-
-4. **Run validation**
-   - Run in-sample backtest
-   - Run out-of-sample backtest
-   - Calculate degradation and robustness
-
-5. **Evaluate robustness (Phase 5)**
-   - Calculate degradation percentage
-   - Calculate robustness score
-   - Call `decision_logic.evaluate_validation()`
-   - Call `decision_logic.route_decision()`
-
-6. **Update iteration_state.json**
-   - Store validation results
-   - Store decision
-   - Update current_phase to "deployed" or "abandoned"
-
-7. **Git commit**
-   - Include in-sample vs OOS metrics
-   - Include decision and rationale
+**Fix**: Test across multiple regimes, add regime detection
 
 ---
 
-## Example: Complete /qc-validate Workflow
+### Low Trade Count in OOS
+
+**Cause**: Strategy stops trading in OOS period
+
+**Example**:
+- IS: 120 trades → OOS: 3 trades
+
+**Decision**: ESCALATE_TO_HUMAN (insufficient OOS data)
+
+---
+
+## Integration with /qc-validate
+
+The `/qc-validate` command workflow:
+
+1. Read `iteration_state.json` for project_id and parameters
+2. Load this skill for validation approach
+3. Modify strategy for time splits (80/20)
+4. Run in-sample and OOS backtests
+5. Calculate degradation and robustness
+6. Evaluate using decision framework
+7. Update `iteration_state.json` with results
+8. Git commit with validation summary
+
+---
+
+## Reference Documentation
+
+**Need implementation details?** Use `qc_validate.py docs`:
 
 ```bash
-# Step 1: Read prerequisites
-PROJECT_ID=$(cat iteration_state.json | jq -r '.project.project_id')
-USE_OPTIMIZED=$(cat iteration_state.json | jq -r '.phase_results.optimization.decision == "PROCEED_TO_VALIDATION"')
+python SCRIPTS/qc_validate.py docs <topic>
 
-# Step 2: Run walk-forward validation
-python3 << 'EOF'
-import sys, json
-sys.path.insert(0, 'SCRIPTS')
-from walk_forward_validation import walk_forward_validation
+# Topics available (via CLI tool):
+#   walk-forward-methodology   - Complete validation methodology
+#   degradation-thresholds     - Performance degradation criteria
+#   monte-carlo-validation     - Advanced Monte Carlo permutation tests
+#   psr-dsr-metrics           - PSR/DSR statistical metrics
+#   common-errors             - Error messages and fixes
+#   decision-criteria         - Phase 5 decision logic
+```
 
-with open('iteration_state.json') as f:
-    state = json.load(f)
-with open('strategy.py') as f:
-    strategy_code = f.read()
+**CLI docs location**: `.claude/skills/quantconnect-validation/reference/`
 
-# Use optimized params if available, otherwise baseline
-use_optimized = state.get('phase_results', {}).get('optimization', {}).get('decision') == 'PROCEED_TO_VALIDATION'
-
-validation = walk_forward_validation(
-    state['project']['project_id'],
-    strategy_code,
-    use_optimized_params=use_optimized
-)
-
-with open('PROJECT_LOGS/validation_result.json', 'w') as f:
-    json.dump(validation, f, indent=2)
-
-print(json.dumps(validation, indent=2))
-EOF
-
-# Step 3: Evaluate robustness
-python3 << 'EOF'
-import sys, json
-sys.path.insert(0, 'SCRIPTS')
-from decision_logic import evaluate_validation, route_decision
-
-with open('PROJECT_LOGS/validation_result.json') as f:
-    validation = json.load(f)
-with open('iteration_state.json') as f:
-    state = json.load(f)
-
-decision, reason, details = evaluate_validation(
-    in_sample_sharpe=validation['in_sample']['sharpe_ratio'],
-    out_of_sample_sharpe=validation['out_of_sample']['sharpe_ratio'],
-    degradation_pct=validation['degradation_pct'],
-    robustness_score=validation['robustness_score'],
-    thresholds=state['thresholds']
-)
-
-routing = route_decision("validation", decision, state['workflow']['iteration'])
-
-print(f"DECISION={decision}")
-print(f"NEXT_ACTION={routing['next_action']}")
-EOF
-
-# Step 4: Update iteration_state.json (Claude updates)
-
-# Step 5: Git commit
-git add iteration_state.json PROJECT_LOGS/validation_result.json
-git commit -m "validation: Complete - DEPLOY_STRATEGY
-
-In-Sample (2019-2022):
-- Sharpe: 0.97
-- Drawdown: 18%
-- Trades: 142
-
-Out-of-Sample (2023):
-- Sharpe: 0.89
-- Drawdown: 22%
-- Trades: 38
-
-Degradation: 8.2%
-Robustness: 0.92
-
-Decision: DEPLOY_STRATEGY
-Reason: Minimal degradation, high robustness, ready for deployment"
+**Usage**:
+```bash
+python SCRIPTS/qc_validate.py --help        # Command options
+python SCRIPTS/qc_validate.py docs          # List all topics
+python SCRIPTS/qc_validate.py docs <topic>  # Show specific topic
 ```
 
 ---
@@ -431,33 +259,41 @@ Reason: Minimal degradation, high robustness, ready for deployment"
 ## Related Skills
 
 - **quantconnect** - Core strategy development
-- **quantconnect-backtest** - Phase 3 backtesting
-- **quantconnect-optimization** - Phase 4 optimization
-- **decision-framework** - Decision thresholds and routing logic
+- **quantconnect-backtest** - Phase 3 backtesting (qc_backtest.py:**)
+- **quantconnect-optimization** - Phase 4 optimization (qc_optimize.py:**)
+- **decision-framework** - Decision thresholds
+- **backtesting-analysis** - Metric interpretation
 
 ---
 
-## Summary
+## Key Principles
 
-**This skill covers**:
-- ✅ Walk-forward validation approach
-- ✅ Time period splits (80/20)
-- ✅ Performance degradation calculation
-- ✅ Robustness score evaluation
-- ✅ Phase 5 decision integration
-- ✅ Deployment readiness assessment
-
-**When to load**:
-- Before running `/qc-validate` command
-- When implementing walk-forward validation
-- When evaluating out-of-sample performance
-- When making deployment decisions
-
-**Key principle**: Out-of-sample testing is the final check before deployment. Never adjust strategy based on OOS results - that defeats the validation purpose.
+1. **OOS is sacred** - Never adjust strategy based on OOS results
+2. **Degradation < 15% is excellent** - Strategy generalizes well
+3. **Robustness > 0.75 is target** - Maintains performance OOS
+4. **Trade count matters** - Need sufficient trades in both periods
+5. **Multiple metrics** - All should degrade similarly for robustness
 
 ---
 
-**Version**: 1.0.0
-**Last Updated**: November 10, 2025
-**Status**: Production Ready
-**Purpose**: Phase 5 walk-forward validation and robustness testing
+## Example Decision
+
+```
+In-Sample (2019-2022):
+  Sharpe: 0.97, Drawdown: 18%, Trades: 142
+
+Out-of-Sample (2023):
+  Sharpe: 0.89, Drawdown: 22%, Trades: 38
+
+Degradation: 8.2% (< 15%)
+Robustness: 0.92 (> 0.75)
+
+→ DEPLOY_STRATEGY (minimal degradation, high robustness)
+```
+
+---
+
+**Version**: 2.0.0 (Progressive Disclosure)
+**Last Updated**: November 13, 2025
+**Lines**: ~190 (was 463)
+**Context Reduction**: 59%
