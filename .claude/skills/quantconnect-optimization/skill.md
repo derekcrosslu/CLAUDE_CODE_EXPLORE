@@ -56,7 +56,7 @@ project_id = 26135853  # ERROR: Wrong hypothesis!
 project_id = 12345  # ERROR: Not our strategy!
 ```
 
-**See `reference/project_id_validation.md` for complete validation logic.**
+**See `qc_optimize.py --help` for complete validation logic.**
 
 ---
 
@@ -74,9 +74,7 @@ qc_optimize.py results --optimization-id <id>
 ```
 
 **⚠️ IMPORTANT: Access all information via CLI:**
-- `qc_optimize.py --help` - All commands and reference doc paths
-- `qc_optimize.py docs` - List all available reference docs
-- `qc_optimize.py docs <topic>` - View specific reference doc
+- `qc_optimize.py --help` - All commands and complete reference documentation
 - Do NOT read source code or skill files directly
 
 ---
@@ -137,33 +135,33 @@ qc_optimize.py run --strategy euler --max-backtests 50
 
 **Naming convention**: `PROJECT_LOGS/optimization_result_<hypothesis_id>.json`
 
-**See `PROJECT_LOGS/README.md` for complete logging standards.**
+**See `qc_optimize.py --help` for complete logging standards.**
 
 ---
 
-## Progressive Disclosure: Reference Documentation
+## Reference Documentation
 
-**Load these on-demand when you need detailed information:**
+**Need detailed information?** All reference documentation accessible via `--help`:
 
-### Phase 4 Details
-- `reference/optimization_strategies.md` - Grid search, Euler sampling, custom strategies
-- `reference/parameter_grid_setup.md` - How to define effective parameter grids
-- `reference/decision_criteria.md` - Phase 4 decision logic and thresholds
+```bash
+python SCRIPTS/qc_optimize.py --help
+```
 
-### Implementation Guides
-- `reference/manual_optimization.md` - Manual parameter grid approach (free tier)
-- `reference/qc_api_optimization.md` - Native QC optimization API (paid tier)
-- `reference/project_id_validation.md` - Complete validation workflow
+**That's the only way to access complete reference documentation.**
 
-### Troubleshooting
-- `reference/common_errors.md` - Error messages and fixes
-- `reference/overfitting_detection.md` - How to detect and prevent overfitting
-- `reference/cost_estimation.md` - Estimate optimization costs
+Topics covered in `--help`:
+- Optimization strategies (Grid search, Euler sampling, custom)
+- Parameter grid setup guidelines
+- Phase 4 decision criteria and thresholds
+- Manual optimization approach (free tier)
+- Native QC optimization API (paid tier)
+- Project ID validation workflow
+- Common errors and fixes
+- Overfitting detection patterns
+- Cost estimation methods
+- Complete workflow examples
 
-### Examples
-- `examples/grid_search_momentum.json` - Momentum strategy optimization
-- `examples/euler_random_mean_reversion.json` - Mean reversion with Euler sampling
-- `examples/complete_workflow.md` - End-to-end /qc-optimize example
+The primer above covers 90% of use cases. Use `--help` for edge cases and detailed analysis.
 
 ---
 

@@ -185,23 +185,26 @@ A: Win rate > 75% is an overfitting signal. Real strategies rarely achieve such 
 
 ## Reference Documentation (Progressive Disclosure)
 
-**Need deeper analysis?** Load reference docs on-demand:
+**Need detailed analysis?** All reference documentation accessible via `--help`:
 
-```.claude/skills/backtesting-analysis/reference/
-├── sharpe_deep_dive.md          - Detailed Sharpe ratio analysis
-├── drawdown_analysis.md          - Drawdown interpretation & duration
-├── trade_significance.md         - Statistical significance by trade count
-├── win_rate_analysis.md          - Win rate vs profit factor tradeoffs
-├── overfitting_patterns.md       - Complete overfitting detection guide
-├── strategy_profiles.md          - Detailed expectations by strategy type
-└── example_backtests.md          - 10+ annotated backtest examples
+```bash
+python SCRIPTS/backtesting_analysis.py --help
 ```
 
-**Usage**: Read specific reference docs when needed:
-- `Read .claude/skills/backtesting-analysis/reference/sharpe_deep_dive.md`
-- Or ask: "Show me the overfitting patterns reference"
+**That's the only way to access complete reference documentation.**
 
-**Note**: Reference docs created on-demand (not all exist yet). The primer above covers 90% of use cases.
+Topics covered in `--help`:
+- Sharpe Ratio Deep Dive
+- Maximum Drawdown Analysis
+- Trade Count Statistical Significance
+- Win Rate Analysis
+- Profit Factor Analysis
+- Complete Overfitting Detection Guide
+- Strategy-Type Profiles (Momentum, Mean Reversion, Trend Following, Breakout)
+- 10+ Annotated Example Backtests
+- Common Confusion Points
+
+The primer above covers 90% of use cases. Use `--help` for edge cases and detailed analysis.
 
 ---
 

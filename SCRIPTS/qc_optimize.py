@@ -303,69 +303,9 @@ def results(optimization_id: str, output: str):
     click.echo(f"✓ Results saved to: {output}")
 
 
-@cli.command()
-@click.argument('topic', required=False)
-def docs(topic: str):
-    """Show reference documentation (progressive disclosure).
-
-    Usage:
-        qc_optimize.py docs                      # List all available docs
-        qc_optimize.py docs manual-optimization  # Show specific doc
-
-    Available topics:
-        manual-optimization    - Manual grid search (free tier)
-        qc-api-optimization    - Native QC API (paid tier)
-        decision-criteria      - Phase 4 decision logic
-        parameter-grid-setup   - How to define parameter grids
-        overfitting-detection  - Detect and prevent overfitting
-        common-errors          - Error messages and fixes
-        cost-estimation        - Estimate optimization costs
-    """
-    import os
-
-    # Reference documentation directory
-    ref_dir = Path(SCRIPT_DIR).parent / '.claude/skills/quantconnect-optimization/reference'
-
-    # Map topics to files
-    docs_map = {
-        'manual-optimization': 'manual_optimization.md',
-        'qc-api-optimization': 'qc_api_optimization.md',
-        'decision-criteria': 'decision_criteria.md',
-        'parameter-grid-setup': 'parameter_grid_setup.md',
-        'overfitting-detection': 'overfitting_detection.md',
-        'common-errors': 'common_errors.md',
-        'cost-estimation': 'cost_estimation.md',
-    }
-
-    if not topic:
-        # List all available docs
-        click.echo("📚 Available Reference Documentation:\n")
-        for topic_name, filename in docs_map.items():
-            doc_path = ref_dir / filename
-            status = "✓" if doc_path.exists() else "✗"
-            click.echo(f"  {status} {topic_name:25} → {filename}")
-
-        click.echo(f"\n📂 Reference directory: {ref_dir}")
-        click.echo("\nUsage: qc_optimize.py docs <topic>")
-        return
-
-    # Show specific doc
-    if topic not in docs_map:
-        click.echo(f"❌ Unknown topic: {topic}", err=True)
-        click.echo(f"\nAvailable topics: {', '.join(docs_map.keys())}", err=True)
-        sys.exit(1)
-
-    doc_path = ref_dir / docs_map[topic]
-
-    if not doc_path.exists():
-        click.echo(f"❌ Documentation not found: {doc_path}", err=True)
-        sys.exit(1)
-
-    # Display the doc
-    with open(doc_path, 'r') as f:
-        content = f.read()
-
-    click.echo(content)
+# REMOVED: docs subcommand
+# Per PROGRESSIVE_DISCLOSURE_RULES.md: ALL reference documentation
+# accessible ONLY via --help (not via docs subcommand)
 
 
 if __name__ == '__main__':

@@ -231,28 +231,23 @@ The `/qc-validate` command workflow:
 
 ## Reference Documentation
 
-**Need implementation details?** Use `qc_validate.py docs`:
+**Need implementation details?** All reference documentation accessible via `--help`:
 
 ```bash
-python SCRIPTS/qc_validate.py docs <topic>
-
-# Topics available (via CLI tool):
-#   walk-forward-methodology   - Complete validation methodology
-#   degradation-thresholds     - Performance degradation criteria
-#   monte-carlo-validation     - Advanced Monte Carlo permutation tests
-#   psr-dsr-metrics           - PSR/DSR statistical metrics
-#   common-errors             - Error messages and fixes
-#   decision-criteria         - Phase 5 decision logic
+python SCRIPTS/qc_validate.py --help
 ```
 
-**CLI docs location**: `.claude/skills/quantconnect-validation/reference/`
+**That's the only way to access complete reference documentation.**
 
-**Usage**:
-```bash
-python SCRIPTS/qc_validate.py --help        # Command options
-python SCRIPTS/qc_validate.py docs          # List all topics
-python SCRIPTS/qc_validate.py docs <topic>  # Show specific topic
-```
+Topics covered in `--help`:
+- Walk-forward validation methodology
+- Performance degradation thresholds
+- Monte Carlo validation techniques
+- PSR/DSR statistical metrics
+- Common errors and fixes
+- Phase 5 decision criteria
+
+The primer above covers 90% of use cases. Use `--help` for edge cases and detailed analysis.
 
 ---
 
