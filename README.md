@@ -11,16 +11,21 @@
 ## 🚀 Start Here
 
 ```bash
-cat PROJECT_DOCUMENTATION/CORE/SETUP/NEXT_STEPS/CURRENT_STATUS.md
+/current-status
 ```
 
 **Read previous session status and next steps.**
 
-This shows:
+This displays:
 - What was accomplished last session
 - Current state of the project
 - Next steps to continue work
 - Context to resume development
+
+Alternative (if slash commands unavailable):
+```bash
+cat PROJECT_DOCUMENTATION/CORE/SETUP/NEXT_STEPS/CURRENT_STATUS.md
+```
 
 ---
 
