@@ -13,6 +13,17 @@ Usage:
     python qc_backtest.py --backtest --project-id 12345 --file main.py
     python qc_backtest.py --status --backtest-id abc123
     python qc_backtest.py --results --backtest-id abc123
+    python qc_backtest.py docs                       # List reference docs
+    python qc_backtest.py docs api-integration       # Show specific doc
+
+REFERENCE DOCUMENTATION (Progressive Disclosure):
+  .claude/skills/quantconnect-backtest/reference/
+    ├── api_integration.md     - Python API usage (QuantConnectAPI class)
+    ├── backtest_results.md    - Complete results structure (25+ metrics)
+    ├── error_handling.md      - All errors with solutions
+    └── workflow_examples.md   - Complete /qc-backtest workflows
+
+Load reference docs on-demand when needed.
 """
 
 import argparse
@@ -260,8 +271,85 @@ def analyze_optimization_results(results):
     return analysis
 
 
+def show_docs(topic=None):
+    """
+    Show reference documentation (progressive disclosure).
+
+    Args:
+        topic: Specific documentation topic (optional)
+    """
+    # Get script directory
+    script_dir = Path(__file__).resolve().parent
+    ref_dir = script_dir.parent / '.claude/skills/quantconnect-backtest/reference'
+
+    # Map topics to files
+    docs_map = {
+        'api-integration': 'api_integration.md',
+        'backtest-results': 'backtest_results.md',
+        'error-handling': 'error_handling.md',
+        'workflow-examples': 'workflow_examples.md',
+    }
+
+    if not topic:
+        # List all available docs
+        print("📚 Available Reference Documentation:\n")
+        for topic_name, filename in docs_map.items():
+            doc_path = ref_dir / filename
+            status = "✓" if doc_path.exists() else "✗"
+            print(f"  {status} {topic_name:25} → {filename}")
+
+        print(f"\n📂 Reference directory: {ref_dir}")
+        print("\nUsage: python qc_backtest.py docs <topic>")
+        print("\nExamples:")
+        print("  python qc_backtest.py docs api-integration")
+        print("  python qc_backtest.py docs error-handling")
+        return
+
+    # Show specific doc
+    if topic not in docs_map:
+        print(f"❌ Unknown topic: {topic}", file=sys.stderr)
+        print(f"\nAvailable topics: {', '.join(docs_map.keys())}", file=sys.stderr)
+        sys.exit(1)
+
+    doc_path = ref_dir / docs_map[topic]
+
+    if not doc_path.exists():
+        print(f"❌ Documentation not found: {doc_path}", file=sys.stderr)
+        sys.exit(1)
+
+    # Display the doc
+    with open(doc_path, 'r') as f:
+        content = f.read()
+
+    print(content)
+
+
 def main():
-    parser = argparse.ArgumentParser(description="QuantConnect Backtest Wrapper")
+    # Check if first argument is 'docs' (special handling)
+    if len(sys.argv) > 1 and sys.argv[1] == 'docs':
+        topic = sys.argv[2] if len(sys.argv) > 2 else None
+        show_docs(topic)
+        sys.exit(0)
+
+    parser = argparse.ArgumentParser(
+        description="QuantConnect Backtest Wrapper",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+REFERENCE DOCUMENTATION (Progressive Disclosure):
+  .claude/skills/quantconnect-backtest/reference/
+    ├── api_integration.md     - Python API usage (QuantConnectAPI class)
+    ├── backtest_results.md    - Complete results structure (25+ metrics)
+    ├── error_handling.md      - All errors with solutions
+    └── workflow_examples.md   - Complete /qc-backtest workflows
+
+  Access via: python qc_backtest.py docs [topic]
+
+Examples:
+  python qc_backtest.py docs                    # List all docs
+  python qc_backtest.py docs api-integration    # Show Python API guide
+  python qc_backtest.py docs error-handling     # Show error solutions
+        """
+    )
 
     # Actions
     parser.add_argument("--create", action="store_true", help="Create new project")
