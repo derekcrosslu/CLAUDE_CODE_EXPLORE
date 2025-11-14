@@ -11,16 +11,16 @@
 ## 🚀 Start Here
 
 ```bash
-/qc-status
+cat PROJECT_DOCUMENTATION/CORE/SETUP/NEXT_STEPS/CURRENT_STATUS.md
 ```
 
-**Check current workflow status, phase, and next steps.**
+**Read previous session status and next steps.**
 
-This displays:
-- Current hypothesis and phase
-- Progress (iteration, backtests, cost)
-- Recent decisions
-- Next recommended actions
+This shows:
+- What was accomplished last session
+- Current state of the project
+- Next steps to continue work
+- Context to resume development
 
 ---
 
@@ -39,5 +39,5 @@ Everything else goes in PROJECT_DOCUMENTATION/
 ---
 
 **Last Updated**: 2025-11-13
-**Workflow Status**: Use `/qc-status` command
-**State File**: `iteration_state.json` (managed by workflow)
+**Session Status**: `PROJECT_DOCUMENTATION/CORE/SETUP/NEXT_STEPS/CURRENT_STATUS.md`
+**Workflow Status**: Use `/qc-status` for active hypothesis tracking
