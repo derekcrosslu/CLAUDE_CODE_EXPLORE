@@ -1,0 +1,29 @@
+{
+  "tool": "qc_backtest",
+  "version": "1.0.0",
+  "description": "QuantConnect backtest execution for Phase 3 hypothesis testing",
+  "sections": [
+    {
+      "id": "qc_coding_standards",
+      "title": "QuantConnect Coding Standards",
+      "content": "**Essential QC Platform Coding Rules**\n\nWhen writing strategy code for backtesting, follow these QuantConnect platform standards.\n\n**Complete Reference**: See HELP/qc_guide.json for full specification\n\n---\n\n## Syntax and Naming\n\n✅ **CORRECT**:\n```python\n# Variables and functions: snake_case\ndef calculate_signal(prices, period):\n    \"\"\"Calculate trading signal.\"\"\"\n    moving_average = sum(prices[-period:]) / period\n    return signal\n\n# Constants: UPPERCASE\nMINUTE = 60\nDAILY = \"1d\"\nMAX_POSITIONS = 10\n```\n\n❌ **WRONG - AVOID PascalCase**:\n```python\ndef CalculateSignal(Prices, Period):  # PascalCase - WRONG (legacy QC)\n    MovingAverage = sum(Prices[-Period:]) / Period  # Mixed case - WRONG\n\nclass MyStrategy:  # PascalCase class - AVOID (use snake_case)\n    pass\n```\n\n**Rules**:\n- **ALWAYS** use `snake_case` for variables, functions, and classes\n- **ONLY** use `UPPERCASE` for constants (MINUTE, DAILY, MAX_POSITIONS, etc.)\n- **NEVER** use `PascalCase` (legacy QuantConnect convention - avoid at all costs)\n- **NEVER** use emojis in code - BANNED on QC platform (causes syntax errors)\n- Follow PEP8 (4 spaces, no tabs)\n- Triple-quoted docstrings\n\n---\n\n## Emojis - BANNED on QC Platform\n\n❌ **CRITICAL: NEVER use emojis in QC code**\n\nEmojis cause **syntax errors** and **compilation failures** on QuantConnect platform.\n\n**WRONG - Will cause syntax error**:\n```python\ndef Initialize(self):\n    self.SetStartDate(2019, 1, 1)  # 📅 Start date - SYNTAX ERROR!\n    self.spy = self.AddEquity(\"SPY\", Resolution.Daily)  # 📈 Add SPY - ERROR!\n    \n    # 🚀 Initialize strategy - SYNTAX ERROR!\n    self.rsi_period = 14\n```\n\n**Error Message**:\n```\nRuntimeError: Syntax error in algorithm. \nInvalid character in identifier at line X\n```\n\n**CORRECT - Use plain text comments**:\n```python\ndef Initialize(self):\n    # Set backtest start date\n    self.SetStartDate(2019, 1, 1)\n    \n    # Add SPY equity\n    self.spy = self.AddEquity(\"SPY\", Resolution.Daily)\n    \n    # Initialize strategy parameters\n    self.rsi_period = 14\n```\n\n**Why Emojis Fail**:\n- QC platform uses Python 3.8 with strict ASCII enforcement\n- Emojis are Unicode characters (U+1F600 etc.)\n- Python parser rejects non-ASCII in code (outside strings)\n- Compilation fails before backtest even runs\n\n**Even in strings - AVOID**:\n```python\n# ❌ RISKY - May work in strings but avoid anyway\nself.Debug(\"Portfolio value: 💰 $100,000\")  # Avoid\n\n# ✅ SAFE - Use plain text\nself.Debug(\"Portfolio value: $100,000\")  # Correct\n```\n\n**Rule**: **NO EMOJIS ANYWHERE** in QC code - comments, strings, or identifiers.\n\n---\n\n## Quick Checklist\n\nBefore running backtest, verify:\n\n- ✅ `snake_case` for variables/functions/classes, `UPPERCASE` for constants\n- ✅ Valid QC imports only (no requests, yfinance, etc.)\n- ✅ `Initialize()` defines dates, cash, securities\n- ✅ No file I/O or async\n- ✅ `OnData()` guards with `IsWarmingUp`\n- ✅ Use `self.Debug()` not `print()`\n- ✅ Indicators created in `Initialize()`\n- ✅ **NO EMOJIS** in code (banned - causes syntax errors)\n\n**Full Specification**: HELP/qc_guide.json",
+      "tags": [
+        "coding_standards",
+        "qc_platform",
+        "best_practices"
+      ],
+      "priority": 1,
+      "related_sections": []
+    }
+  ],
+  "metadata": {
+    "created": "2025-11-13",
+    "updated": "2025-11-13",
+    "version": "1.0.0",
+    "authors": [
+      "Claude"
+    ],
+    "skill": "quantconnect-backtest",
+    "changelog": "v1.0.0: Initial version with CRITICAL emoji ban rule - emojis cause syntax errors on QC platform"
+  }
+}
