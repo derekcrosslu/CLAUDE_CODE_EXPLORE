@@ -5,11 +5,12 @@ QuantConnect Walk-Forward Validation CLI
 Usage:
     qc_validate run --strategy strategy.py --state iteration_state.json
     qc_validate analyze --results validation_result.json
+    qc_validate help [--section <id>] [--search <query>]
 
-Progressive Disclosure Pattern (Beyond MCP):
-- Only load validation logic when needed
-- Simple in-sample vs out-of-sample split (80/20)
-- CLI works for humans, teams, AND agents (trifecta)
+Progressive Disclosure Pattern:
+- All reference documentation in HELP/qc_validate.json
+- Use 'qc_validate help' for complete reference
+- Use --help for command usage
 """
 
 import click
@@ -19,37 +20,91 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-# Absolute path resolution (Beyond MCP pattern)
+# Absolute path resolution
 SCRIPT_DIR = Path(__file__).resolve().parent
 
-# Import shared QC API module (Progressive Disclosure)
+# Import modules
 try:
     sys.path.insert(0, str(SCRIPT_DIR))
     from qc_api import QuantConnectAPI
-except ImportError:
-    click.echo("❌ Error: qc_api.py not found. Ensure it exists in SCRIPTS/", err=True)
+    from help_loader import load_help, format_help, get_section, search_help
+except ImportError as e:
+    click.echo(f"❌ Error: {e}", err=True)
     sys.exit(1)
 
 
 @click.group()
 def cli():
-    """QuantConnect walk-forward validation CLI.
-
-    Phase 5 of autonomous workflow - tests out-of-sample robustness.
+    """QuantConnect walk-forward validation CLI for Phase 5 robustness testing.
 
     \b
-    REFERENCE DOCUMENTATION (Progressive Disclosure):
-      .claude/skills/quantconnect-validation/reference/
-        ├── walk_forward_methodology.md - Validation methodology
-        ├── degradation_thresholds.md - Performance degradation criteria
-        ├── monte_carlo_validation.md - Monte Carlo permutation tests
-        ├── psr_dsr_metrics.md - PSR/DSR statistical metrics
-        ├── common_errors.md - Error messages and fixes
-        └── decision_criteria.md - Phase 5 decision logic
+    COMMANDS:
+      run       Run walk-forward validation (IS/OOS split)
+      analyze   Analyze validation results
+      help      Show complete reference documentation
 
-    Load reference docs on-demand when needed.
+    \b
+    REFERENCE DOCUMENTATION:
+      Use: qc_validate help
+      All content loaded from HELP/qc_validate.json
     """
     pass
+
+
+@cli.command()
+@click.option('--section', help='Show specific section by ID')
+@click.option('--search', help='Search help content')
+@click.option('--list-sections', is_flag=True, help='List all available sections')
+def help(section, search, list_sections):
+    """Show complete reference documentation from HELP/qc_validate.json."""
+    try:
+        help_data = load_help("qc_validate")
+    except Exception as e:
+        click.echo(f"❌ Error loading help: {e}", err=True)
+        sys.exit(1)
+
+    if list_sections:
+        click.echo("Available sections:")
+        for sec in help_data.get('sections', []):
+            priority_marker = "★" * sec.get('priority', 3)
+            click.echo(f"  {priority_marker} {sec['id']}: {sec['title']}")
+            if sec.get('tags'):
+                click.echo(f"     Tags: {', '.join(sec['tags'])}")
+        return
+
+    if section:
+        sec = get_section(help_data, section)
+        if sec:
+            click.echo(f"\n{'=' * 80}")
+            click.echo(f"{sec['title'].upper()}")
+            click.echo('=' * 80)
+            click.echo()
+            click.echo(sec['content'])
+            click.echo()
+            if sec.get('tags'):
+                click.echo(f"Tags: {', '.join(sec['tags'])}")
+            click.echo()
+        else:
+            click.echo(f"❌ Section not found: {section}", err=True)
+            click.echo("\nUse --list-sections to see all available sections")
+            sys.exit(1)
+        return
+
+    if search:
+        results = search_help(search)
+        if results:
+            click.echo(f"\n🔍 Found {len(results)} results for '{search}':\n")
+            for i, result in enumerate(results, 1):
+                click.echo(f"{i}. [{result['tool']}] {result.get('section_title', result.get('question'))}")
+                if result.get('tags'):
+                    click.echo(f"   Tags: {', '.join(result['tags'])}")
+                click.echo()
+        else:
+            click.echo(f"❌ No results found for '{search}'", err=True)
+        return
+
+    # Show full help
+    click.echo(format_help(help_data))
 
 
 @cli.command()
