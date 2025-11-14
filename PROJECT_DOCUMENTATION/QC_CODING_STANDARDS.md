@@ -43,12 +43,13 @@ print(f"Status: {'PASS' if result else 'FAIL'}")
 
 ### Rule 2: Use Official QuantConnect API
 
-**Rule**: Only use documented QuantConnect API methods. Do NOT invent or assume API methods exist.
+**Rule**: Only use documented QuantConnect API methods. Do NOT invent or assume API methods exist. Prefer QuantBook methods over Api() methods in Research environment.
 
 **Rationale**:
 - Prevents runtime errors in QC Research environment
 - Ensures code portability across QC versions
 - Avoids breaking changes from undocumented APIs
+- QuantBook methods are more reliable than Api() in Research
 
 **Official API Reference**: https://www.quantconnect.com/docs/v2/research-environment
 
@@ -59,23 +60,47 @@ print(f"Status: {'PASS' if result else 'FAIL'}")
 project = qb.ReadProject(project_id)
 backtests = project['backtests']
 
-# ✅ CORRECT - Use official API
+# ⚠️ UNRELIABLE - api.list_backtests() may fail in Research
 from QuantConnect.Api import Api
 api = Api()
-backtests = api.list_backtests(qb.project_id)
+backtests = api.list_backtests(qb.project_id)  # May throw NullReferenceException
+
+# ✅ CORRECT - Use QuantBook methods with try/except fallback
+project_id = qb.project_id
+
+try:
+    from QuantConnect.Api import Api
+    api = Api()
+    backtests = api.list_backtests(project_id)
+    # ... use backtests ...
+except Exception as e:
+    # Fallback: prompt for manual input
+    backtest_id = input('Enter backtest ID: ')
+
+# Always use QuantBook to read backtest (most reliable)
+backtest = qb.ReadBacktest(project_id, backtest_id)
 ```
+
+**Preferred Methods in Research**:
+
+| Task | Prefer | Avoid | Reason |
+|------|--------|-------|--------|
+| Read backtest | `qb.ReadBacktest()` | `api.read_backtest()` | More reliable |
+| Get project ID | `qb.project_id` | Hardcode | Always works |
+| List backtests | Try/except both | Assume API works | API may fail |
 
 **Required Imports for Research**:
 ```python
 from QuantConnect import *
 from QuantConnect.Research import *
-from QuantConnect.Api import Api  # For backtest/project management
+from QuantConnect.Api import Api  # Optional - may be unreliable
 ```
 
 **Enforcement**:
-- Manual review of API calls before upload
-- Check against official documentation
-- Validate in QC Research before committing
+- Use try/except for all Api() calls
+- Provide fallback for critical operations
+- Test in QC Research before committing
+- See: `PROJECT_DOCUMENTATION/QC_RESEARCH_API_ISSUES.md`
 
 ---
 
