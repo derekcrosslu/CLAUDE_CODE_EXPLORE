@@ -4,6 +4,7 @@
 
 **Critical**: Always use progressive disclosure - check `--help` before loading full docs. Context window is limited!
 
+***Note***: When workflow is broken the priority is to fix the workflow not continue with iteration
 ---
 
 ## 🚀 Start Here (Run This FIRST!)

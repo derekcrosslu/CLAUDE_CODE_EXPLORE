@@ -338,12 +338,33 @@ But this is different - this is a **bug in implementation**, not a mismatch betw
 
 **WORKAROUND APPLIED (2025-11-14)**:
 - Created manually-corrected research.ipynb with proper JSON formatting
-- Fixed issues: Proper newlines (not literal `\n`), fetches latest backtest ID from project
+- Fixed issues:
+  1. Proper newlines (not literal `\n`)
+  2. Uses correct QC API: `api.list_backtests()` instead of `qb.ReadProject()`
+  3. Removed all emojis (violates QC code standards)
 - Uploaded corrected notebook to QC project 26204235
 - Workflow can proceed with validation
+
+**Final Notebook Corrections Applied**:
+1. **API Fix**: Changed from non-existent `qb.ReadProject()` to proper QC API:
+   ```python
+   from QuantConnect.Api import Api
+   api = Api()
+   backtests = api.list_backtests(qb.project_id)
+   latest_backtest = sorted([b for b in backtests.backtests if b.progress == 1],
+                           key=lambda x: x.created, reverse=True)[0]
+   backtest_id = latest_backtest.backtest_id
+   ```
+
+2. **Emoji Removal**: Removed all emoji characters (✅, ❌, ⚠️) from print statements
+   - Changed `'✅ PASS'` to `'PASS'`
+   - Changed `'❌ FAIL'` to `'FAIL'`
+   - Changed `'⚠️ MARGINAL'` to `'MARGINAL'`
 
 **Permanent Fix Required**: qc_validate.py generate_notebook() function needs complete rewrite
 - Cannot use raw string literals with `"\\n"` - creates wrong JSON output
 - Need to build notebook dict with actual `\n` characters (not escaped)
 - Then json.dump will properly escape them for Jupyter
 - Alternative: Use nbformat library instead of raw JSON manipulation
+- Must use correct QC API (api.list_backtests) not invalid qb.ReadProject()
+- Must not include emojis in generated code
