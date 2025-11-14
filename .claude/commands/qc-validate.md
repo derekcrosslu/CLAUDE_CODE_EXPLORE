@@ -1,17 +1,36 @@
 ---
-description: Run out-of-sample validation for the current strategy
+description: Run advanced Monte Carlo validation - the final gatekeeper before live trading
 ---
 
-Run out-of-sample (OOS) validation to test strategy generalization on unseen data.
+Run comprehensive Monte Carlo validation with PSR, DSR, CPCV, MACHR, and bootstrap analysis to verify strategy robustness across multiple scenarios before risking real capital.
+
+## ⚠️ CRITICAL: THIS IS THE FINAL GATEKEEPER
+
+**Validation is the LAST step before live trading with real money.**
+
+This is NOT a "quick check" - this is PRODUCTION-READY validation implementing:
+- Probabilistic Sharpe Ratio (PSR ≥ 0.95)
+- Deflated Sharpe Ratio (DSR - multiple testing correction)
+- Combinatorial Purged Cross-Validation (CPCV - 500+ splits)
+- Market Condition Historical Randomization (MACHR)
+- Bootstrap resampling (1,000-10,000 runs)
+- Permutation testing (p < 0.05)
+- Monte Carlo drawdown distribution (99th percentile)
+- Parameter stability (jitter testing)
+- Regime robustness (bull/bear/sideways)
+
+**We take enormous pain to make this robust because it protects real capital.**
+
+---
 
 ## ⚠️ CRITICAL RULES (Read Before Executing!)
 
 1. **Work in hypothesis directory**: ALL file operations in `STRATEGIES/hypothesis_X/`
-2. **Never at root**: OOS validation results go in hypothesis directory, NEVER at root
-3. **Read iteration_state.json**: Find hypothesis directory from iteration_state.json
-4. **Logs in PROJECT_LOGS**: Detailed logs can go in `PROJECT_LOGS/`, results summary in hypothesis dir
-5. **Allowed at root**: ONLY README.md, requirements.txt, .env, .gitignore, BOOTSTRAP.sh
-6. **Reuse project_id**: Use SAME project_id from iteration_state.json (created during /qc-backtest)
+2. **Never at root**: Validation results go in hypothesis directory, NEVER at root
+3. **Read iteration_state.json**: Find hypothesis directory and project_id from iteration_state.json
+4. **Reuse project_id**: Use SAME project_id from iteration_state.json (created during /qc-backtest)
+5. **Save to validation_logs/**: Results go in `STRATEGIES/hypothesis_X/validation_logs/`
+6. **Allowed at root**: ONLY README.md, requirements.txt, .env, .gitignore, BOOTSTRAP.sh
 
 **If you create validation files at root, the workflow WILL BREAK!**
 
@@ -26,409 +45,479 @@ Run out-of-sample (OOS) validation to test strategy generalization on unseen dat
 if [[ $(basename $(pwd)) != "CLAUDE_CODE_EXPLORE" ]]; then
     echo "⚠️  WARNING: Not at repository root"
     echo "Current: $(pwd)"
-    echo "Run: cd /path/to/CLAUDE_CODE_EXPLORE"
+    exit 1
 fi
 
 # Check 2: Find hypothesis directory
 HYPOTHESIS_DIR=$(find STRATEGIES -maxdepth 1 -name "hypothesis_*" -type d | sort | tail -1)
 if [ -z "$HYPOTHESIS_DIR" ]; then
     echo "❌ ERROR: No hypothesis directory found!"
-    echo "Run /qc-init first to create hypothesis"
-    exit 1
-fi
-
-# Check 3: iteration_state.json exists in hypothesis directory
-if [ ! -f "${HYPOTHESIS_DIR}/iteration_state.json" ]; then
-    echo "❌ ERROR: iteration_state.json not found in ${HYPOTHESIS_DIR}!"
     echo "Run /qc-init first"
     exit 1
 fi
 
+# Check 3: iteration_state.json exists
+if [ ! -f "${HYPOTHESIS_DIR}/iteration_state.json" ]; then
+    echo "❌ ERROR: iteration_state.json not found!"
+    exit 1
+fi
+
 # Check 4: Baseline backtest exists
-BASELINE_SHARPE=$(cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.phase_results.backtest.performance.sharpe_ratio // empty')
+BASELINE_SHARPE=$(jq -r '.backtest_results.performance.sharpe_ratio // empty' "${HYPOTHESIS_DIR}/iteration_state.json")
 if [ -z "$BASELINE_SHARPE" ] || [ "$BASELINE_SHARPE" == "null" ]; then
     echo "❌ ERROR: No baseline backtest found!"
     echo "Run /qc-backtest first"
     exit 1
 fi
 
-# Check 5: Optimization complete (optional - can skip to validation)
-OPT_COMPLETE=$(cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.phase_results.optimization.completed // false')
-if [ "$OPT_COMPLETE" == "false" ]; then
-    echo "⚠️  WARNING: No optimization found - using baseline parameters"
-    echo "Consider running /qc-optimize first for better results"
-fi
-
-# Check 6: Strategy file exists in hypothesis directory
+# Check 5: Strategy file exists
 STRATEGY_FILE=$(find "${HYPOTHESIS_DIR}" -name "*.py" -type f | head -1)
 if [ -z "$STRATEGY_FILE" ]; then
-    echo "❌ ERROR: No strategy file found in ${HYPOTHESIS_DIR}!"
+    echo "❌ ERROR: No strategy file found!"
+    exit 1
+fi
+
+# Check 6: Project ID exists
+PROJECT_ID=$(jq -r '.project.project_id // empty' "${HYPOTHESIS_DIR}/iteration_state.json")
+if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" == "null" ]; then
+    echo "❌ ERROR: No project_id found!"
     echo "Run /qc-backtest first"
     exit 1
 fi
 
-# Check 7: No validation files at root
-if ls -1 oos_*.json 2>/dev/null; then
-    echo "❌ ERROR: Validation files found at root!"
-    echo "Files must be in ${HYPOTHESIS_DIR}/"
-    exit 1
-fi
+# Check 7: Create validation_logs directory
+mkdir -p "${HYPOTHESIS_DIR}/validation_logs"
 
 echo "✅ Pre-flight checks passed"
-echo "📁 Working with: ${HYPOTHESIS_DIR}"
+echo "📁 Hypothesis: ${HYPOTHESIS_DIR}"
 echo "📊 Baseline Sharpe: ${BASELINE_SHARPE}"
-echo "🔧 Optimization: ${OPT_COMPLETE}"
+echo "🆔 Project ID: ${PROJECT_ID}"
 ```
 
 ---
 
-**⚠️ CRITICAL RULE: REUSE SAME PROJECT_ID FROM HYPOTHESIS**
+## Monte Carlo Validation Suite
 
-**IMPERATIVE**: Use the existing project_id from iteration_state.json
-- Do NOT create a new project for validation
-- Validation runs on the SAME project created during /qc-backtest
-- Keeps entire hypothesis lifecycle in one project
+### Phase 1: Baseline Metrics Collection
 
-**⚠️ AUTONOMOUS MODE: AUTO-CONFIGURE OOS PERIOD**
-
-This command will:
-1. Read current strategy and best parameters
-2. **Auto-configure** OOS time period (no prompts)
-   - If in-sample: 2022-2024 → OOS: 2024-2025
-   - Use last 20-30% of data as OOS
-3. Run OOS backtest via QuantConnect API (using EXISTING project_id)
-4. Compare OOS vs in-sample performance
-5. Check for degradation (Sharpe drop > 30% = fail)
-6. Make final validation decision
-7. Update iteration_state.json
-8. **Auto-proceed or STOP** based on result
-9. Log validation results to decisions_log.md
-
-**User intervention**: NONE (unless validation fails - blocker)
-
-**Usage**:
-```
-/qc-validate
-```
-
-**Automatic OOS Period Selection**:
-The command will automatically select an OOS period that doesn't overlap with the in-sample period:
-
-- In-sample: 2023-01-01 to 2023-12-31
-- Out-of-sample: 2024-01-01 to 2024-12-31
-
-**Manual OOS Period**:
-```
-/qc-validate --oos-start 2024-01-01 --oos-end 2024-12-31
-```
-
-**Decision Framework**:
-
-Based on OOS degradation:
-
-- **oos_degradation > 50%** → RETRY_OPTIMIZATION or ABANDON
-- **oos_degradation > 30%** → ESCALATE (significant degradation)
-- **oos_sharpe >= 1.0** → STRATEGY_COMPLETE ✅
-- **else** → STRATEGY_VALIDATED_SUBOPTIMAL
-
-Where degradation = (in_sample_sharpe - oos_sharpe) / in_sample_sharpe
-
-**Output**:
-```
-🧪 Running Out-of-Sample Validation...
-   Strategy: RSI Mean Reversion
-   Parameters: rsi_period=14, oversold=30, overbought=70
-
-📅 Time Periods:
-   In-Sample (IS): 2023-01-01 to 2023-12-31
-   Out-of-Sample (OOS): 2024-01-01 to 2024-12-31
-
-⏳ Running OOS backtest...
-   ✅ Complete (18s)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📊 VALIDATION RESULTS:
-
-Performance Comparison:
-┌────────────────┬──────────┬──────────┬──────────────┐
-│ Metric         │ In-Sample│Out-Sample│ Degradation  │
-├────────────────┼──────────┼──────────┼──────────────┤
-│ Sharpe Ratio   │   1.45   │   1.28   │    11.7% ✅  │
-│ Total Return   │   23%    │   18%    │    21.7%     │
-│ Max Drawdown   │   12%    │   15%    │    25.0%     │
-│ Win Rate       │   62%    │   58%    │     6.5%     │
-│ Total Trades   │   45     │   38     │    15.6%     │
-└────────────────┴──────────┴──────────┴──────────────┘
-
-🔍 Degradation Analysis:
-   ├─ Sharpe Degradation: 11.7% (ACCEPTABLE ✅)
-   ├─ Return Degradation: 21.7% (ACCEPTABLE ✅)
-   ├─ Drawdown Increase: 25.0% (ACCEPTABLE ✅)
-   └─ Trade Count: Similar (45 → 38)
-
-✅ Generalization: GOOD
-   Strategy performs consistently on unseen data
-
-✅ DECISION: STRATEGY_COMPLETE
-📝 Reason: OOS Sharpe 1.28 >= 1.0, degradation < 30%
-
-📄 Updated: iteration_state.json (validation: complete)
-📝 Logged: decisions_log.md
-🎉 Strategy validated and ready for deployment consideration
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🎯 NEXT STEPS:
-
-1. ✅ Review validation results
-2. 📸 Capture screenshots from QuantConnect UI for visual validation
-3. 📊 Compare IS vs OOS equity curves visually
-4. 🔍 Check for regime changes between periods
-5. 📝 Document strategy in strategy_report.md
-6. 🚀 Consider paper trading before live deployment
-
-Use these commands:
-  /qc-report     - Generate complete strategy report
-  /qc-init       - Start new hypothesis
-```
-
-**Visual Validation Reminder**:
-```
-⚠️  IMPORTANT: Statistical validation passed, but you should:
-   1. Open QuantConnect UI
-   2. Compare IS and OOS equity curves visually
-   3. Check for visual overfitting signs
-   4. Verify trade distribution across time
-
-   Statistical metrics can be misleading without visual confirmation!
-```
-
-**Degradation Thresholds**:
-
-- **< 20% degradation** → Excellent generalization ✅
-- **20-30% degradation** → Acceptable ⚠️
-- **30-50% degradation** → Poor generalization, needs work ⚠️⚠️
-- **> 50% degradation** → Failed validation ❌
-
-**Failure Scenarios**:
-```
-❌ DECISION: RETRY_OPTIMIZATION
-📝 Reason: OOS degradation 52% (> 50%)
-
-Suggestions:
-  - Simplify strategy (remove parameters)
-  - Use more robust indicators
-  - Consider walk-forward optimization
-  - Test on different market regimes
-```
-
-**Complete Strategy**:
-```
-🎉 STRATEGY VALIDATED AND COMPLETE
-
-Summary:
-├─ Hypothesis: RSI Mean Reversion with Trend Filter
-├─ In-Sample Sharpe: 1.45
-├─ Out-of-Sample Sharpe: 1.28
-├─ Degradation: 11.7% (Excellent)
-├─ Total Trades (OOS): 38
-└─ Status: READY FOR DEPLOYMENT CONSIDERATION
-
-Next Actions:
-1. Generate full report: /qc-report
-2. Start paper trading
-3. Monitor for 30 days before live
-
----
-
-## Git Integration (AUTOMATIC)
-
-After validation completes, **automatically commit AND tag if successful**:
-
-**⚠️ IMPORTANT**: Stage files with paths from repository root
+**Extract baseline performance from iteration_state.json:**
 
 ```bash
-# Find hypothesis directory
-HYPOTHESIS_DIR=$(find STRATEGIES -maxdepth 1 -name "hypothesis_*" -type d | sort | tail -1)
-STATE_FILE="${HYPOTHESIS_DIR}/iteration_state.json"
+BASELINE_SHARPE=$(jq -r '.backtest_results.performance.sharpe_ratio' "${HYPOTHESIS_DIR}/iteration_state.json")
+BASELINE_DRAWDOWN=$(jq -r '.backtest_results.performance.max_drawdown' "${HYPOTHESIS_DIR}/iteration_state.json")
+BASELINE_RETURN=$(jq -r '.backtest_results.performance.total_return' "${HYPOTHESIS_DIR}/iteration_state.json")
+BASELINE_TRADES=$(jq -r '.backtest_results.performance.total_trades' "${HYPOTHESIS_DIR}/iteration_state.json")
+BASELINE_WINRATE=$(jq -r '.backtest_results.performance.win_rate' "${HYPOTHESIS_DIR}/iteration_state.json")
 
-# Extract validation metrics from hypothesis directory
-IS_SHARPE=$(cat "${STATE_FILE}" | jq -r '.phase_results.backtest.performance.sharpe_ratio')
-OOS_SHARPE=$(cat "${STATE_FILE}" | jq -r '.phase_results.validation.oos_performance.sharpe_ratio')
-DEGRADATION=$(cat "${STATE_FILE}" | jq -r '.phase_results.validation.degradation')
-OOS_BACKTEST_ID=$(cat "${STATE_FILE}" | jq -r '.phase_results.validation.oos_backtest_id')
-DECISION=$(cat "${STATE_FILE}" | jq -r '.phase_results.validation.decision')
-HYPOTHESIS_NAME=$(cat "${STATE_FILE}" | jq -r '.current_hypothesis.name')
-HYPOTHESIS_ID=$(cat "${STATE_FILE}" | jq -r '.current_hypothesis.id')
-ITERATION=$(cat "${STATE_FILE}" | jq -r '.workflow_state.current_iteration')
+echo "Baseline Metrics:"
+echo "  Sharpe: ${BASELINE_SHARPE}"
+echo "  Max DD: ${BASELINE_DRAWDOWN}"
+echo "  Return: ${BASELINE_RETURN}"
+echo "  Trades: ${BASELINE_TRADES}"
+echo "  Win Rate: ${BASELINE_WINRATE}"
+```
 
-# Stage files from hypothesis directory
-git add "${HYPOTHESIS_DIR}/iteration_state.json"
-git add "${HYPOTHESIS_DIR}/oos_validation_results.json"
-git add "${STRATEGY_FILE}"
+### Phase 2: Run Advanced Monte Carlo Validation
 
-# Optional: Stage logs from PROJECT_LOGS if they exist
-if ls PROJECT_LOGS/validation_h${HYPOTHESIS_ID}*.json 2>/dev/null; then
-    git add PROJECT_LOGS/validation_h${HYPOTHESIS_ID}*.json
+**Execute qc_validate.py with Monte Carlo suite:**
+
+```bash
+cd "${HYPOTHESIS_DIR}"
+
+python ../../SCRIPTS/qc_validate.py run \
+    --strategy "${STRATEGY_FILE}" \
+    --state iteration_state.json \
+    --output validation_logs/monte_carlo_results.json \
+    --monte-carlo-runs 1000 \
+    --bootstrap-runs 5000 \
+    --permutation-runs 10000 \
+    --machr-runs 500 \
+    --cpcv-splits 500
+```
+
+**This runs:**
+1. **Combinatorial Purged Cross-Validation (CPCV)**
+   - 500+ random train/test splits
+   - Purging to prevent label overlap
+   - Embargoing for serial correlation
+   - Generates performance distributions
+
+2. **Probabilistic Sharpe Ratio (PSR)**
+   - Accounts for skewness, kurtosis, track record length
+   - Threshold: PSR ≥ 0.95 (95% confidence)
+   - 10th percentile PSR for worst-case assessment
+
+3. **Deflated Sharpe Ratio (DSR)**
+   - Corrects for multiple testing bias
+   - Adjusts for number of trials tested
+   - Threshold: DSR ≥ 0.95
+
+4. **Minimum Track Record Length (MinTRL)**
+   - Required observation count for confidence
+   - Calculates if current track record sufficient
+
+5. **Walk-Forward Efficiency (WFE)**
+   - OOS returns / IS returns ratio
+   - Threshold: WFE ≥ 50-60%
+   - Tests generalization ability
+
+6. **Bootstrap Resampling**
+   - 5,000 trade sequence resamples
+   - Generates alternative equity curves
+   - MC drawdown distribution (2-3x larger than backtest)
+   - 99th percentile drawdown analysis
+
+7. **Market Condition Historical Randomization (MACHR)**
+   - 500+ block-based bootstrapping runs
+   - Tests across different regime sequences
+   - Regime robustness assessment
+
+8. **Permutation Testing**
+   - 10,000 permutations of trade sequence
+   - Exact significance without distributional assumptions
+   - Threshold: p < 0.05
+
+9. **Parameter Stability (Jitter Testing)**
+   - ±5-10% random perturbations
+   - Tests fragility vs robustness
+   - Plateau width analysis
+
+10. **Regime-Specific Performance**
+    - Bull/Bear/Sideways separation
+    - Positive in ≥2 of 3 regimes required
+    - No single regime > 60% of returns
+
+---
+
+## Monte Carlo Results Analysis
+
+### Extract Results from monte_carlo_results.json
+
+```bash
+RESULTS_FILE="${HYPOTHESIS_DIR}/validation_logs/monte_carlo_results.json"
+
+# Probabilistic Sharpe Ratio
+PSR=$(jq -r '.monte_carlo.psr.value' "$RESULTS_FILE")
+PSR_10TH=$(jq -r '.monte_carlo.psr.percentile_10th' "$RESULTS_FILE")
+
+# Deflated Sharpe Ratio
+DSR=$(jq -r '.monte_carlo.dsr.value' "$RESULTS_FILE")
+
+# Minimum Track Record Length
+MIN_TRL=$(jq -r '.monte_carlo.min_trl.required_months' "$RESULTS_FILE")
+CURRENT_TRL=$(jq -r '.monte_carlo.min_trl.current_months' "$RESULTS_FILE")
+
+# Walk-Forward Efficiency
+WFE=$(jq -r '.walk_forward.wfe.overall' "$RESULTS_FILE")
+WFE_PROFITABLE_WINDOWS=$(jq -r '.walk_forward.profitable_windows_pct' "$RESULTS_FILE")
+
+# Bootstrap Drawdown Distribution
+MC_DD_99TH=$(jq -r '.bootstrap.drawdown.percentile_99th' "$RESULTS_FILE")
+MC_DD_RATIO=$(jq -r '.bootstrap.drawdown.ratio_to_backtest' "$RESULTS_FILE")
+
+# Permutation Test
+PERM_PVALUE=$(jq -r '.permutation_test.pvalue' "$RESULTS_FILE")
+
+# MACHR Regime Consistency
+MACHR_CONSISTENCY=$(jq -r '.machr.consistency_score' "$RESULTS_FILE")
+MACHR_CV=$(jq -r '.machr.coefficient_of_variation' "$RESULTS_FILE")
+
+# Parameter Stability
+PLATEAU_WIDTH=$(jq -r '.parameter_stability.plateau_width_ratio' "$RESULTS_FILE")
+NEIGHBORHOOD_CORR=$(jq -r '.parameter_stability.neighborhood_correlation' "$RESULTS_FILE")
+
+# Regime Performance
+BULL_RETURN=$(jq -r '.regime_analysis.bull.return' "$RESULTS_FILE")
+BEAR_RETURN=$(jq -r '.regime_analysis.bear.return' "$RESULTS_FILE")
+SIDEWAYS_RETURN=$(jq -r '.regime_analysis.sideways.return' "$RESULTS_FILE")
+```
+
+---
+
+## Decision Framework - Production-Ready Thresholds
+
+### Tier 1: ROBUST_STRATEGY (Deploy to Production)
+
+All criteria MUST pass:
+
+```bash
+DECISION="UNKNOWN"
+REASON=""
+
+# Check all thresholds
+if (( $(echo "$PSR >= 0.95" | bc -l) )) && \
+   (( $(echo "$PSR_10TH >= 0.90" | bc -l) )) && \
+   (( $(echo "$DSR >= 0.95" | bc -l) )) && \
+   (( $(echo "$WFE >= 0.50" | bc -l) )) && \
+   (( $(echo "$WFE_PROFITABLE_WINDOWS >= 0.50" | bc -l) )) && \
+   (( $(echo "$PERM_PVALUE < 0.05" | bc -l) )) && \
+   (( $(echo "$MC_DD_RATIO < 2.5" | bc -l) )) && \
+   (( $(echo "$MACHR_CV < 0.40" | bc -l) )) && \
+   (( $(echo "$PLATEAU_WIDTH > 0.20" | bc -l) )) && \
+   (( $(echo "$NEIGHBORHOOD_CORR > 0.70" | bc -l) )) && \
+   [ "$CURRENT_TRL" -ge "$MIN_TRL" ]; then
+
+    # Check regime robustness
+    POSITIVE_REGIMES=0
+    (( $(echo "$BULL_RETURN > 0" | bc -l) )) && ((POSITIVE_REGIMES++))
+    (( $(echo "$BEAR_RETURN > 0" | bc -l) )) && ((POSITIVE_REGIMES++))
+    (( $(echo "$SIDEWAYS_RETURN > 0" | bc -l) )) && ((POSITIVE_REGIMES++))
+
+    if [ "$POSITIVE_REGIMES" -ge 2 ]; then
+        DECISION="ROBUST_STRATEGY"
+        REASON="Passed all Monte Carlo validation thresholds: PSR=$PSR (≥0.95), DSR=$DSR (≥0.95), WFE=$WFE (≥0.50), Perm p=$PERM_PVALUE (<0.05), MC DD Ratio=$MC_DD_RATIO (<2.5), MACHR CV=$MC_DD_RATIO (<0.40), Plateau Width=$PLATEAU_WIDTH (>0.20), Positive in $POSITIVE_REGIMES/3 regimes. Strategy is production-ready."
+    fi
 fi
+```
 
-# Commit with structured message
-git commit -m "$(cat <<EOF
-validate: Out-of-sample validation $(echo ${DECISION} | tr '[:lower:]' '[:upper:]')
+### Tier 2: MARGINAL_VALIDATION (Needs Improvement)
 
-In-Sample Performance:
-- Sharpe Ratio: ${IS_SHARPE}
+Some thresholds fail but not catastrophic:
 
-Out-of-Sample Performance:
-- Sharpe Ratio: ${OOS_SHARPE}
-- Degradation: ${DEGRADATION}%
-- Backtest ID: ${OOS_BACKTEST_ID}
+```bash
+if [ "$DECISION" == "UNKNOWN" ]; then
+    # Check for marginal cases
+    FAILURES=()
 
-Files:
-- Results: ${HYPOTHESIS_DIR}/oos_validation_results.json
-- State: ${HYPOTHESIS_DIR}/iteration_state.json
-- Strategy: ${STRATEGY_FILE}
+    (( $(echo "$PSR < 0.95" | bc -l) )) && FAILURES+=("PSR=$PSR < 0.95")
+    (( $(echo "$DSR < 0.95" | bc -l) )) && FAILURES+=("DSR=$DSR < 0.95")
+    (( $(echo "$WFE < 0.50" | bc -l) )) && FAILURES+=("WFE=$WFE < 0.50")
+    (( $(echo "$PERM_PVALUE >= 0.05" | bc -l) )) && FAILURES+=("Permutation p=$PERM_PVALUE ≥ 0.05")
+    (( $(echo "$MC_DD_RATIO >= 2.5" | bc -l) )) && FAILURES+=("MC DD Ratio=$MC_DD_RATIO ≥ 2.5x")
+    (( $(echo "$MACHR_CV >= 0.40" | bc -l) )) && FAILURES+=("MACHR CV=$MACHR_CV ≥ 0.40")
+    (( $(echo "$PLATEAU_WIDTH <= 0.20" | bc -l) )) && FAILURES+=("Plateau Width=$PLATEAU_WIDTH ≤ 0.20")
+
+    if [ ${#FAILURES[@]} -le 3 ]; then
+        DECISION="MARGINAL_VALIDATION"
+        REASON="Failed ${#FAILURES[@]} thresholds: ${FAILURES[*]}. Strategy shows promise but needs refinement before production deployment."
+    fi
+fi
+```
+
+### Tier 3: FAILED_VALIDATION (Abandon or Major Rework)
+
+Critical failures - strategy not suitable for production:
+
+```bash
+if [ "$DECISION" == "UNKNOWN" ]; then
+    CRITICAL_FAILURES=()
+
+    # Critical failure conditions
+    (( $(echo "$PSR < 0.80" | bc -l) )) && CRITICAL_FAILURES+=("PSR=$PSR < 0.80 (insufficient confidence)")
+    (( $(echo "$WFE < 0.30" | bc -l) )) && CRITICAL_FAILURES+=("WFE=$WFE < 0.30 (severe overfitting)")
+    (( $(echo "$MC_DD_RATIO > 3.0" | bc -l) )) && CRITICAL_FAILURES+=("MC DD Ratio=$MC_DD_RATIO > 3.0x (extreme path-dependent risk)")
+    (( $(echo "$PERM_PVALUE > 0.10" | bc -l) )) && CRITICAL_FAILURES+=("Permutation p=$PERM_PVALUE > 0.10 (not statistically significant)")
+    [ "$POSITIVE_REGIMES" -lt 2 ] && CRITICAL_FAILURES+=("Positive in only $POSITIVE_REGIMES/3 regimes (regime-dependent)")
+
+    DECISION="FAILED_VALIDATION"
+    REASON="Critical validation failures: ${CRITICAL_FAILURES[*]}. Strategy is NOT suitable for production. Consider major rework or abandonment."
+fi
+```
+
+---
+
+## Update iteration_state.json
+
+```bash
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+# Update validation section
+jq --arg decision "$DECISION" \
+   --arg reason "$REASON" \
+   --arg timestamp "$TIMESTAMP" \
+   --argjson psr "$PSR" \
+   --argjson dsr "$DSR" \
+   --argjson wfe "$WFE" \
+   --argjson min_trl "$MIN_TRL" \
+   --argjson current_trl "$CURRENT_TRL" \
+   --argjson perm_pvalue "$PERM_PVALUE" \
+   --argjson mc_dd_99th "$MC_DD_99TH" \
+   --argjson machr_consistency "$MACHR_CONSISTENCY" \
+   '.validation.status = "completed" |
+    .validation.method = "monte_carlo_advanced" |
+    .validation.monte_carlo_runs = 1000 |
+    .validation.psr = $psr |
+    .validation.dsr = $dsr |
+    .validation.wfe = $wfe |
+    .validation.min_trl = $min_trl |
+    .validation.current_trl = $current_trl |
+    .validation.permutation_pvalue = $perm_pvalue |
+    .validation.mc_drawdown_99th = $mc_dd_99th |
+    .validation.machr_consistency = $machr_consistency |
+    .validation.decision = $decision |
+    .validation.reason = $reason |
+    .validation.timestamp = $timestamp |
+    .current_phase = "validation_complete" |
+    .phases_completed += ["validation"] |
+    .metadata.updated_at = $timestamp' \
+    "${HYPOTHESIS_DIR}/iteration_state.json" > "${HYPOTHESIS_DIR}/iteration_state.tmp.json"
+
+mv "${HYPOTHESIS_DIR}/iteration_state.tmp.json" "${HYPOTHESIS_DIR}/iteration_state.json"
+```
+
+---
+
+## Append to decisions_log
+
+```bash
+jq --arg decision "$DECISION" \
+   --arg reason "$REASON" \
+   --arg timestamp "$TIMESTAMP" \
+   --argjson psr "$PSR" \
+   --argjson dsr "$DSR" \
+   --argjson wfe "$WFE" \
+   '.decisions_log += [{
+       "phase": "validation",
+       "decision": $decision,
+       "reason": $reason,
+       "timestamp": $timestamp,
+       "metrics": {
+           "psr": $psr,
+           "dsr": $dsr,
+           "wfe": $wfe,
+           "permutation_pvalue": '$PERM_PVALUE',
+           "mc_drawdown_ratio": '$MC_DD_RATIO',
+           "machr_cv": '$MACHR_CV'
+       }
+   }]' "${HYPOTHESIS_DIR}/iteration_state.json" > "${HYPOTHESIS_DIR}/iteration_state.tmp.json"
+
+mv "${HYPOTHESIS_DIR}/iteration_state.tmp.json" "${HYPOTHESIS_DIR}/iteration_state.json"
+```
+
+---
+
+## Git Commit with Results
+
+```bash
+cd "${HYPOTHESIS_DIR}"
+
+git add iteration_state.json validation_logs/
+
+git commit -m "validate: Monte Carlo validation complete - ${DECISION}
+
+Results:
+- PSR: ${PSR} (10th percentile: ${PSR_10TH})
+- DSR: ${DSR}
+- WFE: ${WFE}
+- Permutation p-value: ${PERM_PVALUE}
+- MC Drawdown 99th: ${MC_DD_99TH} (${MC_DD_RATIO}x backtest)
+- MACHR CV: ${MACHR_CV}
+- Plateau Width: ${PLATEAU_WIDTH}
+- Neighborhood Correlation: ${NEIGHBORHOOD_CORR}
+- MinTRL: ${MIN_TRL} months (current: ${CURRENT_TRL})
+
+Regime Performance:
+- Bull: ${BULL_RETURN}
+- Bear: ${BEAR_RETURN}
+- Sideways: ${SIDEWAYS_RETURN}
 
 Decision: ${DECISION}
-Status: $([ "${DECISION}" = "strategy_complete" ] && echo "READY FOR DEPLOYMENT" || echo "NEEDS REVIEW")
+Reason: ${REASON}
+
 Phase: validation → complete
-Iteration: ${ITERATION}
 
-🤖 Generated with Claude Code
-Co-Authored-By: Claude <noreply@anthropic.com>
-EOF
-)"
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
-# If validation PASSED, create git tag
-if [ "${DECISION}" = "strategy_complete" ] || (( $(echo "${DEGRADATION} < 30" | bc -l) )); then
-    VERSION="v1.0.0-h${HYPOTHESIS_ID}-$(echo ${HYPOTHESIS_NAME} | tr ' ' '-' | tr '[:upper:]' '[:lower:]')"
+Co-Authored-By: Claude <noreply@anthropic.com>"
+```
 
-    git tag -a "${VERSION}" -m "Validated Strategy - ${HYPOTHESIS_NAME}
-Hypothesis ID: ${HYPOTHESIS_ID}
-OOS Sharpe: ${OOS_SHARPE}
-Degradation: ${DEGRADATION}%
-Validated: $(date +%Y-%m-%d)
-Status: Ready for paper trading"
+---
 
-    echo "🏷️  Created tag: ${VERSION}"
+## Display Results Summary
+
+```bash
+echo ""
+echo "═══════════════════════════════════════════════════════════"
+echo "MONTE CARLO VALIDATION COMPLETE"
+echo "═══════════════════════════════════════════════════════════"
+echo ""
+echo "📊 Probabilistic Metrics:"
+echo "   PSR:              ${PSR} (threshold: ≥0.95)"
+echo "   PSR 10th %ile:    ${PSR_10TH} (worst-case)"
+echo "   DSR:              ${DSR} (multiple testing corrected)"
+echo ""
+echo "📈 Generalization:"
+echo "   WFE:              ${WFE} (threshold: ≥0.50)"
+echo "   Profitable Windows: ${WFE_PROFITABLE_WINDOWS}% (threshold: ≥50%)"
+echo ""
+echo "🎲 Statistical Significance:"
+echo "   Permutation p:    ${PERM_PVALUE} (threshold: <0.05)"
+echo ""
+echo "📉 Drawdown Analysis:"
+echo "   MC DD 99th:       ${MC_DD_99TH}"
+echo "   MC/Backtest Ratio: ${MC_DD_RATIO}x (threshold: <2.5x)"
+echo ""
+echo "🔄 Regime Robustness:"
+echo "   MACHR CV:         ${MACHR_CV} (threshold: <0.40)"
+echo "   Bull Return:      ${BULL_RETURN}"
+echo "   Bear Return:      ${BEAR_RETURN}"
+echo "   Sideways Return:  ${SIDEWAYS_RETURN}"
+echo ""
+echo "🎯 Parameter Stability:"
+echo "   Plateau Width:    ${PLATEAU_WIDTH} (threshold: >0.20)"
+echo "   Neighborhood Corr: ${NEIGHBORHOOD_CORR} (threshold: >0.70)"
+echo ""
+echo "⏱️  Track Record:"
+echo "   Required:         ${MIN_TRL} months"
+echo "   Current:          ${CURRENT_TRL} months"
+echo ""
+echo "═══════════════════════════════════════════════════════════"
+echo "✅ DECISION: ${DECISION}"
+echo "═══════════════════════════════════════════════════════════"
+echo ""
+echo "${REASON}"
+echo ""
+
+if [ "$DECISION" == "ROBUST_STRATEGY" ]; then
+    echo "🚀 Strategy is PRODUCTION-READY for live trading!"
+    echo ""
+    echo "Next Steps:"
+    echo "  1. Review validation_logs/monte_carlo_results.json"
+    echo "  2. Set up paper trading with conservative position sizing"
+    echo "  3. Monitor performance against Monte Carlo bands"
+    echo "  4. Gradually scale to full allocation after 3-6 months"
+    echo ""
+elif [ "$DECISION" == "MARGINAL_VALIDATION" ]; then
+    echo "⚠️  Strategy shows promise but needs improvement"
+    echo ""
+    echo "Next Steps:"
+    echo "  1. Address failed thresholds through optimization"
+    echo "  2. Consider parameter adjustments"
+    echo "  3. Re-run validation after improvements"
+    echo "  4. Do NOT deploy to live trading yet"
+    echo ""
+else
+    echo "❌ Strategy FAILED validation - NOT suitable for production"
+    echo ""
+    echo "Next Steps:"
+    echo "  1. Review validation_logs/monte_carlo_results.json for details"
+    echo "  2. Consider major strategy rework or abandonment"
+    echo "  3. Analyze which metrics failed and why"
+    echo "  4. Start new hypothesis if fundamental issues exist"
+    echo ""
 fi
 
-echo "✅ Committed validation results to git"
-echo "📝 Commit: $(git log -1 --oneline)"
+echo "Full results: ${HYPOTHESIS_DIR}/validation_logs/monte_carlo_results.json"
+echo ""
 ```
 
 ---
 
-## Post-Execution Verification
+## Notes
 
-**After running command, verify file locations:**
+- **NO "quick" or "standard" levels** - only production-ready validation
+- **All metrics required** - PSR, DSR, WFE, MACHR, bootstrap, permutation, parameter stability, regime robustness
+- **Thresholds are strict** - this is the final gatekeeper before risking real money
+- **Monte Carlo reveals truth** - drawdowns typically 2-3x larger than backtests
+- **Execution time**: 30-60 minutes for full suite (1,000+ simulations)
+- **Cost**: Higher than basic validation but essential for capital protection
 
-```bash
-# Should be EMPTY (no validation files at root)
-ls -1 oos_*.json 2>/dev/null && echo "❌ ERROR: Validation files at root!" || echo "✅ No validation files at root"
+## References
 
-# Should show OOS validation results in hypothesis directory
-ls "${HYPOTHESIS_DIR}"/oos_validation_results.json 2>/dev/null && echo "✅ Validation results in hypothesis directory" || echo "❌ ERROR: No validation results!"
-
-# Should show updated iteration_state.json in hypothesis directory
-ls "${HYPOTHESIS_DIR}/iteration_state.json" && echo "✅ State file in hypothesis directory" || echo "❌ ERROR: No state file!"
-
-# Should show strategy file in hypothesis directory
-ls "${HYPOTHESIS_DIR}"/*.py 2>/dev/null && echo "✅ Strategy in hypothesis directory" || echo "❌ ERROR: No strategy file!"
-```
+- Complete methodology: `PROJECT_DOCUMENTATION/VALIDATION/MONTECARLO_VALIDATION/CLAUDE_MC_VALIDATION_GUIDE.md`
+- Python implementation: `SCRIPTS/qc_validate.py`
+- Help system: `python SCRIPTS/qc_validate.py help`
 
 ---
 
-## Common Mistakes to Avoid
-
-❌ **WRONG**:
-```bash
-# Saving validation results at root
-cat > oos_validation_results.json <<EOF  # At root!
-{
-  "oos_sharpe": 1.28,
-  ...
-}
-EOF
-```
-
-✅ **CORRECT**:
-```bash
-# Find hypothesis directory first
-HYPOTHESIS_DIR=$(find STRATEGIES -maxdepth 1 -name "hypothesis_*" -type d | sort | tail -1)
-
-# Create results file IN hypothesis directory
-RESULTS_FILE="${HYPOTHESIS_DIR}/oos_validation_results.json"
-cat > "${RESULTS_FILE}" <<EOF
-{
-  "oos_sharpe": 1.28,
-  ...
-}
-EOF
-```
-
-❌ **WRONG**:
-```bash
-# Reading iteration_state.json from root
-cat iteration_state.json | jq -r '.validation.oos_sharpe'
-```
-
-✅ **CORRECT**:
-```bash
-# Reading from hypothesis directory
-STATE_FILE="${HYPOTHESIS_DIR}/iteration_state.json"
-cat "${STATE_FILE}" | jq -r '.phase_results.validation.oos_performance.sharpe_ratio'
-```
-
----
-
-## Directory Structure After Execution
-
-```
-/
-├── README.md                  ✅ (allowed at root)
-├── BOOTSTRAP.sh               ✅ (allowed at root)
-├── requirements.txt           ✅ (allowed at root)
-├── .env                       ✅ (allowed at root)
-├── .gitignore                 ✅ (allowed at root)
-│
-├── SCRIPTS/
-│   └── strategy_components/   ✅ (shared components)
-│       ├── sentiment/
-│       │   ├── kalshi_regime_detector.py
-│       │   ├── kalshi_fed_hedge.py
-│       │   ├── kalshi_vol_forecast.py
-│       │   ├── kalshi_sentiment_monitor.py
-│       │   └── kalshi_api_wrapper.py
-│       └── (other shared components)
-│
-├── STRATEGIES/
-│   └── hypothesis_X_name/
-│       ├── iteration_state.json            ✅ (updated)
-│       ├── config.json                     ✅ (QC configuration)
-│       ├── strategy_name.py                ✅ (main strategy)
-│       ├── optimization_params.json        ✅ (if Phase 4 reached)
-│       ├── optimization_results_*.json     ✅ (if Phase 4 reached)
-│       ├── oos_validation_results.json     ✅ (created here!)
-│       ├── research.ipynb                  ✅ (if Phase 5 reached)
-│       ├── README.md                       ✅ (hypothesis description)
-│       ├── backtest_logs/                  ✅ (backtest-specific logs)
-│       ├── helper_classes/                 ✅ (strategy-specific helpers)
-│       └── backup_scripts/                 ✅ (version backups)
-│
-└── PROJECT_LOGS/
-    └── validation_hX_*.json                ✅ (optional logs)
-```
-
----
-
-**Tag created only if**:
-- Decision = STRATEGY_COMPLETE, OR
-- Degradation < 30% (acceptable performance)
-
----
-
-**Version**: 2.0.0 (Fixed - Directory-First Pattern)
-**Last Updated**: 2025-11-14
-**Critical Fix**: Added mandatory hypothesis directory usage, pre-flight checks, verification
+**This is the ONLY validation command. There is no "quick" option because validation protects real capital.**
