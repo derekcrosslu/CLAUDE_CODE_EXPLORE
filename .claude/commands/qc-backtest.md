@@ -604,10 +604,25 @@ python SCRIPTS/qc_backtest.py --output PROJECT_LOGS/backtest_result_h${HYPOTHESI
 ├── .env                       ✅ (allowed at root)
 ├── .gitignore                 ✅ (allowed at root)
 │
+├── SCRIPTS/
+│   └── strategy_components/   ✅ (shared components)
+│       ├── sentiment/
+│       │   ├── kalshi_regime_detector.py
+│       │   ├── kalshi_fed_hedge.py
+│       │   ├── kalshi_vol_forecast.py
+│       │   ├── kalshi_sentiment_monitor.py
+│       │   └── kalshi_api_wrapper.py
+│       └── (other shared components)
+│
 ├── STRATEGIES/
 │   └── hypothesis_X_name/
 │       ├── iteration_state.json              ✅ (updated)
-│       └── strategy_name.py                  ✅ (created here!)
+│       ├── config.json                       ✅ (QC configuration)
+│       ├── strategy_name.py                  ✅ (created here!)
+│       ├── README.md                         ✅ (hypothesis description)
+│       ├── backtest_logs/                    ✅ (backtest-specific logs)
+│       ├── helper_classes/                   ✅ (strategy-specific helpers)
+│       └── backup_scripts/                   ✅ (version backups)
 │
 └── PROJECT_LOGS/
     └── backtest_result_hX_iteration_Y.json   ✅ (created here!)

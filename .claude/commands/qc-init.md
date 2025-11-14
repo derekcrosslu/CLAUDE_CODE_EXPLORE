@@ -81,10 +81,16 @@ HYPOTHESIS_SLUG=$(echo "$HYPOTHESIS_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' 
 HYPOTHESIS_DIR="STRATEGIES/hypothesis_${NEW_ID}_${HYPOTHESIS_SLUG}"
 mkdir -p "${HYPOTHESIS_DIR}"
 
+# Create subdirectories for hypothesis organization
+mkdir -p "${HYPOTHESIS_DIR}/backtest_logs"
+mkdir -p "${HYPOTHESIS_DIR}/helper_classes"
+mkdir -p "${HYPOTHESIS_DIR}/backup_scripts"
+
 # IMPORTANT: Change into this directory for all subsequent operations
 cd "${HYPOTHESIS_DIR}"
 
 echo "✅ Created hypothesis directory: ${HYPOTHESIS_DIR}"
+echo "✅ Created subdirectories: backtest_logs, helper_classes, backup_scripts"
 echo "✅ Working directory: $(pwd)"
 ```
 
@@ -292,7 +298,10 @@ ls STRATEGIES/hypothesis_*/iteration_state.json
 ```
 STRATEGIES/
 └── hypothesis_{ID}_{name_slug}/
-    └── iteration_state.json          ← Created here, NOT at root!
+    ├── iteration_state.json          ← Created here, NOT at root!
+    ├── backtest_logs/                ← Created for backtest-specific logs
+    ├── helper_classes/               ← Created for strategy-specific helpers
+    └── backup_scripts/               ← Created for version backups
 ```
 
 **Future files will also go here:**
@@ -300,9 +309,19 @@ STRATEGIES/
 STRATEGIES/
 └── hypothesis_{ID}_{name_slug}/
     ├── iteration_state.json           ← Phase 1 (this command)
-    ├── {strategy_name}.py             ← Phase 2 (/qc-backtest)
+    ├── config.json                    ← Phase 2 (QC configuration)
+    ├── {strategy_name}.py             ← Phase 2 (/qc-backtest - main strategy)
+    ├── optimization_params.json       ← Phase 4 (/qc-optimize)
     ├── optimization_results_*.json    ← Phase 4 (/qc-optimize)
-    └── oos_validation_results.json    ← Phase 5 (/qc-validate)
+    ├── oos_validation_results.json    ← Phase 5 (/qc-validate)
+    ├── research.ipynb                 ← Phase 5 (optional analysis)
+    ├── README.md                      ← Hypothesis description
+    ├── backtest_logs/                 ← Backtest-specific logs
+    │   └── (detailed backtest outputs)
+    ├── helper_classes/                ← Strategy-specific helper classes
+    │   └── (indicators, risk managers, etc.)
+    └── backup_scripts/                ← Version backups
+        └── (timestamped backups of strategy)
 ```
 
 ## Common Mistakes to Avoid

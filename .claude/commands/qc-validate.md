@@ -393,12 +393,29 @@ cat "${STATE_FILE}" | jq -r '.phase_results.validation.oos_performance.sharpe_ra
 ├── .env                       ✅ (allowed at root)
 ├── .gitignore                 ✅ (allowed at root)
 │
+├── SCRIPTS/
+│   └── strategy_components/   ✅ (shared components)
+│       ├── sentiment/
+│       │   ├── kalshi_regime_detector.py
+│       │   ├── kalshi_fed_hedge.py
+│       │   ├── kalshi_vol_forecast.py
+│       │   ├── kalshi_sentiment_monitor.py
+│       │   └── kalshi_api_wrapper.py
+│       └── (other shared components)
+│
 ├── STRATEGIES/
 │   └── hypothesis_X_name/
 │       ├── iteration_state.json            ✅ (updated)
-│       ├── strategy_name.py                ✅ (exists)
-│       ├── optimization_results_*.json     ✅ (exists)
-│       └── oos_validation_results.json     ✅ (created here!)
+│       ├── config.json                     ✅ (QC configuration)
+│       ├── strategy_name.py                ✅ (main strategy)
+│       ├── optimization_params.json        ✅ (if Phase 4 reached)
+│       ├── optimization_results_*.json     ✅ (if Phase 4 reached)
+│       ├── oos_validation_results.json     ✅ (created here!)
+│       ├── research.ipynb                  ✅ (if Phase 5 reached)
+│       ├── README.md                       ✅ (hypothesis description)
+│       ├── backtest_logs/                  ✅ (backtest-specific logs)
+│       ├── helper_classes/                 ✅ (strategy-specific helpers)
+│       └── backup_scripts/                 ✅ (version backups)
 │
 └── PROJECT_LOGS/
     └── validation_hX_*.json                ✅ (optional logs)

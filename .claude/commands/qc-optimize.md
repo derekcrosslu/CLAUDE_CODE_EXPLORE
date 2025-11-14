@@ -435,11 +435,27 @@ cat "${STATE_FILE}" | jq -r '.phase_results.optimization.best_parameters'
 ├── .env                       ✅ (allowed at root)
 ├── .gitignore                 ✅ (allowed at root)
 │
+├── SCRIPTS/
+│   └── strategy_components/   ✅ (shared components)
+│       ├── sentiment/
+│       │   ├── kalshi_regime_detector.py
+│       │   ├── kalshi_fed_hedge.py
+│       │   ├── kalshi_vol_forecast.py
+│       │   ├── kalshi_sentiment_monitor.py
+│       │   └── kalshi_api_wrapper.py
+│       └── (other shared components)
+│
 ├── STRATEGIES/
 │   └── hypothesis_X_name/
 │       ├── iteration_state.json                ✅ (updated)
+│       ├── config.json                         ✅ (QC configuration)
 │       ├── strategy_name.py                    ✅ (exists)
-│       └── optimization_results_TIMESTAMP.json ✅ (created here!)
+│       ├── optimization_params.json            ✅ (parameter ranges)
+│       ├── optimization_results_TIMESTAMP.json ✅ (created here!)
+│       ├── README.md                           ✅ (hypothesis description)
+│       ├── backtest_logs/                      ✅ (backtest-specific logs)
+│       ├── helper_classes/                     ✅ (strategy-specific helpers)
+│       └── backup_scripts/                     ✅ (version backups)
 │
 └── PROJECT_LOGS/
     └── (optimization logs can go here optionally)
