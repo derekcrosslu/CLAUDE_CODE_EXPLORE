@@ -19,6 +19,7 @@ import re
 import sys
 from pathlib import Path
 from datetime import datetime
+from typing import List
 
 # Absolute path resolution
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -30,6 +31,76 @@ try:
 except ImportError as e:
     click.echo(f"❌ Error: {e}", err=True)
     sys.exit(1)
+
+
+def validate_qc_code(content: str, file_type: str = 'notebook') -> List[str]:
+    """
+    Validate code against QC coding standards defined in HELP/qc_guide.json.
+
+    Rules enforced:
+    1. No emojis in code (causes encoding issues in QC)
+    2. No invalid API calls (qb.ReadProject doesn't exist)
+    3. No placeholder backtest IDs
+    4. No double-escaped newlines in notebook JSON
+
+    Args:
+        content: File content as string
+        file_type: 'python' | 'notebook' | 'markdown'
+
+    Returns:
+        List of violation messages (empty if passes all checks)
+    """
+    violations = []
+
+    # Rule 1: Check for emojis
+    # Comprehensive emoji pattern covering most common emoji ranges
+    emoji_pattern = r'[\U0001F300-\U0001F9FF\u2600-\u26FF\u2700-\u27BF\u2B50\u2705\u274C\u26A0\uFE0F]'
+    emoji_matches = list(re.finditer(emoji_pattern, content))
+    if emoji_matches:
+        # Get first few matches for reporting
+        sample_emojis = [m.group() for m in emoji_matches[:5]]
+        violations.append(
+            f"RULE 1 VIOLATION: {len(emoji_matches)} emoji(s) detected in code "
+            f"(first few: {', '.join(sample_emojis)}). "
+            "Emojis cause encoding issues in QC Research."
+        )
+
+    # Rule 2: Check for invalid API calls
+    invalid_api_calls = [
+        ('qb.ReadProject', "use 'api.list_backtests(qb.project_id)' instead"),
+        ('qb.read_project', "use 'api.list_backtests(qb.project_id)' instead"),
+    ]
+    for invalid_call, suggestion in invalid_api_calls:
+        if invalid_call in content:
+            violations.append(
+                f"RULE 2 VIOLATION: Invalid API call '{invalid_call}' detected - {suggestion}"
+            )
+
+    # Rule 3: Check for placeholder backtest IDs
+    placeholder_patterns = [
+        (r"backtest_id\s*=\s*['\"]manual_from_screenshot['\"]", "'manual_from_screenshot'"),
+        (r"backtest_id\s*=\s*['\"]REPLACE_ME['\"]", "'REPLACE_ME'"),
+        (r"backtest_id\s*=\s*['\"]TODO['\"]", "'TODO'"),
+        (r"backtest_id\s*=\s*['\"]placeholder['\"]", "'placeholder'"),
+    ]
+    for pattern, placeholder in placeholder_patterns:
+        if re.search(pattern, content, re.IGNORECASE):
+            violations.append(
+                f"RULE 4 VIOLATION: Placeholder backtest_id {placeholder} detected. "
+                "Fetch backtest ID from api.list_backtests() instead."
+            )
+
+    # Rule 4: Check for double-escaped newlines (notebooks only)
+    if file_type == 'notebook':
+        # In JSON, properly escaped newlines look like: "text\\n"
+        # Double-escaped (WRONG) look like: "text\\\\n"
+        if '\\\\\\\\n' in content:
+            violations.append(
+                "RULE 3 VIOLATION: Double-escaped newlines (\\\\\\\\n) detected in notebook JSON. "
+                "Use actual newlines (\\n) in Python source; json.dump() will properly escape them."
+            )
+
+    return violations
 
 
 @click.group()
@@ -759,6 +830,23 @@ def upload_notebook(file: str):
     except FileNotFoundError:
         click.echo(f"❌ Error: File not found: {file}", err=True)
         sys.exit(1)
+
+    # VALIDATE: Check against QC coding standards
+    click.echo("\n🔍 Validating against QC coding standards...")
+    violations = validate_qc_code(content, file_type='notebook')
+
+    if violations:
+        click.echo(f"\n⚠️  QC CODING STANDARDS VIOLATIONS DETECTED\n")
+        click.echo(f"File: {file}")
+        click.echo("Violations:")
+        for i, violation in enumerate(violations, 1):
+            click.echo(f"  [{i}] {violation}")
+        click.echo(f"\n❌ UPLOAD BLOCKED - Fix violations before proceeding")
+        click.echo(f"\nSee: PROJECT_DOCUMENTATION/QC_CODING_STANDARDS.md")
+        click.echo(f"Or:  HELP/qc_guide.json (section: research_and_notebooks)\n")
+        sys.exit(1)
+
+    click.echo("✅ Validation passed - all QC coding standards met")
 
     # Upload to QC
     api = QuantConnectAPI()

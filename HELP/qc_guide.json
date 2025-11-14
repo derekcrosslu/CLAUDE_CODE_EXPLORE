@@ -228,6 +228,32 @@
         "runtime",
         "compatibility"
       ]
+    },
+    {
+      "id": "research_and_notebooks",
+      "title": "QC Research and Jupyter Notebooks",
+      "rules": [
+        "NEVER include emojis in notebook cells (causes encoding errors in QC Research).",
+        "Use official QuantConnect API: api.list_backtests(), api.read_backtest(), NOT qb.ReadProject().",
+        "Always validate backtest_id exists before use - fetch from API, never hardcode placeholders.",
+        "When generating notebooks programmatically, use actual newline characters (\\n) not escaped strings (\\\\n).",
+        "Import QuantConnect.Api for backtest/project operations: from QuantConnect.Api import Api.",
+        "Filter for completed backtests only: [b for b in backtests.backtests if b.progress == 1].",
+        "Sort by creation date to get latest: sorted(..., key=lambda x: x.created, reverse=True)[0]."
+      ],
+      "examples": [
+        {
+          "good": "from QuantConnect.Api import Api\napi = Api()\nbacktests = api.list_backtests(qb.project_id)\ncompleted = [b for b in backtests.backtests if b.progress == 1]\nlatest = sorted(completed, key=lambda x: x.created, reverse=True)[0]\nbacktest_id = latest.backtest_id",
+          "bad": "project = qb.ReadProject(project_id)  # WRONG - method doesn't exist\nbacktest_id = 'manual_from_screenshot'  # WRONG - placeholder ID\nprint('Status: ✅ PASS')  # WRONG - emojis not allowed"
+        }
+      ],
+      "tags": [
+        "research",
+        "notebooks",
+        "jupyter",
+        "api",
+        "validation"
+      ]
     }
   ],
   "summary": {
@@ -247,7 +273,10 @@
       "\u2705 use self.debug() not print()",
       "\u2705 OptionStrategies for combos",
       "\u2705 define self.symbol_data in initialize",
-      "\u2705 avoid emogies on all code"
+      "\u2705 NO emojis in ANY code uploaded to QC (STRICT - causes encoding issues)",
+      "\u2705 use official QC API only (api.list_backtests, NOT qb.ReadProject)",
+      "\u2705 never use placeholder backtest_ids (manual_from_screenshot, REPLACE_ME, TODO)",
+      "\u2705 validate generated notebooks before upload (check JSON escaping)"
     ]
   }
 }
