@@ -23,11 +23,10 @@ from datetime import datetime
 # Absolute path resolution
 SCRIPT_DIR = Path(__file__).resolve().parent
 
-# Import modules
+# Import only core modules (Progressive Disclosure)
 try:
     sys.path.insert(0, str(SCRIPT_DIR))
     from qc_api import QuantConnectAPI
-    from help_loader import load_help, format_help, get_section, search_help
 except ImportError as e:
     click.echo(f"❌ Error: {e}", err=True)
     sys.exit(1)
@@ -57,6 +56,13 @@ def cli():
 @click.option('--list-sections', is_flag=True, help='List all available sections')
 def help(section, search, list_sections):
     """Show complete reference documentation from HELP/qc_validate.json."""
+    # Lazy load help_loader (Progressive Disclosure - only load when needed)
+    try:
+        from help_loader import load_help, format_help, get_section, search_help
+    except ImportError as e:
+        click.echo(f"❌ Error: help_loader.py not found: {e}", err=True)
+        sys.exit(1)
+
     try:
         help_data = load_help("qc_validate")
     except Exception as e:
