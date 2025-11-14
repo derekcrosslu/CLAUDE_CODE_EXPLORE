@@ -2,28 +2,32 @@
 
 **Goal**: Build a lean, self-documenting workflow enabling Claude Code to autonomously develop and validate QuantConnect trading strategies session-after-session.
 
-**Note 1**: This is a work in progress. We need to build redundancy so claude code does not get lost and can work autonomously without user intervention.
-
-**Note 2**: Never load into context script or files without checking first --help. Context window is very limited and keeping it nimble is key to acomplish your session tasks and project goals.
+**Critical**: Always use progressive disclosure - check `--help` before loading full docs. Context window is limited!
 
 ---
 
-## 🚀 Start Here
+## 🚀 Start Here (Run This FIRST!)
 
 ```bash
-/current-status
+./BOOTSTRAP.sh
 ```
 
-**Read previous session status and next steps.**
+**This script provides everything you need at session start:**
+- ✅ Current project status and next steps
+- ✅ Available scripts with `--help` for progressive disclosure
+- ✅ Available skills and slash commands
+- ✅ Critical rules reminder
 
-This displays:
-- What was accomplished last session
-- Current state of the project
-- Next steps to continue work
-- Context to resume development
+**Why BOOTSTRAP.sh?**
+- Prevents information overload
+- Enforces progressive disclosure pattern
+- Shows `--help` commands for on-demand docs
+- Context-efficient session initialization
 
-Alternative (if slash commands unavailable):
+**Alternative** (if script unavailable):
 ```bash
+/current-status
+# OR
 cat PROJECT_DOCUMENTATION/CORE/SETUP/NEXT_STEPS/CURRENT_STATUS.md
 ```
 
