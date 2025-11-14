@@ -89,7 +89,13 @@ Execute a QuantConnect optimization job using the native QC optimization API:
 
    HYPOTHESIS_ID=$(cat "${STATE_FILE}" | jq -r '.current_hypothesis.id')
    HYPOTHESIS_NAME=$(cat "${STATE_FILE}" | jq -r '.current_hypothesis.name')
-   PROJECT_ID=$(cat "${STATE_FILE}" | jq -r '.qc_project.project_id')
+   PROJECT_ID=$(jq -r '.project.project_id // empty' "${STATE_FILE}")
+
+   if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" == "null" ]; then
+       echo "❌ ERROR: No project_id in iteration_state.json"
+       echo "Run /qc-backtest first to create QC project"
+       exit 1
+   fi
    BASELINE_SHARPE=$(cat "${STATE_FILE}" | jq -r '.phase_results.backtest.performance.sharpe_ratio')
 
    # Find strategy file in hypothesis directory

@@ -114,9 +114,69 @@ fi
 echo "✅ Directory verification passed"
 ```
 
-### Step 4: Create iteration_state.json (in hypothesis directory)
+### Step 4: Create main.py Stub (REQUIRED for QuantConnect)
+
+**⚠️ CRITICAL: QuantConnect ALWAYS executes main.py as entry point**
 
 **Now we're safely in `STRATEGIES/hypothesis_X/` directory**
+
+```bash
+# Create main.py stub with QCAlgorithm structure
+cat > main.py << 'EOF'
+# region imports
+from AlgorithmImports import *
+# endregion
+
+class MyStrategy(QCAlgorithm):
+    """
+    TODO: Add strategy description here
+
+    This is the entry point for QuantConnect backtesting.
+    QuantConnect ALWAYS executes main.py.
+
+    You can import additional modules from this project:
+    - from helper_classes.indicators import MyIndicator
+    - from my_other_strategy_file import SomeClass
+    """
+
+    def initialize(self):
+        """Initialize algorithm parameters and data."""
+        # Set backtest period
+        self.set_start_date(2022, 1, 1)
+        self.set_end_date(2025, 10, 31)
+        self.set_cash(100000)
+
+        # TODO: Add securities, indicators, schedule, etc.
+
+    def on_data(self, data):
+        """OnData event handler - called when new data arrives."""
+        # TODO: Implement your trading logic here
+        pass
+EOF
+
+echo "✅ Created: $(pwd)/main.py (QC entry point)"
+```
+
+**If user provided existing strategy file** (via `/qc-init path/to/strategy.py`):
+
+```bash
+# Option 1: Copy existing strategy as main.py
+if [[ -n "$STRATEGY_FILE" ]]; then
+    cp "$STRATEGY_FILE" main.py
+    echo "✅ Copied strategy to main.py: $STRATEGY_FILE"
+fi
+
+# Option 2: Copy as separate file and keep stub
+# User can manually import their strategy class in main.py
+# if [[ -n "$STRATEGY_FILE" ]]; then
+#     STRATEGY_BASENAME=$(basename "$STRATEGY_FILE")
+#     cp "$STRATEGY_FILE" "$STRATEGY_BASENAME"
+#     echo "✅ Copied strategy: $STRATEGY_BASENAME"
+#     echo "⚠️  Remember to import and use in main.py"
+# fi
+```
+
+### Step 5: Create iteration_state.json (in hypothesis directory)
 
 ```bash
 # Copy template from project root to current directory (hypothesis dir)
@@ -137,6 +197,7 @@ echo "✅ Created: $(pwd)/iteration_state.json"
 import json
 from datetime import datetime
 import uuid
+import os
 
 # We're already in STRATEGIES/hypothesis_X/ directory
 with open('iteration_state.json', 'r') as f:
@@ -156,6 +217,10 @@ state['current_hypothesis'] = {
     "status": "research",
     "abandon_reason": None
 }
+
+# Populate project info
+hypothesis_slug = HYPOTHESIS_NAME.lower().replace(' ', '_')
+state['project']['project_name'] = f"hypothesis_{NEW_ID}_{hypothesis_slug}"
 
 # Populate metadata
 state['metadata'] = {
@@ -177,7 +242,7 @@ print(f"✅ iteration_state.json populated")
 print(f"   Location: {os.getcwd()}/iteration_state.json")
 ```
 
-### Step 5: Create Git Branch
+### Step 6: Create Git Branch
 
 ```bash
 # Create branch name (slugify hypothesis name)

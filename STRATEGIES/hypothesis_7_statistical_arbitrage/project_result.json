@@ -1,0 +1,57 @@
+{
+  "projects": [
+    {
+      "projectId": 26202294,
+      "organizationId": "448dcbbedde5bc24ecd302c120681ee8",
+      "name": "H7_Statistical_Arbitrage",
+      "modified": "2025-11-14 15:34:17",
+      "created": "2025-11-14 15:34:17",
+      "ownerId": 389294,
+      "language": "Py",
+      "collaborators": [
+        {
+          "uid": 389294,
+          "liveControl": true,
+          "permission": "write",
+          "publicId": "derek-cross",
+          "profileImage": "https://cdn.quantconnect.com/web/i/users/profile/c2d0df82f3c90801750179501.jpg",
+          "email": "derekcrosslu@gmail.com",
+          "name": "Derek Cross",
+          "bio": "",
+          "owner": true
+        }
+      ],
+      "leanVersionId": 17373,
+      "leanPinnedToMaster": true,
+      "owner": true,
+      "description": "",
+      "channelId": "P26202294-94dbfe6a9578828a62e73843ecb679b9",
+      "parameters": [],
+      "libraries": [],
+      "grid": {
+        "xs": [],
+        "sm": [],
+        "md": [],
+        "lg": [],
+        "xl": []
+      },
+      "liveGrid": {
+        "xs": [],
+        "sm": [],
+        "md": [],
+        "lg": [],
+        "xl": []
+      },
+      "paperEquity": null,
+      "lastLiveDeployment": null,
+      "liveForm": null,
+      "encrypted": false,
+      "codeRunning": false,
+      "leanEnvironment": 1,
+      "encryptionKey": null,
+      "maxFileSize": 128000,
+      "isPinned": false
+    }
+  ],
+  "success": true
+}

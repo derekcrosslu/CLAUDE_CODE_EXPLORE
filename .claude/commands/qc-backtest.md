@@ -131,7 +131,7 @@ HYPOTHESIS_NAME=$(cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.current
 HYPOTHESIS_DESC=$(cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.current_hypothesis.description')
 HYPOTHESIS_RATIONALE=$(cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.current_hypothesis.rationale')
 HYPOTHESIS_ID=$(cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.current_hypothesis.id')
-PROJECT_ID=$(cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.qc_project.project_id')
+PROJECT_ID=$(jq -r '.project.project_id // "null"' "${HYPOTHESIS_DIR}/iteration_state.json")
 ITERATION=$(cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.workflow_state.current_iteration')
 
 echo "✅ Read state from: ${HYPOTHESIS_DIR}/iteration_state.json"
@@ -251,22 +251,103 @@ If validation fails:
 ```bash
 # If PROJECT_ID is null, create new project ONLY ONCE
 if [ "$PROJECT_ID" == "null" ]; then
-    python SCRIPTS/qc_backtest.py --create --name "${HYPOTHESIS_NAME}" --output project_result.json
-    PROJECT_ID=$(cat project_result.json | jq -r '.projects.projects[0].projectId')
-    PROJECT_URL="https://www.quantconnect.com/project/${PROJECT_ID}"
+    # Create QC project
+    echo "Creating new QuantConnect project..."
+    cd "${HYPOTHESIS_DIR}"  # Run from hypothesis dir
 
-    # Update iteration_state.json with project_id (SAVE THIS!)
-    # project.project_id = $PROJECT_ID
-    # project.project_name = ...
-    # project.strategy_file = ...
-    # project.qc_url = $PROJECT_URL
+    python ../../SCRIPTS/qc_backtest.py --create \
+        --name "H${HYPOTHESIS_ID}_${HYPOTHESIS_NAME}" \
+        --output project_result.json
+
+    # Extract projectId from QC API response
+    PROJECT_ID=$(jq -r '.projects[0].projectId' project_result.json)
+
+    if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" == "null" ]; then
+        echo "❌ ERROR: Failed to create QC project"
+        cat project_result.json
+        exit 1
+    fi
+
+    # **CRITICAL: Save project_id to iteration_state.json**
+    echo "Saving project_id to iteration_state.json..."
+    jq --argjson pid "$PROJECT_ID" \
+       '.project.project_id = $pid' \
+       iteration_state.json > iteration_state.tmp && \
+       mv iteration_state.tmp iteration_state.json
+
+    echo "✅ Created QC project: $PROJECT_ID"
+    echo "✅ Saved project_id to iteration_state.json"
+    echo "✅ Project URL: https://www.quantconnect.com/project/${PROJECT_ID}"
+
+    cd ../..  # Back to repo root
 fi
 
 # For ALL subsequent backtests: REUSE existing PROJECT_ID
 # Update code in existing project, don't create new one
 ```
 
-### Step 6: Upload Strategy and Run Backtest
+### Step 6: Verify main.py Exists (SCHEMA ENFORCEMENT)
+
+**⚠️ CRITICAL: QuantConnect ALWAYS executes main.py**
+
+```bash
+# Check required file exists (from schema)
+MAIN_PY="${HYPOTHESIS_DIR}/main.py"
+
+if [ ! -f "$MAIN_PY" ]; then
+    echo "❌ ERROR: main.py not found!"
+    echo "❌ Location: $MAIN_PY"
+    echo "❌ QuantConnect requires main.py as entry point"
+    echo "❌ Run /qc-init first or create main.py manually"
+    exit 1
+fi
+
+echo "✅ Verified: main.py exists (QC entry point)"
+```
+
+### Step 7: Upload ALL Files to QC Project
+
+**⚠️ CRITICAL: Upload main.py + all helper files**
+
+```bash
+cd "${HYPOTHESIS_DIR}"
+
+# Upload main.py (REQUIRED - QC entry point)
+echo "Uploading main.py to project ${PROJECT_ID}..."
+python ../../SCRIPTS/qc_api.py upload-file \
+    --project-id "${PROJECT_ID}" \
+    --name "main.py" \
+    --file "main.py"
+
+# Upload all other .py files in hypothesis directory (optional strategy files)
+for py_file in *.py; do
+    if [ "$py_file" != "main.py" ] && [ -f "$py_file" ]; then
+        echo "Uploading ${py_file}..."
+        python ../../SCRIPTS/qc_api.py upload-file \
+            --project-id "${PROJECT_ID}" \
+            --name "${py_file}" \
+            --file "${py_file}"
+    fi
+done
+
+# Upload helper classes (if any)
+if [ -d "helper_classes" ]; then
+    for helper in helper_classes/*.py; do
+        if [ -f "$helper" ]; then
+            echo "Uploading ${helper}..."
+            python ../../SCRIPTS/qc_api.py upload-file \
+                --project-id "${PROJECT_ID}" \
+                --name "$(basename $helper)" \
+                --file "$helper"
+        fi
+    done
+fi
+
+cd ../..  # Back to repo root
+echo "✅ All files uploaded to QC project"
+```
+
+### Step 8: Run Backtest
 
 **⚠️ CRITICAL: Always use --project-id flag to reuse existing project**
 
@@ -290,11 +371,9 @@ if [[ "${BACKTEST_LOG}" != STRATEGIES/*/backtest_logs/* ]]; then
 fi
 
 # ALWAYS pass existing project_id to reuse the same project
-# This updates code in existing project instead of creating new one
-python SCRIPTS/qc_backtest.py --run \
+# main.py is already uploaded, QC will execute it
+python SCRIPTS/qc_backtest.py --backtest \
     --project-id "${PROJECT_ID}" \
-    --name "Backtest_iteration_${ITERATION}" \
-    --file "${STRATEGY_FILE}" \
     --output "${BACKTEST_LOG}"
 
 # Check if backtest succeeded
@@ -305,7 +384,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "✅ Backtest log saved: ${BACKTEST_LOG}"
+echo "✅ Backtest completed"
+echo "✅ Results saved: ${BACKTEST_LOG}"
 ```
 
 **Verification after backtest**:
