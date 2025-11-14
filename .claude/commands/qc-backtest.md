@@ -270,14 +270,24 @@ fi
 
 **⚠️ CRITICAL: Always use --project-id flag to reuse existing project**
 
-**⚠️ CRITICAL: Backtest result logs go in PROJECT_LOGS/, not hypothesis directory**
+**⚠️ CRITICAL: Backtest result logs go in hypothesis backtest_logs/ directory, NOT at root**
 
 ```bash
-# Ensure PROJECT_LOGS directory exists
-mkdir -p PROJECT_LOGS
+# Ensure backtest_logs directory exists in hypothesis directory
+mkdir -p "${HYPOTHESIS_DIR}/backtest_logs"
 
-# Create backtest result filename with hypothesis ID
-BACKTEST_LOG="PROJECT_LOGS/backtest_result_h${HYPOTHESIS_ID}_iteration_${ITERATION}.json"
+# Create backtest result filename with timestamp
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKTEST_LOG="${HYPOTHESIS_DIR}/backtest_logs/backtest_iteration_${ITERATION}_${TIMESTAMP}.json"
+
+echo "📝 Saving backtest log: ${BACKTEST_LOG}"
+
+# Verify path before running backtest
+if [[ "${BACKTEST_LOG}" != STRATEGIES/*/backtest_logs/* ]]; then
+    echo "❌ ERROR: Backtest log path doesn't point to hypothesis backtest_logs/!"
+    echo "❌ Path: ${BACKTEST_LOG}"
+    exit 1
+fi
 
 # ALWAYS pass existing project_id to reuse the same project
 # This updates code in existing project instead of creating new one
@@ -301,18 +311,29 @@ echo "✅ Backtest log saved: ${BACKTEST_LOG}"
 **Verification after backtest**:
 
 ```bash
-# Verify backtest log created in PROJECT_LOGS
+# Verify backtest log created in hypothesis backtest_logs/
 if [ ! -f "${BACKTEST_LOG}" ]; then
     echo "❌ ERROR: Backtest log not created!"
     exit 1
 fi
 
-# Verify NOT created at root
-if [ -f "backtest_result.json" ]; then
-    echo "⚠️  WARNING: backtest_result.json at root - should be in PROJECT_LOGS/"
+# Verify it's in the correct subdirectory
+if [[ "${BACKTEST_LOG}" != STRATEGIES/*/backtest_logs/* ]]; then
+    echo "❌ ERROR: Backtest log not in hypothesis backtest_logs/!"
+    exit 1
 fi
 
-echo "✅ Backtest result properly stored in PROJECT_LOGS/"
+# Verify NOT created at root
+if ls -1 backtest_*.json 2>/dev/null; then
+    echo "⚠️  WARNING: Backtest files at root - should be in ${HYPOTHESIS_DIR}/backtest_logs/"
+fi
+
+# Verify NOT created in PROJECT_LOGS
+if ls -1 PROJECT_LOGS/backtest_*.json 2>/dev/null; then
+    echo "⚠️  WARNING: Backtest files in PROJECT_LOGS/ - should be in ${HYPOTHESIS_DIR}/backtest_logs/"
+fi
+
+echo "✅ Backtest result properly stored in ${HYPOTHESIS_DIR}/backtest_logs/"
 ```
 
 **Project ID Lifecycle**:
@@ -537,8 +558,14 @@ ls "${HYPOTHESIS_DIR}"/*.py 2>/dev/null && echo "✅ Strategy in hypothesis dire
 # Should show iteration_state.json in hypothesis directory
 ls "${HYPOTHESIS_DIR}/iteration_state.json" && echo "✅ State file in hypothesis directory" || echo "❌ ERROR: No state file!"
 
-# Should show backtest log in PROJECT_LOGS
-ls PROJECT_LOGS/backtest_result_h*.json && echo "✅ Backtest log in PROJECT_LOGS" || echo "❌ ERROR: No backtest log!"
+# Should show backtest log in hypothesis backtest_logs/
+ls "${HYPOTHESIS_DIR}"/backtest_logs/backtest_*.json && echo "✅ Backtest log in hypothesis backtest_logs/" || echo "❌ ERROR: No backtest log!"
+
+# Should NOT be at root
+ls -1 backtest_*.json 2>/dev/null && echo "❌ ERROR: Backtest files at root!" || echo "✅ No backtest files at root"
+
+# Should NOT be in PROJECT_LOGS (old location)
+ls -1 PROJECT_LOGS/backtest_*.json 2>/dev/null && echo "⚠️  WARNING: Backtest files in PROJECT_LOGS/ (should be in hypothesis backtest_logs/)" || echo "✅ No backtest files in PROJECT_LOGS"
 ```
 
 ---
@@ -585,11 +612,20 @@ cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.current_hypothesis.name'
 python SCRIPTS/qc_backtest.py --output backtest_result.json  # At root!
 ```
 
+❌ **ALSO WRONG**:
+```bash
+# Saving in PROJECT_LOGS instead of hypothesis directory
+mkdir -p PROJECT_LOGS
+python SCRIPTS/qc_backtest.py --output PROJECT_LOGS/backtest_result.json  # Wrong location!
+```
+
 ✅ **CORRECT**:
 ```bash
-# Saving backtest results in PROJECT_LOGS
-mkdir -p PROJECT_LOGS
-python SCRIPTS/qc_backtest.py --output PROJECT_LOGS/backtest_result_h${HYPOTHESIS_ID}.json
+# Saving backtest results in hypothesis backtest_logs/
+HYPOTHESIS_DIR=$(find STRATEGIES -maxdepth 1 -name "hypothesis_*" -type d | sort | tail -1)
+mkdir -p "${HYPOTHESIS_DIR}/backtest_logs"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+python SCRIPTS/qc_backtest.py --output "${HYPOTHESIS_DIR}/backtest_logs/backtest_iteration_1_${TIMESTAMP}.json"
 ```
 
 ---
@@ -621,11 +657,12 @@ python SCRIPTS/qc_backtest.py --output PROJECT_LOGS/backtest_result_h${HYPOTHESI
 │       ├── strategy_name.py                  ✅ (created here!)
 │       ├── README.md                         ✅ (hypothesis description)
 │       ├── backtest_logs/                    ✅ (backtest-specific logs)
+│       │   └── backtest_iteration_1_TIMESTAMP.json  ✅ (created here!)
 │       ├── helper_classes/                   ✅ (strategy-specific helpers)
 │       └── backup_scripts/                   ✅ (version backups)
 │
 └── PROJECT_LOGS/
-    └── backtest_result_hX_iteration_Y.json   ✅ (created here!)
+    └── (global logs if needed, NOT backtest logs)
 ```
 
 ---
