@@ -6,6 +6,18 @@ Run a backtest on QuantConnect for the current hypothesis and automatically dete
 
 This command implements Phase 2 (Implementation) and Phase 3 (Backtest + Decision) of the 5-phase autonomous workflow.
 
+## ⚠️ CRITICAL RULES (Read Before Executing!)
+
+1. **Work in hypothesis directory**: ALL file operations in `STRATEGIES/hypothesis_X/`
+2. **Never at root**: Strategy files go in hypothesis directory, NEVER at root
+3. **Read iteration_state.json**: Find hypothesis directory from iteration_state.json
+4. **Logs separate**: Backtest result logs go in `PROJECT_LOGS/`, NOT hypothesis directory
+5. **Allowed at root**: ONLY README.md, requirements.txt, .env, .gitignore, BOOTSTRAP.sh
+
+**If you create strategy files at root, the workflow WILL BREAK!**
+
+---
+
 ## What This Command Does
 
 1. Reads current hypothesis from iteration_state.json
@@ -62,19 +74,67 @@ The command applies 4-tier threshold system to determine next action:
 - If Sharpe >= 0.5 but < 0.7: PROCEED_TO_OPTIMIZATION (try to improve)
 - If iteration > max_iterations: ABANDON_HYPOTHESIS (too many attempts)
 
-## Implementation Steps
+## Pre-Flight Checks (Run at Start)
 
-When this command is executed, perform these steps:
-
-### Step 1: Read Current State
+**Before executing this command, verify:**
 
 ```bash
-# Read iteration_state.json
-HYPOTHESIS_NAME=$(cat iteration_state.json | jq -r '.hypothesis.name')
-HYPOTHESIS_DESC=$(cat iteration_state.json | jq -r '.hypothesis.description')
-HYPOTHESIS_RATIONALE=$(cat iteration_state.json | jq -r '.hypothesis.rationale')
-PROJECT_ID=$(cat iteration_state.json | jq -r '.project.project_id')
-ITERATION=$(cat iteration_state.json | jq -r '.workflow.iteration')
+# Check 1: We're at repository root
+if [[ $(basename $(pwd)) != "CLAUDE_CODE_EXPLORE" ]]; then
+    echo "⚠️  WARNING: Not at repository root"
+    echo "Current: $(pwd)"
+    echo "Run: cd /path/to/CLAUDE_CODE_EXPLORE"
+fi
+
+# Check 2: Find hypothesis directory
+HYPOTHESIS_DIR=$(find STRATEGIES -maxdepth 1 -name "hypothesis_*" -type d | sort | tail -1)
+if [ -z "$HYPOTHESIS_DIR" ]; then
+    echo "❌ ERROR: No hypothesis directory found!"
+    echo "Run /qc-init first to create hypothesis"
+    exit 1
+fi
+
+# Check 3: iteration_state.json exists in hypothesis directory
+if [ ! -f "${HYPOTHESIS_DIR}/iteration_state.json" ]; then
+    echo "❌ ERROR: iteration_state.json not found in ${HYPOTHESIS_DIR}!"
+    echo "Run /qc-init first"
+    exit 1
+fi
+
+# Check 4: No strategy files at root
+if ls -1 *.py 2>/dev/null | grep -v BOOTSTRAP.sh; then
+    echo "❌ ERROR: Python files found at root!"
+    echo "Strategy files must be in ${HYPOTHESIS_DIR}/"
+    exit 1
+fi
+
+echo "✅ Pre-flight checks passed"
+echo "📁 Working with: ${HYPOTHESIS_DIR}"
+```
+
+---
+
+## Implementation Steps
+
+When this command is executed, perform these steps **IN ORDER**:
+
+### Step 1: Read Current State and Find Hypothesis Directory
+
+**⚠️ CRITICAL**: Always read from hypothesis directory, never from root
+
+```bash
+# Find hypothesis directory (latest created)
+HYPOTHESIS_DIR=$(find STRATEGIES -maxdepth 1 -name "hypothesis_*" -type d | sort | tail -1)
+
+# Read iteration_state.json from hypothesis directory
+HYPOTHESIS_NAME=$(cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.current_hypothesis.name')
+HYPOTHESIS_DESC=$(cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.current_hypothesis.description')
+HYPOTHESIS_RATIONALE=$(cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.current_hypothesis.rationale')
+HYPOTHESIS_ID=$(cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.current_hypothesis.id')
+PROJECT_ID=$(cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.qc_project.project_id')
+ITERATION=$(cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.workflow_state.current_iteration')
+
+echo "✅ Read state from: ${HYPOTHESIS_DIR}/iteration_state.json"
 ```
 
 ### Step 2: Load QuantConnect Skill
@@ -88,27 +148,70 @@ Load the QuantConnect skill to access:
 
 ### Step 3: Implement Strategy (Phase 2)
 
+**⚠️ CRITICAL**: Create strategy file IN hypothesis directory
+
 Generate strategy code based on hypothesis:
 
+```bash
+# Create slugified strategy filename
+STRATEGY_SLUG=$(echo "$HYPOTHESIS_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | sed 's/[^a-z0-9_]//g')
+STRATEGY_FILE="${HYPOTHESIS_DIR}/${STRATEGY_SLUG}.py"
+
+echo "📝 Creating strategy file: ${STRATEGY_FILE}"
+
+# Verification: Ensure not creating at root
+if [[ "${STRATEGY_FILE}" != STRATEGIES/* ]]; then
+    echo "❌ ERROR: Strategy file path doesn't start with STRATEGIES/!"
+    echo "❌ Path: ${STRATEGY_FILE}"
+    echo "❌ Cannot create at root - workflow will break"
+    exit 1
+fi
+```
+
+**Python strategy template** (to be created at `${STRATEGY_FILE}`):
+
 ```python
-# File: {hypothesis_name_slug}.py
-# Template structure:
+# File: ${STRATEGY_FILE}
+# Created in: ${HYPOTHESIS_DIR}/
+# Hypothesis: ${HYPOTHESIS_NAME}
+
 class HypothesisStrategy(QCAlgorithm):
     def Initialize(self):
         # Set dates, cash, resolution
         # Add equities/assets
         # Configure indicators
         # Set warmup period
-        
+
     def OnData(self, data):
         # Entry logic (from hypothesis)
         # Exit logic (from hypothesis)
         # Risk management (stop loss, position sizing)
-        
+
 # Error handling:
 # - Check for None before accessing data
 # - Validate indicators are ready
 # - Handle missing data gracefully
+```
+
+**After creating strategy file, verify location**:
+
+```bash
+# Verify file was created in hypothesis directory
+if [ ! -f "${STRATEGY_FILE}" ]; then
+    echo "❌ ERROR: Failed to create ${STRATEGY_FILE}"
+    exit 1
+fi
+
+# Verify it's NOT at root
+if [ -f "$(basename ${STRATEGY_FILE})" ]; then
+    echo "❌ ERROR: Strategy file created at root!"
+    echo "❌ File: $(basename ${STRATEGY_FILE})"
+    echo "❌ This violates Critical Rule #2"
+    exit 1
+fi
+
+echo "✅ Strategy file created: ${STRATEGY_FILE}"
+echo "✅ Location verified: In hypothesis directory"
 ```
 
 ### Step 4: Validate Implementation
@@ -167,21 +270,49 @@ fi
 
 **⚠️ CRITICAL: Always use --project-id flag to reuse existing project**
 
+**⚠️ CRITICAL: Backtest result logs go in PROJECT_LOGS/, not hypothesis directory**
+
 ```bash
+# Ensure PROJECT_LOGS directory exists
+mkdir -p PROJECT_LOGS
+
+# Create backtest result filename with hypothesis ID
+BACKTEST_LOG="PROJECT_LOGS/backtest_result_h${HYPOTHESIS_ID}_iteration_${ITERATION}.json"
+
 # ALWAYS pass existing project_id to reuse the same project
 # This updates code in existing project instead of creating new one
 python SCRIPTS/qc_backtest.py --run \
     --project-id "${PROJECT_ID}" \
     --name "Backtest_iteration_${ITERATION}" \
     --file "${STRATEGY_FILE}" \
-    --output backtest_result.json
+    --output "${BACKTEST_LOG}"
 
 # Check if backtest succeeded
 if [ $? -ne 0 ]; then
-    echo "ERROR: Backtest failed"
+    echo "❌ ERROR: Backtest failed"
     # Update iteration_state.json with error
     # ESCALATE_TO_HUMAN or retry
+    exit 1
 fi
+
+echo "✅ Backtest log saved: ${BACKTEST_LOG}"
+```
+
+**Verification after backtest**:
+
+```bash
+# Verify backtest log created in PROJECT_LOGS
+if [ ! -f "${BACKTEST_LOG}" ]; then
+    echo "❌ ERROR: Backtest log not created!"
+    exit 1
+fi
+
+# Verify NOT created at root
+if [ -f "backtest_result.json" ]; then
+    echo "⚠️  WARNING: backtest_result.json at root - should be in PROJECT_LOGS/"
+fi
+
+echo "✅ Backtest result properly stored in PROJECT_LOGS/"
 ```
 
 **Project ID Lifecycle**:
@@ -195,13 +326,15 @@ fi
 ### Step 7: Parse Results
 
 ```bash
-# Extract metrics from backtest_result.json
-BACKTEST_ID=$(cat backtest_result.json | jq -r '.backtest_id')
-SHARPE=$(cat backtest_result.json | jq -r '.performance.sharpe_ratio')
-MAX_DRAWDOWN=$(cat backtest_result.json | jq -r '.performance.max_drawdown')
-TOTAL_RETURN=$(cat backtest_result.json | jq -r '.performance.total_return')
-TOTAL_TRADES=$(cat backtest_result.json | jq -r '.performance.total_trades')
-WIN_RATE=$(cat backtest_result.json | jq -r '.performance.win_rate')
+# Extract metrics from backtest log in PROJECT_LOGS
+BACKTEST_ID=$(cat "${BACKTEST_LOG}" | jq -r '.backtest_id')
+SHARPE=$(cat "${BACKTEST_LOG}" | jq -r '.performance.sharpe_ratio')
+MAX_DRAWDOWN=$(cat "${BACKTEST_LOG}" | jq -r '.performance.max_drawdown')
+TOTAL_RETURN=$(cat "${BACKTEST_LOG}" | jq -r '.performance.total_return')
+TOTAL_TRADES=$(cat "${BACKTEST_LOG}" | jq -r '.performance.total_trades')
+WIN_RATE=$(cat "${BACKTEST_LOG}" | jq -r '.performance.win_rate')
+
+echo "📊 Results parsed from: ${BACKTEST_LOG}"
 ```
 
 ### Step 8: Apply Decision Framework
@@ -256,34 +389,79 @@ fi
 
 ### Step 9: Update iteration_state.json
 
+**⚠️ CRITICAL**: Update iteration_state.json IN hypothesis directory
+
 ```bash
+# Update iteration_state.json in hypothesis directory
+STATE_FILE="${HYPOTHESIS_DIR}/iteration_state.json"
+
+echo "📝 Updating state file: ${STATE_FILE}"
+
+# Verify state file exists
+if [ ! -f "${STATE_FILE}" ]; then
+    echo "❌ ERROR: iteration_state.json not found at ${STATE_FILE}"
+    exit 1
+fi
+
+# Update using Python (safer than sed/awk)
+python3 -c "
+import json
+from datetime import datetime
+
+with open('${STATE_FILE}', 'r') as f:
+    state = json.load(f)
+
 # Update phase_results.backtest section
-# - completed: true
-# - timestamp: now
-# - backtest_id: $BACKTEST_ID
-# - performance: {sharpe, drawdown, return, trades, win_rate}
-# - decision: $DECISION
-# - decision_reason: $REASON
+state['phase_results']['backtest'] = {
+    'completed': True,
+    'timestamp': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+    'backtest_id': '${BACKTEST_ID}',
+    'performance': {
+        'sharpe_ratio': ${SHARPE},
+        'max_drawdown': ${MAX_DRAWDOWN},
+        'total_return': ${TOTAL_RETURN},
+        'total_trades': ${TOTAL_TRADES},
+        'win_rate': ${WIN_RATE}
+    },
+    'decision': '${DECISION}',
+    'decision_reason': '${REASON}'
+}
 
 # Update workflow section
-# - current_phase: based on decision
-# - iteration: increment if iterating
-# - updated_at: now
+state['workflow_state']['current_phase'] = 'backtest'
+state['workflow_state']['updated_at'] = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
 
 # Update decisions_log
-# Append: {phase: "backtest", decision: $DECISION, reason: $REASON, timestamp: now}
+state.setdefault('decisions_log', []).append({
+    'phase': 'backtest',
+    'decision': '${DECISION}',
+    'reason': '${REASON}',
+    'timestamp': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+})
 
 # Update cost_tracking
-# - api_calls: increment
-# - backtests_run: increment
+state['cost_tracking']['api_calls'] += 1
+state['cost_tracking']['backtests_run'] += 1
 
-# Update next_action based on decision
+# Save
+with open('${STATE_FILE}', 'w') as f:
+    json.dump(state, f, indent=2)
+
+print('✅ State file updated')
+"
+
+echo "✅ Updated: ${STATE_FILE}"
 ```
 
 ### Step 10: Git Commit
 
+**⚠️ IMPORTANT**: Stage files with paths from repository root
+
 ```bash
-git add iteration_state.json
+# We're at repository root - add files with full paths
+git add "${HYPOTHESIS_DIR}/iteration_state.json"
+git add "${STRATEGY_FILE}"
+git add "${BACKTEST_LOG}"
 
 # Structured commit message
 git commit -m "backtest: Complete iteration ${ITERATION} - ${DECISION}
@@ -299,11 +477,18 @@ Results:
 Decision: ${DECISION}
 Reason: ${REASON}
 
+Files:
+- Strategy: ${STRATEGY_FILE}
+- State: ${HYPOTHESIS_DIR}/iteration_state.json
+- Log: ${BACKTEST_LOG}
+
 Phase: backtest → $(echo ${DECISION} | tr '[:upper:]' '[:lower:]' | sed 's/_/ /g')
 Iteration: ${ITERATION}
 
 🤖 Generated with Claude Code
 Co-Authored-By: Claude <noreply@anthropic.com>"
+
+echo "✅ Git commit created"
 ```
 
 ### Step 11: Execute Next Action Autonomously
@@ -338,6 +523,98 @@ Iteration: {iteration}
 [If ABANDON/ESCALATE: Awaiting user action]
 ```
 
+## Post-Execution Verification
+
+**After running command, verify file locations:**
+
+```bash
+# Should be EMPTY (no .py files except allowed)
+ls -1 *.py 2>/dev/null && echo "❌ ERROR: Python files at root!" || echo "✅ No .py files at root"
+
+# Should show strategy file in hypothesis directory
+ls "${HYPOTHESIS_DIR}"/*.py 2>/dev/null && echo "✅ Strategy in hypothesis directory" || echo "❌ ERROR: No strategy file!"
+
+# Should show iteration_state.json in hypothesis directory
+ls "${HYPOTHESIS_DIR}/iteration_state.json" && echo "✅ State file in hypothesis directory" || echo "❌ ERROR: No state file!"
+
+# Should show backtest log in PROJECT_LOGS
+ls PROJECT_LOGS/backtest_result_h*.json && echo "✅ Backtest log in PROJECT_LOGS" || echo "❌ ERROR: No backtest log!"
+```
+
+---
+
+## Common Mistakes to Avoid
+
+❌ **WRONG**:
+```bash
+# Creating strategy file at root
+cat > my_strategy.py <<EOF  # At root!
+class MyStrategy(QCAlgorithm):
+    ...
+EOF
+```
+
+✅ **CORRECT**:
+```bash
+# Find hypothesis directory first
+HYPOTHESIS_DIR=$(find STRATEGIES -maxdepth 1 -name "hypothesis_*" -type d | sort | tail -1)
+
+# Create strategy file IN hypothesis directory
+STRATEGY_FILE="${HYPOTHESIS_DIR}/my_strategy.py"
+cat > "${STRATEGY_FILE}" <<EOF
+class MyStrategy(QCAlgorithm):
+    ...
+EOF
+```
+
+❌ **WRONG**:
+```bash
+# Reading iteration_state.json from root
+cat iteration_state.json | jq -r '.hypothesis.name'
+```
+
+✅ **CORRECT**:
+```bash
+# Reading from hypothesis directory
+cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.current_hypothesis.name'
+```
+
+❌ **WRONG**:
+```bash
+# Saving backtest results at root
+python SCRIPTS/qc_backtest.py --output backtest_result.json  # At root!
+```
+
+✅ **CORRECT**:
+```bash
+# Saving backtest results in PROJECT_LOGS
+mkdir -p PROJECT_LOGS
+python SCRIPTS/qc_backtest.py --output PROJECT_LOGS/backtest_result_h${HYPOTHESIS_ID}.json
+```
+
+---
+
+## Directory Structure After Execution
+
+```
+/
+├── README.md                  ✅ (allowed at root)
+├── BOOTSTRAP.sh               ✅ (allowed at root)
+├── requirements.txt           ✅ (allowed at root)
+├── .env                       ✅ (allowed at root)
+├── .gitignore                 ✅ (allowed at root)
+│
+├── STRATEGIES/
+│   └── hypothesis_X_name/
+│       ├── iteration_state.json              ✅ (updated)
+│       └── strategy_name.py                  ✅ (created here!)
+│
+└── PROJECT_LOGS/
+    └── backtest_result_hX_iteration_Y.json   ✅ (created here!)
+```
+
+---
+
 ## Notes
 
 - Automatically loads QuantConnect Skill for implementation guidance
@@ -346,6 +623,8 @@ Iteration: {iteration}
 - Overfitting signals checked before performance thresholds
 - Implementation validation prevents common bugs (NoneType, off-by-one)
 - Max 3 fix attempts before escalating to human
+- **All hypothesis files MUST be in `STRATEGIES/hypothesis_X/`**
+- **Backtest logs MUST be in `PROJECT_LOGS/`**
 
 ## Next Steps
 
@@ -360,3 +639,9 @@ Corresponds to Week 1 Implementation checklist items:
 - "Load QuantConnect Skill"
 - "Generate strategy code from hypothesis"
 - "Evaluate backtest results (Phase 3 decision logic)"
+
+---
+
+**Version**: 2.0.0 (Fixed - Directory-First Pattern)
+**Last Updated**: 2025-11-14
+**Critical Fix**: Added mandatory hypothesis directory usage, pre-flight checks, verification

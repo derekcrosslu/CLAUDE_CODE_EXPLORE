@@ -140,7 +140,79 @@ fi
 echo ""
 
 # ============================================================================
-# 5. CRITICAL RULES
+# 5. FILE ORGANIZATION CHECK
+# ============================================================================
+
+echo "=================================================="
+echo "🔍 FILE ORGANIZATION CHECK"
+echo "=================================================="
+echo ""
+
+# Check for files at root (except allowed)
+ALLOWED_PATTERN='^(README\.md|requirements\.txt|\.env|\.gitignore|BOOTSTRAP\.sh|STRATEGIES|SCRIPTS|PROJECT_DOCUMENTATION|PROJECT_SCHEMAS|PROJECT_LOGS|\.claude|\.git|venv|__pycache__)$'
+
+echo "Checking for root-level violations..."
+echo ""
+
+VIOLATIONS=$(ls -1 2>/dev/null | grep -vE "$ALLOWED_PATTERN" || true)
+
+if [ ! -z "$VIOLATIONS" ]; then
+    echo "⚠️  WARNING: Files found at root level that may violate organization rules:"
+    echo ""
+    echo "$VIOLATIONS" | while read -r file; do
+        echo "  - $file"
+    done
+    echo ""
+    echo "📦 These should be moved to appropriate directories:"
+    echo "   - Hypothesis files → STRATEGIES/hypothesis_X/"
+    echo "   - Logs → PROJECT_LOGS/"
+    echo "   - Docs → PROJECT_DOCUMENTATION/"
+    echo ""
+else
+    echo "✅ Root directory is clean - no violations found"
+    echo ""
+fi
+
+# Check for iteration_state.json at root (common mistake)
+if [ -f "iteration_state.json" ]; then
+    echo "❌ ERROR: iteration_state.json found at root!"
+    echo "   This file MUST be in STRATEGIES/hypothesis_X/"
+    echo "   Move it immediately to avoid workflow breakage"
+    echo ""
+fi
+
+# Check for .py files at root (except allowed scripts in SCRIPTS/)
+PY_FILES=$(ls -1 *.py 2>/dev/null || true)
+if [ ! -z "$PY_FILES" ]; then
+    echo "❌ ERROR: Python files found at root:"
+    echo ""
+    echo "$PY_FILES" | while read -r file; do
+        echo "  - $file"
+    done
+    echo ""
+    echo "   Strategy files MUST be in STRATEGIES/hypothesis_X/"
+    echo "   Helper scripts MUST be in SCRIPTS/"
+    echo ""
+fi
+
+# Check for optimization/validation result files at root
+RESULT_FILES=$(ls -1 optimization_*.json oos_*.json backtest_result*.json 2>/dev/null || true)
+if [ ! -z "$RESULT_FILES" ]; then
+    echo "❌ ERROR: Result files found at root:"
+    echo ""
+    echo "$RESULT_FILES" | while read -r file; do
+        echo "  - $file"
+    done
+    echo ""
+    echo "   Result files MUST be in STRATEGIES/hypothesis_X/ or PROJECT_LOGS/"
+    echo ""
+fi
+
+echo "=================================================="
+echo ""
+
+# ============================================================================
+# 6. CRITICAL RULES
 # ============================================================================
 
 echo "=================================================="
@@ -150,6 +222,8 @@ echo ""
 echo "1. Root Directory:"
 echo "   - ONLY README.md + requirements.txt + .env + .gitignore + BOOTSTRAP.sh + directories"
 echo "   - NO status/docs files at root"
+echo "   - NO strategy files (.py) at root"
+echo "   - NO iteration_state.json at root"
 echo ""
 echo "2. Progressive Disclosure:"
 echo "   - Load skill.md (primer only)"
@@ -171,7 +245,7 @@ echo "   - Context window is LIMITED - keep it nimble"
 echo ""
 
 # ============================================================================
-# 6. NEXT ACTIONS
+# 7. NEXT ACTIONS
 # ============================================================================
 
 echo "=================================================="
@@ -181,18 +255,25 @@ echo ""
 echo "Based on CURRENT_STATUS.md, your next steps are:"
 echo ""
 
-if [ -f "iteration_state.json" ]; then
-    current_phase=$(jq -r '.workflow.current_phase // "unknown"' iteration_state.json 2>/dev/null || echo "unknown")
+# Find hypothesis directory (if exists)
+HYPOTHESIS_DIR=$(find STRATEGIES -maxdepth 1 -name "hypothesis_*" -type d 2>/dev/null | sort | tail -1 || true)
+
+if [ -n "$HYPOTHESIS_DIR" ] && [ -f "${HYPOTHESIS_DIR}/iteration_state.json" ]; then
+    current_phase=$(jq -r '.workflow_state.current_phase // .workflow.current_phase // "unknown"' "${HYPOTHESIS_DIR}/iteration_state.json" 2>/dev/null || echo "unknown")
+    hypothesis_name=$(jq -r '.current_hypothesis.name // .hypothesis.name // "Unknown"' "${HYPOTHESIS_DIR}/iteration_state.json" 2>/dev/null || echo "Unknown")
+
+    echo "Current Hypothesis: $hypothesis_name"
+    echo "Hypothesis Directory: $HYPOTHESIS_DIR"
     echo "Current Phase: $current_phase"
     echo ""
 
     case "$current_phase" in
         "research")
-            echo "→ Define hypothesis in iteration_state.json"
+            echo "→ Define hypothesis in ${HYPOTHESIS_DIR}/iteration_state.json"
             echo "→ Run /qc-init to initialize new hypothesis"
             ;;
         "implementation")
-            echo "→ Generate strategy code"
+            echo "→ Generate strategy code in ${HYPOTHESIS_DIR}/"
             echo "→ Run /qc-backtest to test hypothesis"
             ;;
         "backtest")
@@ -210,14 +291,15 @@ if [ -f "iteration_state.json" ]; then
             ;;
     esac
 else
-    echo "⚠️  iteration_state.json not found"
-    echo "→ Check CURRENT_STATUS.md for initialization steps"
+    echo "⚠️  No hypothesis directory found"
+    echo "→ Run /qc-init to initialize new hypothesis"
+    echo "→ Or check CURRENT_STATUS.md for current phase"
 fi
 
 echo ""
 
 # ============================================================================
-# 7. SUMMARY
+# 8. SUMMARY
 # ============================================================================
 
 echo "=================================================="
@@ -226,6 +308,7 @@ echo "=================================================="
 echo ""
 echo "You now have:"
 echo "  ✓ Current project status"
+echo "  ✓ File organization check"
 echo "  ✓ Available scripts with --help paths"
 echo "  ✓ Available skills and commands"
 echo "  ✓ Critical rules reminder"
@@ -234,6 +317,8 @@ echo "💡 REMEMBER:"
 echo "   - Use --help commands for progressive disclosure"
 echo "   - Load skills only when needed for specific tasks"
 echo "   - Keep context window nimble"
+echo "   - ALL hypothesis files go in STRATEGIES/hypothesis_X/"
+echo "   - NEVER create files at root (except allowed)"
 echo ""
 echo "🚀 Ready to continue work!"
 echo ""

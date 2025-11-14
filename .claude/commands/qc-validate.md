@@ -4,6 +4,84 @@ description: Run out-of-sample validation for the current strategy
 
 Run out-of-sample (OOS) validation to test strategy generalization on unseen data.
 
+## ⚠️ CRITICAL RULES (Read Before Executing!)
+
+1. **Work in hypothesis directory**: ALL file operations in `STRATEGIES/hypothesis_X/`
+2. **Never at root**: OOS validation results go in hypothesis directory, NEVER at root
+3. **Read iteration_state.json**: Find hypothesis directory from iteration_state.json
+4. **Logs in PROJECT_LOGS**: Detailed logs can go in `PROJECT_LOGS/`, results summary in hypothesis dir
+5. **Allowed at root**: ONLY README.md, requirements.txt, .env, .gitignore, BOOTSTRAP.sh
+6. **Reuse project_id**: Use SAME project_id from iteration_state.json (created during /qc-backtest)
+
+**If you create validation files at root, the workflow WILL BREAK!**
+
+---
+
+## Pre-Flight Checks (Run at Start)
+
+**Before executing this command, verify:**
+
+```bash
+# Check 1: We're at repository root
+if [[ $(basename $(pwd)) != "CLAUDE_CODE_EXPLORE" ]]; then
+    echo "⚠️  WARNING: Not at repository root"
+    echo "Current: $(pwd)"
+    echo "Run: cd /path/to/CLAUDE_CODE_EXPLORE"
+fi
+
+# Check 2: Find hypothesis directory
+HYPOTHESIS_DIR=$(find STRATEGIES -maxdepth 1 -name "hypothesis_*" -type d | sort | tail -1)
+if [ -z "$HYPOTHESIS_DIR" ]; then
+    echo "❌ ERROR: No hypothesis directory found!"
+    echo "Run /qc-init first to create hypothesis"
+    exit 1
+fi
+
+# Check 3: iteration_state.json exists in hypothesis directory
+if [ ! -f "${HYPOTHESIS_DIR}/iteration_state.json" ]; then
+    echo "❌ ERROR: iteration_state.json not found in ${HYPOTHESIS_DIR}!"
+    echo "Run /qc-init first"
+    exit 1
+fi
+
+# Check 4: Baseline backtest exists
+BASELINE_SHARPE=$(cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.phase_results.backtest.performance.sharpe_ratio // empty')
+if [ -z "$BASELINE_SHARPE" ] || [ "$BASELINE_SHARPE" == "null" ]; then
+    echo "❌ ERROR: No baseline backtest found!"
+    echo "Run /qc-backtest first"
+    exit 1
+fi
+
+# Check 5: Optimization complete (optional - can skip to validation)
+OPT_COMPLETE=$(cat "${HYPOTHESIS_DIR}/iteration_state.json" | jq -r '.phase_results.optimization.completed // false')
+if [ "$OPT_COMPLETE" == "false" ]; then
+    echo "⚠️  WARNING: No optimization found - using baseline parameters"
+    echo "Consider running /qc-optimize first for better results"
+fi
+
+# Check 6: Strategy file exists in hypothesis directory
+STRATEGY_FILE=$(find "${HYPOTHESIS_DIR}" -name "*.py" -type f | head -1)
+if [ -z "$STRATEGY_FILE" ]; then
+    echo "❌ ERROR: No strategy file found in ${HYPOTHESIS_DIR}!"
+    echo "Run /qc-backtest first"
+    exit 1
+fi
+
+# Check 7: No validation files at root
+if ls -1 oos_*.json 2>/dev/null; then
+    echo "❌ ERROR: Validation files found at root!"
+    echo "Files must be in ${HYPOTHESIS_DIR}/"
+    exit 1
+fi
+
+echo "✅ Pre-flight checks passed"
+echo "📁 Working with: ${HYPOTHESIS_DIR}"
+echo "📊 Baseline Sharpe: ${BASELINE_SHARPE}"
+echo "🔧 Optimization: ${OPT_COMPLETE}"
+```
+
+---
+
 **⚠️ CRITICAL RULE: REUSE SAME PROJECT_ID FROM HYPOTHESIS**
 
 **IMPERATIVE**: Use the existing project_id from iteration_state.json
@@ -168,17 +246,32 @@ Next Actions:
 
 After validation completes, **automatically commit AND tag if successful**:
 
-```bash
-# Extract validation metrics
-IS_SHARPE=$(cat iteration_state.json | grep '"is_sharpe"' | sed 's/[^0-9.-]*//g')
-OOS_SHARPE=$(cat iteration_state.json | grep '"oos_sharpe"' | sed 's/[^0-9.-]*//g')
-DEGRADATION=$(cat iteration_state.json | grep '"degradation"' | sed 's/[^0-9.-]*//g')
-OOS_BACKTEST_ID=$(cat iteration_state.json | grep '"oos_backtest_id"' | sed 's/.*: "//;s/",//')
-DECISION=$(cat iteration_state.json | grep 'validation.*decision' | sed 's/.*: "//;s/",//')
-HYPOTHESIS_NAME=$(cat iteration_state.json | grep '"name"' | head -1 | sed 's/.*: "//;s/",//')
+**⚠️ IMPORTANT**: Stage files with paths from repository root
 
-# Stage files
-git add iteration_state.json oos_results*.json decisions_log.md
+```bash
+# Find hypothesis directory
+HYPOTHESIS_DIR=$(find STRATEGIES -maxdepth 1 -name "hypothesis_*" -type d | sort | tail -1)
+STATE_FILE="${HYPOTHESIS_DIR}/iteration_state.json"
+
+# Extract validation metrics from hypothesis directory
+IS_SHARPE=$(cat "${STATE_FILE}" | jq -r '.phase_results.backtest.performance.sharpe_ratio')
+OOS_SHARPE=$(cat "${STATE_FILE}" | jq -r '.phase_results.validation.oos_performance.sharpe_ratio')
+DEGRADATION=$(cat "${STATE_FILE}" | jq -r '.phase_results.validation.degradation')
+OOS_BACKTEST_ID=$(cat "${STATE_FILE}" | jq -r '.phase_results.validation.oos_backtest_id')
+DECISION=$(cat "${STATE_FILE}" | jq -r '.phase_results.validation.decision')
+HYPOTHESIS_NAME=$(cat "${STATE_FILE}" | jq -r '.current_hypothesis.name')
+HYPOTHESIS_ID=$(cat "${STATE_FILE}" | jq -r '.current_hypothesis.id')
+ITERATION=$(cat "${STATE_FILE}" | jq -r '.workflow_state.current_iteration')
+
+# Stage files from hypothesis directory
+git add "${HYPOTHESIS_DIR}/iteration_state.json"
+git add "${HYPOTHESIS_DIR}/oos_validation_results.json"
+git add "${STRATEGY_FILE}"
+
+# Optional: Stage logs from PROJECT_LOGS if they exist
+if ls PROJECT_LOGS/validation_h${HYPOTHESIS_ID}*.json 2>/dev/null; then
+    git add PROJECT_LOGS/validation_h${HYPOTHESIS_ID}*.json
+fi
 
 # Commit with structured message
 git commit -m "$(cat <<EOF
@@ -192,10 +285,15 @@ Out-of-Sample Performance:
 - Degradation: ${DEGRADATION}%
 - Backtest ID: ${OOS_BACKTEST_ID}
 
+Files:
+- Results: ${HYPOTHESIS_DIR}/oos_validation_results.json
+- State: ${HYPOTHESIS_DIR}/iteration_state.json
+- Strategy: ${STRATEGY_FILE}
+
 Decision: ${DECISION}
 Status: $([ "${DECISION}" = "strategy_complete" ] && echo "READY FOR DEPLOYMENT" || echo "NEEDS REVIEW")
 Phase: validation → complete
-Iteration: $(cat iteration_state.json | grep '"iteration_count"' | sed 's/[^0-9]*//g')
+Iteration: ${ITERATION}
 
 🤖 Generated with Claude Code
 Co-Authored-By: Claude <noreply@anthropic.com>
@@ -203,10 +301,11 @@ EOF
 )"
 
 # If validation PASSED, create git tag
-if [ "${DECISION}" = "strategy_complete" ] || [ "${DEGRADATION}" -lt 30 ]; then
-    VERSION="v1.0.0-$(echo ${HYPOTHESIS_NAME} | tr ' ' '-' | tr '[:upper:]' '[:lower:]')"
+if [ "${DECISION}" = "strategy_complete" ] || (( $(echo "${DEGRADATION} < 30" | bc -l) )); then
+    VERSION="v1.0.0-h${HYPOTHESIS_ID}-$(echo ${HYPOTHESIS_NAME} | tr ' ' '-' | tr '[:upper:]' '[:lower:]')"
 
     git tag -a "${VERSION}" -m "Validated Strategy - ${HYPOTHESIS_NAME}
+Hypothesis ID: ${HYPOTHESIS_ID}
 OOS Sharpe: ${OOS_SHARPE}
 Degradation: ${DEGRADATION}%
 Validated: $(date +%Y-%m-%d)
@@ -219,8 +318,100 @@ echo "✅ Committed validation results to git"
 echo "📝 Commit: $(git log -1 --oneline)"
 ```
 
+---
+
+## Post-Execution Verification
+
+**After running command, verify file locations:**
+
+```bash
+# Should be EMPTY (no validation files at root)
+ls -1 oos_*.json 2>/dev/null && echo "❌ ERROR: Validation files at root!" || echo "✅ No validation files at root"
+
+# Should show OOS validation results in hypothesis directory
+ls "${HYPOTHESIS_DIR}"/oos_validation_results.json 2>/dev/null && echo "✅ Validation results in hypothesis directory" || echo "❌ ERROR: No validation results!"
+
+# Should show updated iteration_state.json in hypothesis directory
+ls "${HYPOTHESIS_DIR}/iteration_state.json" && echo "✅ State file in hypothesis directory" || echo "❌ ERROR: No state file!"
+
+# Should show strategy file in hypothesis directory
+ls "${HYPOTHESIS_DIR}"/*.py 2>/dev/null && echo "✅ Strategy in hypothesis directory" || echo "❌ ERROR: No strategy file!"
+```
+
+---
+
+## Common Mistakes to Avoid
+
+❌ **WRONG**:
+```bash
+# Saving validation results at root
+cat > oos_validation_results.json <<EOF  # At root!
+{
+  "oos_sharpe": 1.28,
+  ...
+}
+EOF
+```
+
+✅ **CORRECT**:
+```bash
+# Find hypothesis directory first
+HYPOTHESIS_DIR=$(find STRATEGIES -maxdepth 1 -name "hypothesis_*" -type d | sort | tail -1)
+
+# Create results file IN hypothesis directory
+RESULTS_FILE="${HYPOTHESIS_DIR}/oos_validation_results.json"
+cat > "${RESULTS_FILE}" <<EOF
+{
+  "oos_sharpe": 1.28,
+  ...
+}
+EOF
+```
+
+❌ **WRONG**:
+```bash
+# Reading iteration_state.json from root
+cat iteration_state.json | jq -r '.validation.oos_sharpe'
+```
+
+✅ **CORRECT**:
+```bash
+# Reading from hypothesis directory
+STATE_FILE="${HYPOTHESIS_DIR}/iteration_state.json"
+cat "${STATE_FILE}" | jq -r '.phase_results.validation.oos_performance.sharpe_ratio'
+```
+
+---
+
+## Directory Structure After Execution
+
+```
+/
+├── README.md                  ✅ (allowed at root)
+├── BOOTSTRAP.sh               ✅ (allowed at root)
+├── requirements.txt           ✅ (allowed at root)
+├── .env                       ✅ (allowed at root)
+├── .gitignore                 ✅ (allowed at root)
+│
+├── STRATEGIES/
+│   └── hypothesis_X_name/
+│       ├── iteration_state.json            ✅ (updated)
+│       ├── strategy_name.py                ✅ (exists)
+│       ├── optimization_results_*.json     ✅ (exists)
+│       └── oos_validation_results.json     ✅ (created here!)
+│
+└── PROJECT_LOGS/
+    └── validation_hX_*.json                ✅ (optional logs)
+```
+
+---
+
 **Tag created only if**:
 - Decision = STRATEGY_COMPLETE, OR
 - Degradation < 30% (acceptable performance)
-4. Document in strategy library
-```
+
+---
+
+**Version**: 2.0.0 (Fixed - Directory-First Pattern)
+**Last Updated**: 2025-11-14
+**Critical Fix**: Added mandatory hypothesis directory usage, pre-flight checks, verification
