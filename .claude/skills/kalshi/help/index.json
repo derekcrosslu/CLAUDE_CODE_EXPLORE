@@ -1,0 +1,134 @@
+{
+  "kalshi_cli": {
+    "name": "Kalshi CLI",
+    "version": "1.0.0",
+    "description": "Progressive disclosure interface for Kalshi prediction market data",
+    "components": 5,
+    "total_lines_of_code": 1863
+  },
+  "commands": {
+    "markets": {
+      "description": "List available Kalshi markets (Fed, VIX)",
+      "usage": "kalshi markets",
+      "output": "Lists top markets in each category with tickers and titles"
+    },
+    "fed": {
+      "description": "Show Federal Reserve rate probabilities",
+      "usage": "kalshi fed",
+      "output": "Bar chart of rate probabilities with hike/cut analysis",
+      "help_file": "kalshi_api.json"
+    },
+    "vix": {
+      "description": "Show VIX volatility range probabilities",
+      "usage": "kalshi vix",
+      "output": "Bar chart of VIX ranges with expected value and regime",
+      "help_file": "kalshi_vol_forecast.json"
+    },
+    "regime": {
+      "description": "Show current market regime classification",
+      "usage": "kalshi regime",
+      "output": "Fed/volatility/risk regimes with position sizing multiplier",
+      "help_file": "kalshi_regime.json"
+    },
+    "sentiment": {
+      "description": "Show sentiment analysis and shifts",
+      "usage": "kalshi sentiment",
+      "output": "Fed/VIX signals with shift detection (24h)",
+      "help_file": "kalshi_sentiment.json"
+    },
+    "hedge": {
+      "description": "Show Fed event hedge recommendation",
+      "usage": "kalshi hedge",
+      "output": "Uncertainty, tail risk, hedge ratio, and rationale",
+      "help_file": "kalshi_fed_hedge.json"
+    },
+    "docs": {
+      "description": "Show detailed documentation for specific topic",
+      "usage": "kalshi docs <topic>",
+      "topics": [
+        "api",
+        "components",
+        "regime",
+        "fed_hedge",
+        "volatility",
+        "sentiment",
+        "examples"
+      ]
+    }
+  },
+  "components": {
+    "KalshiAPI": {
+      "file": "SCRIPTS/strategy_components/sentiment/kalshi_api_wrapper.py",
+      "lines": 355,
+      "help_file": "kalshi_api.json",
+      "description": "Core API client for Kalshi prediction markets",
+      "key_methods": [
+        "get_fed_rate_probabilities",
+        "get_vix_range_probabilities",
+        "get_market_probability"
+      ]
+    },
+    "KalshiRegimeDetector": {
+      "file": "SCRIPTS/strategy_components/sentiment/kalshi_regime_detector.py",
+      "lines": 220,
+      "help_file": "kalshi_regime.json",
+      "description": "Market regime classification (Fed/Vol/Risk)",
+      "key_methods": [
+        "get_current_regime",
+        "should_reduce_risk",
+        "get_position_sizing_multiplier"
+      ]
+    },
+    "KalshiFedHedge": {
+      "file": "SCRIPTS/strategy_components/sentiment/kalshi_fed_hedge.py",
+      "lines": 180,
+      "help_file": "kalshi_fed_hedge.json",
+      "description": "Fed event hedging with uncertainty measurement",
+      "key_methods": [
+        "get_hedge_signal",
+        "should_hedge_fed_event",
+        "get_position_adjustment"
+      ]
+    },
+    "KalshiVolForecast": {
+      "file": "SCRIPTS/strategy_components/sentiment/kalshi_vol_forecast.py",
+      "lines": 200,
+      "help_file": "kalshi_vol_forecast.json",
+      "description": "Volatility forecasting from VIX prediction markets",
+      "key_methods": [
+        "get_expected_vix",
+        "get_vol_forecast_signal",
+        "get_volatility_adjusted_position_size"
+      ]
+    },
+    "KalshiSentimentMonitor": {
+      "file": "SCRIPTS/strategy_components/sentiment/kalshi_sentiment_monitor.py",
+      "lines": 250,
+      "help_file": "kalshi_sentiment.json",
+      "description": "Sentiment shift detection from probability changes",
+      "key_methods": [
+        "update_probabilities",
+        "detect_sentiment_shifts",
+        "get_sentiment_signal"
+      ]
+    }
+  },
+  "help_files": {
+    "kalshi_api.json": "KalshiAPI - Core API client",
+    "kalshi_regime.json": "KalshiRegimeDetector - Regime classification",
+    "kalshi_fed_hedge.json": "KalshiFedHedge - Fed event hedging",
+    "kalshi_vol_forecast.json": "KalshiVolForecast - Volatility forecasting",
+    "kalshi_sentiment.json": "KalshiSentimentMonitor - Sentiment monitoring"
+  },
+  "quick_start": {
+    "cli": "kalshi fed  # Show Fed probabilities",
+    "python": "from SCRIPTS.strategy_components.sentiment import KalshiRegimeDetector\ndetector = KalshiRegimeDetector()\nregime = detector.get_current_regime()",
+    "strategy": "See SCRIPTS/strategy_components/sentiment/README.md"
+  },
+  "documentation": {
+    "readme": "SCRIPTS/strategy_components/sentiment/README.md",
+    "skill": ".claude/skills/kalshi/skill.md",
+    "help_files": ".claude/skills/kalshi/help/*.json",
+    "examples": "Use 'kalshi docs examples'"
+  }
+}

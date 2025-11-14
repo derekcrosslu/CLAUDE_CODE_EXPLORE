@@ -1,0 +1,147 @@
+{
+  "component": "KalshiSentimentMonitor",
+  "file": "SCRIPTS/strategy_components/sentiment/kalshi_sentiment_monitor.py",
+  "description": "Monitor Kalshi prediction market probability changes to detect shifts in market sentiment",
+  "features": [
+    "Tracks historical probabilities over time",
+    "Detects significant shifts (>10% probability moves)",
+    "Generates trading signals from sentiment changes",
+    "Stores history for trend analysis"
+  ],
+  "methods": {
+    "update_probabilities": {
+      "description": "Update current probabilities and store in history (call periodically)",
+      "returns": "None",
+      "recommended_frequency": "Every 1 hour",
+      "storage": "Saves to temp file (.kalshi_sentiment_history.json)",
+      "history_retention": "168 hours (1 week)"
+    },
+    "get_probability_shift": {
+      "description": "Calculate probability shifts over time window",
+      "parameters": {
+        "market": "str - Market category ('fed' or 'vix')",
+        "lookback_hours": "int - Hours to look back (default: 24)"
+      },
+      "returns": "Dict[str, float] - Probability changes per outcome",
+      "example": {
+        "input": {
+          "market": "fed",
+          "lookback_hours": 24
+        },
+        "output": {
+          "4.75": 0.15,
+          "5.00": -0.12,
+          "5.25": -0.03
+        }
+      }
+    },
+    "detect_sentiment_shifts": {
+      "description": "Detect significant sentiment shifts across all markets",
+      "parameters": {
+        "lookback_hours": "int - Time window (default: 24)",
+        "shift_threshold": "float - Minimum shift to flag (default: 0.10)"
+      },
+      "returns": "Dict",
+      "output_fields": {
+        "fed": {
+          "shifts": "Dict[str, float] - Probability changes",
+          "max_shift": "float - Maximum absolute shift",
+          "shift_magnitude": "float - Total shift magnitude",
+          "significant": "bool - True if max_shift >= threshold"
+        },
+        "vix": "Same structure as fed"
+      },
+      "example": {
+        "output": {
+          "fed": {
+            "shifts": {"5.00": -0.15, "4.75": 0.15},
+            "max_shift": 0.15,
+            "shift_magnitude": 0.15,
+            "significant": true
+          },
+          "vix": {
+            "shifts": {"<20": 0.08, "20-25": -0.05},
+            "max_shift": 0.08,
+            "shift_magnitude": 0.065,
+            "significant": false
+          }
+        }
+      }
+    },
+    "get_sentiment_signal": {
+      "description": "Get trading signal based on sentiment shifts",
+      "returns": "Dict",
+      "output_fields": {
+        "fed_signal": "str - BULLISH | NEUTRAL | BEARISH",
+        "vix_signal": "str - LOW_VOL | NEUTRAL | HIGH_VOL",
+        "overall": "str - RISK_ON | NEUTRAL | RISK_OFF"
+      },
+      "signal_logic": {
+        "fed_signal": {
+          "BULLISH": "Probabilities shifting toward rate cuts (>15% shift to lower rates)",
+          "BEARISH": "Probabilities shifting toward rate hikes (>15% shift to higher rates)",
+          "NEUTRAL": "No significant directional shift"
+        },
+        "vix_signal": {
+          "LOW_VOL": "Probabilities shifting toward low VIX ranges (>10% shift to <20)",
+          "HIGH_VOL": "Probabilities shifting toward high VIX ranges (>10% shift to >25)",
+          "NEUTRAL": "No significant vol shift"
+        },
+        "overall": {
+          "RISK_ON": "Fed BULLISH and VIX not HIGH_VOL",
+          "RISK_OFF": "Fed BEARISH or VIX HIGH_VOL",
+          "NEUTRAL": "Other combinations"
+        }
+      },
+      "example": {
+        "output": {
+          "fed_signal": "BULLISH",
+          "vix_signal": "LOW_VOL",
+          "overall": "RISK_ON"
+        }
+      }
+    }
+  },
+  "data_storage": {
+    "file": ".kalshi_sentiment_history.json (in temp directory)",
+    "structure": {
+      "fed": [
+        {
+          "timestamp": "ISO 8601 format",
+          "probabilities": {"4.75": 0.23, "5.00": 0.65}
+        }
+      ],
+      "vix": [
+        {
+          "timestamp": "ISO 8601 format",
+          "probabilities": {"<20": 0.45, "20-25": 0.35}
+        }
+      ]
+    },
+    "retention": "Last 168 entries (1 week if updating hourly)",
+    "custom_location": "Pass history_file parameter to __init__"
+  },
+  "shift_detection": {
+    "default_threshold": 0.10,
+    "shift_magnitude_calculation": "Sum of absolute probability changes / 2",
+    "significant_shift": "max_shift >= threshold (default 10%)",
+    "interpretation": {
+      "< 0.05": "Negligible shift - no action needed",
+      "0.05-0.10": "Moderate shift - monitor closely",
+      "> 0.10": "Significant shift - trading signal"
+    }
+  },
+  "recommended_usage": {
+    "update_frequency": "Every 1 hour via scheduled task",
+    "lookback_period": "24 hours for recent shifts, 168 hours for trends",
+    "shift_threshold": "0.10 (10%) for significant shifts",
+    "integration": "Schedule updates, check signals before trades"
+  },
+  "usage_example": "from SCRIPTS.strategy_components.sentiment import KalshiSentimentMonitor\n\nmonitor = KalshiSentimentMonitor()\n\n# Update hourly\nmonitor.update_probabilities()\n\n# Detect shifts\nshifts = monitor.detect_sentiment_shifts(lookback_hours=24)\n\nif shifts['fed']['significant']:\n    signal = monitor.get_sentiment_signal()\n    if signal['overall'] == 'RISK_OFF':\n        self.Liquidate()",
+  "strategy_integration": {
+    "initialize": "self.sentiment = KalshiSentimentMonitor()\nself.Schedule.On(\n    self.DateRules.EveryDay(),\n    self.TimeRules.Every(TimeSpan.FromHours(1)),\n    lambda: self.sentiment.update_probabilities()\n)",
+    "on_data": "signal = self.sentiment.get_sentiment_signal()\nif signal['overall'] == 'RISK_ON':\n    self.SetHoldings('SPY', 1.5)\nelif signal['overall'] == 'RISK_OFF':\n    self.SetHoldings('SPY', 0.5)"
+  },
+  "caching": "60 seconds (1 minute) TTL",
+  "helper_function": "get_sentiment_signal() -> str  # Returns 'RISK_ON', 'NEUTRAL', or 'RISK_OFF'"
+}

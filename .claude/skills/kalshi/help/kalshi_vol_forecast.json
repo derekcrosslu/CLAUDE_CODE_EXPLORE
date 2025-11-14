@@ -1,0 +1,131 @@
+{
+  "component": "KalshiVolForecast",
+  "file": "SCRIPTS/strategy_components/sentiment/kalshi_vol_forecast.py",
+  "description": "Forecast expected volatility using Kalshi VIX prediction markets",
+  "features": [
+    "Expected VIX calculation (probability-weighted)",
+    "Volatility surprise detection",
+    "Position sizing based on vol expectations",
+    "Volatility regime classification"
+  ],
+  "methods": {
+    "get_expected_vix": {
+      "description": "Calculate probability-weighted expected VIX level",
+      "returns": "float - Expected VIX value",
+      "calculation": "Σ(midpoint * probability) for each VIX range",
+      "example": {
+        "input_probabilities": {
+          "<15": 0.20,
+          "15-20": 0.45,
+          "20-25": 0.25,
+          ">25": 0.10
+        },
+        "output": 18.5
+      }
+    },
+    "get_vol_forecast_signal": {
+      "description": "Get complete volatility forecast with trading signal",
+      "returns": "Dict",
+      "output_fields": {
+        "expected_vix": "float - Probability-weighted VIX expectation",
+        "vol_regime": "str - LOW | NORMAL | HIGH",
+        "surprise_prob": "float - Probability of vol spike",
+        "position_sizing_factor": "float - Recommended sizing multiplier",
+        "signal": "str - REDUCE | NEUTRAL | INCREASE"
+      },
+      "example": {
+        "output": {
+          "expected_vix": 18.5,
+          "vol_regime": "NORMAL",
+          "surprise_prob": 0.12,
+          "position_sizing_factor": 1.0,
+          "signal": "NEUTRAL"
+        }
+      }
+    },
+    "get_volatility_regime": {
+      "description": "Classify volatility regime from expected VIX",
+      "returns": "str - LOW | NORMAL | HIGH",
+      "criteria": {
+        "LOW": "Expected VIX < 15",
+        "NORMAL": "Expected VIX 15-25",
+        "HIGH": "Expected VIX > 25"
+      }
+    },
+    "get_vol_surprise_probability": {
+      "description": "Calculate probability of volatility surprise (spike)",
+      "returns": "float - Probability of VIX > 30",
+      "logic": "Sum probabilities for VIX ranges > 30"
+    },
+    "should_reduce_positions": {
+      "description": "Simple recommendation to reduce based on high vol expectation",
+      "returns": "bool",
+      "criteria": "True if expected_vix > 25 OR surprise_prob > 0.20"
+    },
+    "get_volatility_adjusted_position_size": {
+      "description": "Get position size adjusted for volatility expectations",
+      "parameters": {
+        "base_position_size": "float - Base position size (e.g., 1.0)"
+      },
+      "returns": "float - Adjusted position size",
+      "logic": {
+        "LOW vol (VIX < 15)": "base_size * 1.2",
+        "NORMAL vol (VIX 15-25)": "base_size * 1.0",
+        "HIGH vol (VIX > 25)": "base_size * 0.6"
+      },
+      "example": {
+        "input": 1.0,
+        "expected_vix": 28,
+        "output": 0.6
+      }
+    }
+  },
+  "vol_regimes": {
+    "LOW": {
+      "threshold": "VIX < 15",
+      "interpretation": "Complacent market - low risk pricing",
+      "action": "Can increase position sizes",
+      "multiplier": 1.2
+    },
+    "NORMAL": {
+      "threshold": "VIX 15-25",
+      "interpretation": "Normal volatility environment",
+      "action": "Maintain normal sizing",
+      "multiplier": 1.0
+    },
+    "HIGH": {
+      "threshold": "VIX > 25",
+      "interpretation": "Elevated volatility - risk-off",
+      "action": "Reduce position sizes significantly",
+      "multiplier": 0.6
+    }
+  },
+  "expected_vix_calculation": {
+    "method": "Probability-weighted average",
+    "steps": [
+      "Get VIX range probabilities from Kalshi",
+      "Extract midpoint for each range (e.g., '15-20' -> 17.5)",
+      "Calculate weighted sum: Σ(midpoint * probability)",
+      "Return expected VIX value"
+    ],
+    "example": {
+      "ranges": {
+        "<15": {"midpoint": 12.5, "prob": 0.20},
+        "15-20": {"midpoint": 17.5, "prob": 0.45},
+        "20-25": {"midpoint": 22.5, "prob": 0.25},
+        ">25": {"midpoint": 27.5, "prob": 0.10}
+      },
+      "calculation": "(12.5*0.20) + (17.5*0.45) + (22.5*0.25) + (27.5*0.10) = 18.5"
+    }
+  },
+  "usage_example": "from SCRIPTS.strategy_components.sentiment import KalshiVolForecast\n\nvol = KalshiVolForecast()\nexpected_vix = vol.get_expected_vix()\n\nif vol.should_reduce_positions():\n    sizing_factor = 0.5\nelse:\n    sizing_factor = 1.0\n\nself.SetHoldings('SPY', 1.0 * sizing_factor)",
+  "strategy_integration": {
+    "initialize": "self.vol_forecast = KalshiVolForecast()",
+    "on_data": "signal = self.vol_forecast.get_vol_forecast_signal()\nposition = 1.0 * signal['position_sizing_factor']\nself.SetHoldings('SPY', position)"
+  },
+  "caching": "180 seconds (3 minutes) TTL",
+  "helper_functions": {
+    "get_expected_volatility": "Returns expected VIX as float",
+    "is_high_vol_expected": "Returns True if expected VIX > 25"
+  }
+}

@@ -57,6 +57,7 @@ scripts=(
     "SCRIPTS/qc_optimize.py:Phase 4 - Parameter optimization"
     "SCRIPTS/qc_validate.py:Phase 5 - Walk-forward validation"
     "SCRIPTS/decision_logic.py:Decision framework and routing logic"
+    "SCRIPTS/kalshi:Kalshi prediction market data (Fed, VIX, regime)"
 )
 
 for script_info in "${scripts[@]}"; do

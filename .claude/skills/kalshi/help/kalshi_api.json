@@ -1,0 +1,51 @@
+{
+  "component": "KalshiAPI",
+  "file": "SCRIPTS/strategy_components/sentiment/kalshi_api_wrapper.py",
+  "description": "Core API client for accessing Kalshi prediction market data",
+  "features": [
+    "Public market data access (no authentication required)",
+    "Built-in caching (60s TTL)",
+    "Series, markets, events, and orderbook endpoints",
+    "Probability calculation from orderbook data"
+  ],
+  "methods": {
+    "get_fed_rate_probabilities": {
+      "description": "Get Federal Reserve rate decision probabilities",
+      "returns": "Dict[str, float]",
+      "example": {
+        "output": {"4.75": 0.23, "5.00": 0.65, "5.25": 0.12}
+      }
+    },
+    "get_vix_range_probabilities": {
+      "description": "Get VIX range probabilities",
+      "returns": "Dict[str, float]",
+      "example": {
+        "output": {"<20": 0.45, "20-25": 0.35, ">25": 0.20}
+      }
+    },
+    "get_market_probability": {
+      "description": "Get probability for specific market ticker",
+      "parameters": {
+        "ticker": "str - Market ticker (e.g., 'FED-23DEC-T5.00')"
+      },
+      "returns": "float - Probability (0.0 to 1.0)",
+      "example": {
+        "input": "FED-23DEC-T5.00",
+        "output": 0.65
+      }
+    },
+    "get_markets": {
+      "description": "Get markets matching criteria",
+      "parameters": {
+        "series_ticker": "str - Series ticker (e.g., 'FED', 'VIX')",
+        "status": "str - Market status ('open', 'closed', 'settled')",
+        "limit": "int - Maximum results to return"
+      },
+      "returns": "List[Dict] - List of market objects"
+    }
+  },
+  "usage_example": "from SCRIPTS.strategy_components.sentiment import KalshiAPI\n\nkalshi = KalshiAPI()\nfed_probs = kalshi.get_fed_rate_probabilities()\nvix_probs = kalshi.get_vix_range_probabilities()\nprob = kalshi.get_market_probability('FED-23DEC-T5.00')",
+  "caching": "60 seconds TTL",
+  "authentication": "None required (public endpoints)",
+  "base_url": "https://api.elections.kalshi.com/trade-api/v2"
+}

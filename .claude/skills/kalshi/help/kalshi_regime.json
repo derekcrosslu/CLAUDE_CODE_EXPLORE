@@ -1,0 +1,83 @@
+{
+  "component": "KalshiRegimeDetector",
+  "file": "SCRIPTS/strategy_components/sentiment/kalshi_regime_detector.py",
+  "description": "Classify market regimes using prediction market probabilities",
+  "regimes": {
+    "fed_policy": {
+      "values": ["TIGHTENING", "NEUTRAL", "EASING"],
+      "description": "Federal Reserve policy stance based on rate expectations",
+      "criteria": {
+        "TIGHTENING": "Expected rate > Current rate by 0.25%+",
+        "EASING": "Expected rate < Current rate by 0.25%+",
+        "NEUTRAL": "Expected rate within 0.25% of current"
+      }
+    },
+    "volatility": {
+      "values": ["LOW", "NORMAL", "HIGH"],
+      "description": "Market volatility regime from VIX expectations",
+      "criteria": {
+        "LOW": "Expected VIX < 15",
+        "NORMAL": "Expected VIX 15-25",
+        "HIGH": "Expected VIX > 25"
+      }
+    },
+    "risk_sentiment": {
+      "values": ["RISK_ON", "NEUTRAL", "RISK_OFF"],
+      "description": "Overall risk sentiment combining Fed and vol regimes",
+      "criteria": {
+        "RISK_ON": "Fed easing + low/normal vol",
+        "RISK_OFF": "Fed tightening OR high vol",
+        "NEUTRAL": "Other combinations"
+      }
+    }
+  },
+  "methods": {
+    "get_current_regime": {
+      "description": "Get complete regime classification",
+      "returns": "Dict[str, str]",
+      "example": {
+        "output": {
+          "fed": "NEUTRAL",
+          "volatility": "NORMAL",
+          "risk": "NEUTRAL"
+        }
+      }
+    },
+    "get_fed_regime": {
+      "description": "Get Fed policy regime only",
+      "returns": "FedRegime enum",
+      "values": ["TIGHTENING", "NEUTRAL", "EASING"]
+    },
+    "get_volatility_regime": {
+      "description": "Get volatility regime only",
+      "returns": "VolatilityRegime enum",
+      "values": ["LOW", "NORMAL", "HIGH"]
+    },
+    "get_risk_regime": {
+      "description": "Get risk sentiment regime only",
+      "returns": "RiskRegime enum",
+      "values": ["RISK_ON", "NEUTRAL", "RISK_OFF"]
+    },
+    "should_reduce_risk": {
+      "description": "Quick check if risk reduction is warranted",
+      "returns": "bool",
+      "logic": "True if risk regime is RISK_OFF"
+    },
+    "get_position_sizing_multiplier": {
+      "description": "Get position sizing multiplier based on regime",
+      "returns": "float",
+      "values": {
+        "RISK_OFF": 0.5,
+        "NEUTRAL": 1.0,
+        "RISK_ON": 1.5
+      }
+    }
+  },
+  "usage_example": "from SCRIPTS.strategy_components.sentiment import KalshiRegimeDetector\n\ndetector = KalshiRegimeDetector()\nregime = detector.get_current_regime()\n\nif detector.should_reduce_risk():\n    # Reduce positions\n\nmultiplier = detector.get_position_sizing_multiplier()\nposition = base_position * multiplier",
+  "strategy_integration": {
+    "initialize": "self.regime = KalshiRegimeDetector()",
+    "on_data": "regime = self.regime.get_current_regime()\nif regime['risk'] == 'RISK_OFF':\n    self.Liquidate()"
+  },
+  "caching": "300 seconds (5 minutes) TTL",
+  "helper_function": "get_regime_signal() -> str  # Returns 'RISK_ON', 'NEUTRAL', or 'RISK_OFF'"
+}

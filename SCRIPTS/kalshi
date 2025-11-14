@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# Kalshi CLI - Progressive Disclosure for Prediction Market Data
+#
+# Usage: ./SCRIPTS/kalshi <command>
+#
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+exec python3 "$SCRIPT_DIR/kalshi_cli.py" "$@"

@@ -1,0 +1,92 @@
+{
+  "component": "KalshiFedHedge",
+  "file": "SCRIPTS/strategy_components/sentiment/kalshi_fed_hedge.py",
+  "description": "Hedge strategies around Federal Reserve decision events",
+  "features": [
+    "Fed decision uncertainty measurement",
+    "Tail risk probability (unexpected moves)",
+    "Automatic hedge ratio calculation",
+    "Position adjustment recommendations"
+  ],
+  "methods": {
+    "get_hedge_signal": {
+      "description": "Get complete Fed hedge signal and recommendation",
+      "returns": "Dict",
+      "output_fields": {
+        "should_hedge": "bool - True if hedging recommended",
+        "uncertainty": "float - Fed decision uncertainty (0.0 to 1.0)",
+        "tail_risk": "float - Probability of unexpected move",
+        "hedge_ratio": "float - Suggested hedge size (0.0 to 0.5)",
+        "rationale": "str - Human-readable explanation"
+      },
+      "example": {
+        "output": {
+          "should_hedge": true,
+          "uncertainty": 0.65,
+          "tail_risk": 0.18,
+          "hedge_ratio": 0.35,
+          "rationale": "Fed hedge recommended: High uncertainty (65%), Elevated tail risk (18%)"
+        }
+      }
+    },
+    "calculate_fed_uncertainty": {
+      "description": "Calculate Fed decision uncertainty from probabilities",
+      "returns": "float - Uncertainty measure (0.0 to 1.0)",
+      "logic": "Uses entropy calculation on rate probabilities"
+    },
+    "get_tail_risk_probability": {
+      "description": "Calculate tail risk probability",
+      "returns": "float - Probability of unexpected large move",
+      "logic": "Sum of probabilities outside main cluster"
+    },
+    "should_hedge_fed_event": {
+      "description": "Simple yes/no hedge recommendation",
+      "returns": "bool",
+      "criteria": "True if uncertainty > 0.6 OR tail_risk > 0.15"
+    },
+    "get_position_adjustment": {
+      "description": "Get adjusted position size with hedge applied",
+      "parameters": {
+        "current_position_size": "float - Current position (e.g., 1.0)"
+      },
+      "returns": "float - Adjusted position size",
+      "example": {
+        "input": 1.0,
+        "hedge_ratio": 0.35,
+        "output": 0.65
+      }
+    }
+  },
+  "hedge_criteria": {
+    "uncertainty_threshold": 0.6,
+    "tail_risk_threshold": 0.15,
+    "max_hedge_ratio": 0.5,
+    "logic": "Hedge if uncertainty > 0.6 OR tail_risk > 0.15"
+  },
+  "uncertainty_calculation": {
+    "method": "Shannon entropy",
+    "formula": "-Σ(p * log2(p))",
+    "normalization": "Divided by log2(n) to get 0.0-1.0 range",
+    "interpretation": {
+      "< 0.3": "Low uncertainty - clear market consensus",
+      "0.3-0.6": "Moderate uncertainty",
+      "> 0.6": "High uncertainty - hedging recommended"
+    }
+  },
+  "tail_risk_calculation": {
+    "method": "Outlier probability summation",
+    "logic": "Sum probabilities of rates > 1 std dev from weighted mean",
+    "interpretation": {
+      "< 0.10": "Low tail risk",
+      "0.10-0.15": "Moderate tail risk",
+      "> 0.15": "Elevated tail risk - hedging recommended"
+    }
+  },
+  "usage_example": "from SCRIPTS.strategy_components.sentiment import KalshiFedHedge\n\nhedge = KalshiFedHedge()\nsignal = hedge.get_hedge_signal()\n\nif signal['should_hedge']:\n    current = 1.0\n    adjusted = hedge.get_position_adjustment(current)\n    self.SetHoldings('SPY', adjusted)",
+  "strategy_integration": {
+    "initialize": "self.fed_hedge = KalshiFedHedge()",
+    "on_data": "signal = self.fed_hedge.get_hedge_signal()\nif signal['should_hedge']:\n    leverage = 1.0 - signal['hedge_ratio']\n    self.SetHoldings('SPY', leverage)"
+  },
+  "caching": "180 seconds (3 minutes) TTL",
+  "helper_function": "should_hedge_fed() -> bool  # Simple yes/no recommendation"
+}
