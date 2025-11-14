@@ -4,7 +4,7 @@
 
 **Note 1**: This is a work in progress. We need to build redundancy so claude code does not get lost and can work autonomously without user intervention.
 
-**Note 2**: Never load into context script or files without checking first --help. Context window is veruy limited and keeping it nimble is key to acomplish your session tasks and project goals.
+**Note 2**: Never load into context script or files without checking first --help. Context window is very limited and keeping it nimble is key to acomplish your session tasks and project goals.
 
 ---
 
