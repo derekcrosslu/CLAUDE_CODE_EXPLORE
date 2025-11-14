@@ -117,25 +117,71 @@ echo "  Trades: ${BASELINE_TRADES}"
 echo "  Win Rate: ${BASELINE_WINRATE}"
 ```
 
-### Phase 2: Run Advanced Monte Carlo Validation
+### Phase 2: Generate Monte Carlo Validation Notebook
 
-**Execute qc_validate.py with Monte Carlo suite:**
+**⚠️ IMPORTANT**: All Monte Carlo validation runs IN QuantConnect Research, not locally.
+
+**Workflow**:
+1. Generate research.ipynb with Monte Carlo validation code
+2. Upload research.ipynb to QuantConnect project
+3. Manually run notebook in QC Research (you will do this)
+4. Collect results from QC after completion
+
+**Step 2.1: Generate Validation Notebook**
 
 ```bash
 cd "${HYPOTHESIS_DIR}"
 
-python ../../SCRIPTS/qc_validate.py run \
-    --strategy "${STRATEGY_FILE}" \
-    --state iteration_state.json \
-    --output validation_logs/monte_carlo_results.json \
-    --monte-carlo-runs 1000 \
-    --bootstrap-runs 5000 \
-    --permutation-runs 10000 \
-    --machr-runs 500 \
-    --cpcv-splits 500
+# Generate research.ipynb with full Monte Carlo suite
+python ../../SCRIPTS/qc_validate.py generate-notebook \
+    --output research.ipynb
+
+echo "✅ Generated: ${HYPOTHESIS_DIR}/research.ipynb"
 ```
 
-**This runs:**
+**What gets generated in research.ipynb**:
+- PSR, DSR, MinTRL calculations
+- Bootstrap resampling (configurable runs)
+- Permutation testing
+- MACHR (Market Condition Historical Randomization)
+- Parameter stability analysis
+- Regime-specific performance
+- All results saved to JSON format for collection
+
+**Step 2.2: Upload Notebook to QuantConnect**
+
+```bash
+# Upload research.ipynb to QC project
+python ../../SCRIPTS/qc_validate.py upload-notebook \
+    --project-id "${PROJECT_ID}"
+
+echo "✅ Uploaded research.ipynb to project ${PROJECT_ID}"
+echo "📍 URL: https://www.quantconnect.com/project/${PROJECT_ID}"
+```
+
+**Step 2.3: Run Notebook in QuantConnect Research**
+
+**⚠️ MANUAL STEP - YOU MUST DO THIS**:
+
+1. Go to https://www.quantconnect.com/project/${PROJECT_ID}
+2. Open "Research" tab
+3. Find research.ipynb in file list
+4. Click "Run All Cells" or execute cells sequentially
+5. Wait for all Monte Carlo simulations to complete (30-60 minutes)
+6. Verify results JSON is saved (last cell shows output path)
+
+**Step 2.4: Collect Results from QuantConnect**
+
+```bash
+# After notebook completes in QC, collect results
+python ../../SCRIPTS/qc_validate.py collect-results \
+    --project-id "${PROJECT_ID}" \
+    --output validation_logs/monte_carlo_results.json
+
+echo "✅ Collected results: ${HYPOTHESIS_DIR}/validation_logs/monte_carlo_results.json"
+```
+
+**Monte Carlo Suite** (what runs in QC Research notebook):
 1. **Combinatorial Purged Cross-Validation (CPCV)**
    - 500+ random train/test splits
    - Purging to prevent label overlap
